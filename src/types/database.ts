@@ -37,6 +37,28 @@ export interface Booking {
   status: BookingStatus;
   notes: string | null;
   created_at: string;
+  rooms?: Room;
+  profiles?: Profile;
+}
+
+export interface RequestCategory {
+  id: string;
+  name: string;
+  department: string | null;
+}
+
+export interface CoordinationRequest {
+  id: string;
+  title: string;
+  description: string | null;
+  category_id: string | null;
+  created_by: string;
+  assigned_to: string | null;
+  status: RequestStatus;
+  created_at: string;
+  updated_at: string;
+  request_categories?: RequestCategory;
+  assignee?: Profile;
 }
 
 export interface Checklist {
@@ -65,4 +87,31 @@ export interface ChecklistAssignment {
   assigned_to: string;
   is_done: boolean;
   done_at: string | null;
+  profiles?: Profile;
+}
+
+export interface ChecklistAccess {
+  checklist_id: string;
+  user_id: string;
+  can_edit: boolean;
+  profiles?: Profile;
+}
+
+export interface ChecklistAttachment {
+  id: string;
+  checklist_id: string;
+  file_name: string;
+  file_path: string;
+  uploaded_by: string;
+  uploaded_at: string;
+}
+
+export interface SharedFile {
+  id: string;
+  file_name: string;
+  file_path: string;
+  pdf_path: string | null;
+  uploaded_by: string;
+  uploaded_at: string;
+  profiles?: Profile;
 }
