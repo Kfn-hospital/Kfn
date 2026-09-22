@@ -1,0 +1,20 @@
+# Dependencies
+/node_modules
+
+# Next.js
+/.next/
+/out/
+
+# Production
+/build
+
+# Environment variables — لا تُرفع أبدًا لـ GitHub لأنها تحتوي مفاتيح سرية
+.env
+.env.local
+.env.production
+
+# Misc
+.DS_Store
+*.pem
+npm-debug.log*
+next-env.d.ts
