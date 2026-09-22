@@ -3,20 +3,22 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-
-const links = [
-  { href: '/dashboard', label: '📅 القاعات والحجوزات' },
-  { href: '/requests', label: '📋 طلبات التنسيق والمتابعة' },
-  { href: '/checklists', label: '✅ قوائم التحقق' },
-  { href: '/files', label: '📁 ملفات ومستندات' },
-  { href: '/admin/rooms', label: '🏢 إدارة القاعات' },
-  { href: '/admin/users', label: '👥 المستخدمون' },
-];
+import { useLanguage } from '@/lib/i18n/LanguageContext';
 
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
+  const { t, toggleLang } = useLanguage();
+
+  const links = [
+    { href: '/dashboard', label: t('navDashboard') },
+    { href: '/requests', label: t('navRequests') },
+    { href: '/checklists', label: t('navChecklists') },
+    { href: '/files', label: t('navFiles') },
+    { href: '/admin/rooms', label: t('navRoomsAdmin') },
+    { href: '/admin/users', label: t('navUsers') },
+  ];
 
   async function handleLogout() {
     await supabase.auth.signOut();
@@ -27,8 +29,7 @@ export default function Sidebar() {
   return (
     <aside className="w-64 bg-teal-900 text-white min-h-screen p-4 flex flex-col">
       <div className="mb-8 text-center">
-        <h2 className="font-extrabold">بوابة خورفكان</h2>
-        <p className="text-xs text-teal-300">الإدارية</p>
+        <h2 className="font-extrabold">{t('appName')}</h2>
       </div>
 
       <nav className="flex-1 space-y-1">
@@ -48,10 +49,17 @@ export default function Sidebar() {
       </nav>
 
       <button
-        onClick={handleLogout}
-        className="mt-4 text-sm font-bold text-teal-300 hover:text-white text-right px-3 py-2"
+        onClick={toggleLang}
+        className="mb-2 border border-teal-600 rounded-xl px-3 py-2 text-sm font-bold text-teal-100 hover:bg-teal-800"
       >
-        🚪 تسجيل الخروج
+        🌐 {t('langToggle')}
+      </button>
+
+      <button
+        onClick={handleLogout}
+        className="text-sm font-bold text-teal-300 hover:text-white text-start px-3 py-2"
+      >
+        {t('logout')}
       </button>
     </aside>
   );

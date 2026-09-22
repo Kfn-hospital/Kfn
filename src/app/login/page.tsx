@@ -3,10 +3,12 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { useLanguage } from '@/lib/i18n/LanguageContext';
 
 export default function LoginPage() {
   const router = useRouter();
   const supabase = createClient();
+  const { t, toggleLang } = useLanguage();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -21,7 +23,7 @@ export default function LoginPage() {
 
     setLoading(false);
     if (error) {
-      setError('البريد أو كلمة المرور غير صحيحة');
+      setError(t('loginError'));
       return;
     }
     router.push('/dashboard');
@@ -29,20 +31,27 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-4">
+    <main className="min-h-screen flex items-center justify-center p-4 relative">
+      <button
+        onClick={toggleLang}
+        className="absolute top-4 left-4 text-sm font-bold text-teal-700 border border-teal-700 rounded-xl px-3 py-1.5"
+      >
+        🌐 {t('langToggle')}
+      </button>
+
       <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-sm">
         <h1 className="text-xl font-extrabold text-teal-900 mb-1 text-center">
-          🔒 تسجيل الدخول
+          {t('loginTitle')}
         </h1>
         <p className="text-sm text-slate-500 mb-6 text-center">
-          بوابة خورفكان الإدارية
+          {t('loginSubtitle')}
         </p>
 
         <form onSubmit={handleLogin} className="space-y-3">
           <input
             type="email"
             required
-            placeholder="البريد الإلكتروني"
+            placeholder={t('emailPlaceholder')}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="w-full border rounded-xl px-3 py-2.5"
@@ -51,7 +60,7 @@ export default function LoginPage() {
           <input
             type="password"
             required
-            placeholder="كلمة المرور"
+            placeholder={t('passwordPlaceholder')}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="w-full border rounded-xl px-3 py-2.5"
@@ -66,7 +75,7 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full bg-teal-700 text-white rounded-xl py-3 font-bold disabled:opacity-50"
           >
-            {loading ? 'جارِ الدخول...' : 'دخول'}
+            {loading ? t('loggingIn') : t('loginBtn')}
           </button>
         </form>
       </div>
