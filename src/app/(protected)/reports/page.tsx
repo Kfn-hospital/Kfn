@@ -26,7 +26,8 @@ type RequestRow = {
 const COLORS = ['#0f766e', '#f59e0b', '#ef4444', '#64748b', '#3b82f6', '#a855f7'];
 
 export default function ReportsPage() {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
+const language = typeof document !== 'undefined' && document.documentElement.lang === 'en' ? 'en' : 'ar';
   const supabase = createClient();
 
   const [bookings, setBookings] = useState<BookingRow[]>([]);
