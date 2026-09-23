@@ -20,13 +20,13 @@ type RequestRow = {
   id: string;
   status: string;
   category_id: string | null;
-  request_categories: { name: string; name_en: string | null } | null;
+  request_categories: { name: string } | null;
 };
 
 const COLORS = ['#0f766e', '#f59e0b', '#ef4444', '#64748b', '#3b82f6', '#a855f7'];
 
 export default function ReportsPage() {
-const { t, lang: language } = useLanguage();
+  const { t, lang: language } = useLanguage();
   const supabase = createClient();
 
   const [bookings, setBookings] = useState<BookingRow[]>([]);
@@ -37,7 +37,7 @@ const { t, lang: language } = useLanguage();
     (async () => {
       const [{ data: b }, { data: r }] = await Promise.all([
         supabase.from('bookings').select('id, booking_date, status, rooms(name, name_en)'),
-        supabase.from('requests').select('id, status, category_id, request_categories(name, name_en)'),
+        supabase.from('requests').select('id, status, category_id, request_categories(name)'),
       ]);
       if (b) setBookings(b as unknown as BookingRow[]);
       if (r) setRequests(r as unknown as RequestRow[]);
@@ -82,11 +82,11 @@ const { t, lang: language } = useLanguage();
   const requestsByCategory = useMemo(() => {
     const map = new Map<string, number>();
     requests.forEach((r) => {
-      const name = (language === 'ar' ? r.request_categories?.name : r.request_categories?.name_en || r.request_categories?.name) ?? t('uncategorized');
+      const name = r.request_categories?.name ?? t('uncategorized');
       map.set(name, (map.get(name) ?? 0) + 1);
     });
     return Array.from(map.entries()).map(([name, value]) => ({ name, value }));
-  }, [requests, language, t]);
+  }, [requests, t]);
 
   const exportCsv = () => {
     const rows = bookings.map((b) => ({

@@ -1,0 +1,143 @@
+import { NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  { auth: { autoRefreshToken: false, persistSession: false } }
+);
+
+export async function POST(request: Request) {
+  const { message, userId } = await request.json();
+
+  if (!message || !userId) {
+    return NextResponse.json({ ok: false, error: 'بيانات ناقصة' }, { status: 400 });
+  }
+
+  const [{ data: settingsRows }, { data: rooms }, { data: categories }] = await Promise.all([
+    supabaseAdmin.from('app_settings').select('key, value').eq('key', 'gemini_api_key'),
+    supabaseAdmin.from('rooms').select('id, name, name_en').eq('status', 'active'),
+    supabaseAdmin.from('request_categories').select('id, name'),
+  ]);
+
+  const geminiKey = settingsRows?.[0]?.value as string | undefined;
+  if (!geminiKey) {
+    return NextResponse.json({
+      ok: false,
+      error: 'مفتاح Gemini غير مضاف بعد. أضِفه من صفحة إعدادات البرنامج (/admin/settings) أولًا.',
+    });
+  }
+
+  const today = new Date().toISOString().slice(0, 10);
+  const roomsList = (rooms ?? []).map((r) => `- ${r.name} (id: ${r.id})`).join('\n');
+  const categoriesList = (categories ?? []).map((c) => `- ${c.name} (id: ${c.id})`).join('\n');
+
+  const prompt = `أنت مساعد ذكي في بوابة خورفكان الإدارية. تاريخ اليوم: ${today}
+
+القاعات المتاحة لحجزها:
+${roomsList}
+
+فئات طلبات مكتب التنسيق والمتابعة المتاحة:
+${categoriesList}
+
+اقرأ طلب المستخدم وحدد intent واحد من دول:
+- "booking": حجز قاعة من القائمة فوق — لازم يكون واضح فيه القاعة والتاريخ والوقت
+- "request": أي طلب تاني لمكتب التنسيق والمتابعة (صيانة، تنسيق فعالية، طلب إداري...) — حاول تحدد أقرب فئة من القائمة فوق
+- "clarify": لو المعلومات ناقصة أو الطلب غامض (حدد إيه الناقص بالظبط في clarify_message)
+
+أرجع رد بصيغة JSON فقط بدون أي نص أو علامات كود خارج الـ JSON، بالشكل ده بالظبط:
+
+لحجز قاعة:
+{"intent":"booking","room_id":"...","date":"YYYY-MM-DD","start_time":"HH:MM","end_time":"HH:MM","title":"...","clarify_message":""}
+
+لطلب تنسيق ومتابعة:
+{"intent":"request","category_id":"...","title":"عنوان مختصر للطلب","description":"وصف الطلب بالتفصيل","clarify_message":""}
+
+للتوضيح:
+{"intent":"clarify","clarify_message":"سؤال التوضيح هنا"}
+
+طلب المستخدم: "${message}"`;
+
+  let parsed: {
+    intent: 'booking' | 'request' | 'clarify';
+    room_id?: string;
+    date?: string;
+    start_time?: string;
+    end_time?: string;
+    title?: string;
+    category_id?: string;
+    description?: string;
+    clarify_message?: string;
+  };
+
+  try {
+    const geminiRes = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+      }
+    );
+    const geminiJson = await geminiRes.json();
+    const text: string = geminiJson.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+    const cleaned = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+    parsed = JSON.parse(cleaned);
+  } catch {
+    return NextResponse.json({ ok: false, error: 'تعذر فهم رد المساعد الذكي، حاول تصيغ طلبك بشكل أوضح.' });
+  }
+
+  if (parsed.intent === 'clarify') {
+    return NextResponse.json({ ok: false, message: parsed.clarify_message || 'محتاج توضيح أكتر لطلبك.' });
+  }
+
+  if (parsed.intent === 'booking') {
+    if (!parsed.room_id || !parsed.date || !parsed.start_time || !parsed.end_time) {
+      return NextResponse.json({ ok: false, message: 'محتاج تحدد القاعة والتاريخ والوقت بوضوح أكتر.' });
+    }
+
+    const { error } = await supabaseAdmin.from('bookings').insert({
+      room_id: parsed.room_id,
+      title: parsed.title || 'حجز عبر المساعد الذكي',
+      booking_date: parsed.date,
+      start_time: parsed.start_time,
+      end_time: parsed.end_time,
+      booked_by: userId,
+      status: 'pending',
+    });
+
+    if (error) {
+      return NextResponse.json({ ok: false, error: error.message });
+    }
+
+    return NextResponse.json({
+      ok: true,
+      message: `✅ تم إرسال طلب حجز "${parsed.title || ''}" بتاريخ ${parsed.date} من ${parsed.start_time} إلى ${parsed.end_time}، وهو الآن قيد مراجعة الأدمن.`,
+    });
+  }
+
+  if (parsed.intent === 'request') {
+    if (!parsed.title) {
+      return NextResponse.json({ ok: false, message: 'محتاج توضح طلبك أكتر شوية.' });
+    }
+
+    const { error } = await supabaseAdmin.from('requests').insert({
+      title: parsed.title,
+      description: parsed.description || null,
+      category_id: parsed.category_id || null,
+      created_by: userId,
+      status: 'pending',
+    });
+
+    if (error) {
+      return NextResponse.json({ ok: false, error: error.message });
+    }
+
+    return NextResponse.json({
+      ok: true,
+      message: `✅ تم إرسال طلبك "${parsed.title}" لمكتب التنسيق والمتابعة، وهيتم متابعته قريبًا.`,
+    });
+  }
+
+  return NextResponse.json({ ok: false, message: 'لم أفهم طلبك، حاول تصيغه بشكل مختلف.' });
+}
