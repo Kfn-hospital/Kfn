@@ -108,6 +108,21 @@ export const translations = {
     roleRoomManager: 'مسؤول قاعة',
     roleCoordinator: 'موظف تنسيق',
     roleEmployee: 'موظف',
+
+    // لوحة تحكم الأدمن
+    adminPanelTitle: 'لوحة تحكم الأدمن',
+    adminPanelSubtitle: 'إدارة الحجوزات، الطلبات، والمستخدمين',
+    tabPendingBookings: 'حجوزات معلّقة',
+    tabFullBookingLog: 'سجل الحجوزات الكامل',
+    tabAuditLog: 'سجل التدقيق',
+    noPendingBookings: 'مفيش حجوزات معلّقة دلوقتي',
+    bookedBy: 'حجزها',
+    approveSuccess: 'تم اعتماد الحجز بنجاح ✔',
+    rejectSuccess: 'تم رفض الحجز',
+    auditAction: 'الإجراء',
+    auditBy: 'بواسطة',
+    auditDetails: 'التفاصيل',
+    auditDate: 'التاريخ',
   },
   en: {
     appName: 'Khorfakkan Admin Portal',
@@ -206,6 +221,20 @@ export const translations = {
     roleRoomManager: 'Room Manager',
     roleCoordinator: 'Coordinator',
     roleEmployee: 'Employee',
+
+    adminPanelTitle: 'Admin Control Panel',
+    adminPanelSubtitle: 'Manage bookings, requests, and users',
+    tabPendingBookings: 'Pending Bookings',
+    tabFullBookingLog: 'Full Booking Log',
+    tabAuditLog: 'Audit Log',
+    noPendingBookings: 'No pending bookings right now',
+    bookedBy: 'Booked By',
+    approveSuccess: 'Booking approved successfully ✔',
+    rejectSuccess: 'Booking rejected',
+    auditAction: 'Action',
+    auditBy: 'By',
+    auditDetails: 'Details',
+    auditDate: 'Date',
   },
 } as const;
 

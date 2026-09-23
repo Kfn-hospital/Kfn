@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
@@ -10,6 +11,23 @@ export default function Sidebar() {
   const router = useRouter();
   const supabase = createClient();
   const { t, toggleLang } = useLanguage();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    async function checkRole() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+      if (profile?.role === 'admin') setIsAdmin(true);
+    }
+    checkRole();
+  }, []);
 
   const links = [
     { href: '/dashboard', label: t('navDashboard') },
@@ -18,6 +36,7 @@ export default function Sidebar() {
     { href: '/files', label: t('navFiles') },
     { href: '/admin/rooms', label: t('navRoomsAdmin') },
     { href: '/admin/users', label: t('navUsers') },
+    ...(isAdmin ? [{ href: '/admin', label: `⚙️ ${t('adminPanelTitle')}` }] : []),
   ];
 
   async function handleLogout() {
