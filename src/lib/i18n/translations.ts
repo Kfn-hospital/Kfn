@@ -123,6 +123,31 @@ export const translations = {
     auditBy: 'بواسطة',
     auditDetails: 'التفاصيل',
     auditDate: 'التاريخ',
+
+reportsTitle: 'الإحصائيات والتقارير',
+reportsSubtitle: 'نظرة شاملة على الحجوزات والطلبات',
+exportCsv: 'تصدير CSV',
+bookingsByMonth: 'الحجوزات شهريًا',
+topRooms: 'أكثر القاعات استخدامًا',
+requestsByCategory: 'الطلبات حسب الفئة',
+bookingStatusBreakdown: 'توزيع حالة الحجوزات',
+uncategorized: 'غير مصنف',
+settingsTitle: 'إعدادات البرنامج',
+settingsSubtitle: 'الشعار، المساعد الذكي، رمز QR، وإعدادات أخرى',
+logoUpload: 'شعار المؤسسة',
+aiAssistantName: 'اسم المساعد الذكي',
+aiInstructions: 'تعليمات المساعد الذكي',
+geminiApiKey: 'مفتاح Gemini API',
+testConnection: 'اختبار الاتصال',
+testSuccess: 'الاتصال ناجح',
+testFailed: 'فشل الاتصال',
+voiceLink: 'رابط التسجيل الصوتي',
+qrCodeTitle: 'رمز QR للبوابة',
+saveSettings: 'حفظ الإعدادات',
+saveSuccess: 'تم الحفظ بنجاح',
+
+
+    
   },
   en: {
     appName: 'Khorfakkan Admin Portal',
@@ -235,6 +260,32 @@ export const translations = {
     auditBy: 'By',
     auditDetails: 'Details',
     auditDate: 'Date',
+
+
+reportsTitle: 'Statistics & Reports',
+reportsSubtitle: 'Full overview of bookings and requests',
+exportCsv: 'Export CSV',
+bookingsByMonth: 'Bookings by Month',
+topRooms: 'Most Used Rooms',
+requestsByCategory: 'Requests by Category',
+bookingStatusBreakdown: 'Booking Status Breakdown',
+uncategorized: 'Uncategorized',
+settingsTitle: 'Program Settings',
+settingsSubtitle: 'Logo, AI assistant, QR code, and more',
+logoUpload: 'Organization Logo',
+aiAssistantName: 'AI Assistant Name',
+aiInstructions: 'AI Assistant Instructions',
+geminiApiKey: 'Gemini API Key',
+testConnection: 'Test Connection',
+testSuccess: 'Connection successful',
+testFailed: 'Connection failed',
+voiceLink: 'Voice Recording Link',
+qrCodeTitle: 'Portal QR Code',
+saveSettings: 'Save Settings',
+saveSuccess: 'Saved successfully',
+
+
+    
   },
 } as const;
 
