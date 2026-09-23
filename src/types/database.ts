@@ -1,7 +1,7 @@
 // أنواع TypeScript مطابقة لجداول قاعدة البيانات
 
 export type UserRole = 'admin' | 'room_manager' | 'coordinator' | 'employee';
-export type UserStatus = 'active' | 'suspended';
+export type UserStatus = 'active' | 'suspended' | 'pending';
 export type BookingStatus = 'pending' | 'approved' | 'rejected' | 'cancelled';
 export type RequestStatus = 'pending' | 'in_progress' | 'completed' | 'rejected';
 
