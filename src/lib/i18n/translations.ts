@@ -146,6 +146,12 @@ qrCodeTitle: 'رمز QR للبوابة',
 saveSettings: 'حفظ الإعدادات',
 saveSuccess: 'تم الحفظ بنجاح',
 
+tabCalendar: 'التقويم',
+addUser: 'إضافة مستخدم',
+userEmail: 'البريد الإلكتروني',
+userPassword: 'كلمة المرور',
+newUserRole: 'الصلاحية',
+userCreated: 'تم إنشاء المستخدم بنجاح',
 
     
   },
@@ -240,7 +246,7 @@ saveSuccess: 'تم الحفظ بنجاح',
     download: '⬇ Download',
 
     usersTitle: 'Users',
-    userRole: 'Role',
+    newUserRole: 'Role',
     userDepartment: 'Department',
     roleAdmin: 'Admin',
     roleRoomManager: 'Room Manager',
@@ -284,6 +290,12 @@ qrCodeTitle: 'Portal QR Code',
 saveSettings: 'Save Settings',
 saveSuccess: 'Saved successfully',
 
+tabCalendar: 'Calendar',
+addUser: 'Add User',
+userEmail: 'Email',
+userPassword: 'Password',
+userRole: 'Role',
+userCreated: 'User created successfully',
 
     
   },
