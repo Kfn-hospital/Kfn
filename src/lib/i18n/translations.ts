@@ -3,6 +3,7 @@
 
 export const translations = {
   ar: {
+  editBooking: 'تعديل الحجز',
   emailOrPhonePlaceholder: 'البريد الإلكتروني أو رقم الهاتف',
   roomManagers: 'المسؤولون عن الموافقة',
   addManager: 'إضافة',
@@ -182,6 +183,7 @@ userCreated: 'تم إنشاء المستخدم بنجاح',
     
   },
   en: {
+  editBooking: 'Edit Booking',
   emailOrPhonePlaceholder: 'Email or phone number',
   roomManagers: 'Room Approvers',
   addManager: 'Add',

@@ -24,6 +24,19 @@ function toDateKey(d: Date) {
   return `${y}-${m}-${day}`;
 }
 
+function dateOnly(value: string) {
+  return value.slice(0, 10);
+}
+
+const EMPTY_FORM = {
+  room_id: '',
+  title: '',
+  booking_date: '',
+  start_time: '',
+  end_time: '',
+  notes: '',
+};
+
 export default function DashboardPage() {
   const supabase = createClient();
   const { t, lang } = useLanguage();
@@ -33,17 +46,11 @@ export default function DashboardPage() {
   const [userId, setUserId] = useState<string>('');
   const [userRole, setUserRole] = useState<string>('');
   const [modalOpen, setModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const [form, setForm] = useState({
-    room_id: '',
-    title: '',
-    booking_date: '',
-    start_time: '',
-    end_time: '',
-    notes: '',
-  });
+  const [form, setForm] = useState({ ...EMPTY_FORM });
 
   // ---- Calendar state ----
   const [calendarBookings, setCalendarBookings] = useState<Booking[]>([]);
@@ -107,21 +114,49 @@ export default function DashboardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [calendarMonth]);
 
-  async function handleAddBooking(e: React.FormEvent) {
+  function openNewBooking(dateKey?: string) {
+    setEditingId(null);
+    setForm({ ...EMPTY_FORM, booking_date: dateKey || '' });
+    setError('');
+    setModalOpen(true);
+  }
+
+  function openEditBooking(b: Booking) {
+    setEditingId(b.id);
+    setForm({
+      room_id: b.room_id,
+      title: b.title,
+      booking_date: dateOnly(b.booking_date),
+      start_time: b.start_time,
+      end_time: b.end_time,
+      notes: b.notes || '',
+    });
+    setError('');
+    setModalOpen(true);
+  }
+
+  function closeModal() {
+    setModalOpen(false);
+    setEditingId(null);
+  }
+
+  async function handleSubmitBooking(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError('');
 
-    const { error } = await supabase.from('bookings').insert({
+    const payload = {
       room_id: form.room_id,
       title: form.title,
       booking_date: form.booking_date,
       start_time: form.start_time,
       end_time: form.end_time,
       notes: form.notes || null,
-      booked_by: userId,
-      status: 'pending',
-    });
+    };
+
+    const { error } = editingId
+      ? await supabase.from('bookings').update(payload).eq('id', editingId)
+      : await supabase.from('bookings').insert({ ...payload, booked_by: userId, status: 'pending' });
 
     setLoading(false);
     if (error) {
@@ -129,7 +164,8 @@ export default function DashboardPage() {
       return;
     }
     setModalOpen(false);
-    setForm({ room_id: '', title: '', booking_date: '', start_time: '', end_time: '', notes: '' });
+    setEditingId(null);
+    setForm({ ...EMPTY_FORM });
     loadData();
     loadCalendarBookings(calendarMonth);
   }
@@ -183,9 +219,10 @@ export default function DashboardPage() {
   const bookingsByDate = useMemo(() => {
     const map = new Map<string, Booking[]>();
     calendarBookings.forEach((b) => {
-      const list = map.get(b.booking_date) ?? [];
+      const key = dateOnly(b.booking_date);
+      const list = map.get(key) ?? [];
       list.push(b);
-      map.set(b.booking_date, list);
+      map.set(key, list);
     });
     return map;
   }, [calendarBookings]);
@@ -209,11 +246,6 @@ export default function DashboardPage() {
 
   const selectedDayBookings = selectedDay ? bookingsByDate.get(selectedDay) ?? [] : [];
 
-  function openBookingForDay(dateKey: string) {
-    setForm((f) => ({ ...f, booking_date: dateKey }));
-    setModalOpen(true);
-  }
-
   return (
     <main className="p-6">
       <div className="flex items-center justify-between mb-6">
@@ -221,7 +253,7 @@ export default function DashboardPage() {
           {t('roomsAndBookings')}
         </h1>
         <button
-          onClick={() => setModalOpen(true)}
+          onClick={() => openNewBooking()}
           className="bg-teal-700 text-white rounded-xl px-5 py-2.5 font-bold"
         >
           {t('newBooking')}
@@ -307,7 +339,7 @@ export default function DashboardPage() {
               <div key={key} className="flex flex-col items-stretch">
                 <button
                   onClick={() => setSelectedDay(key)}
-                  onDoubleClick={() => openBookingForDay(key)}
+                  onDoubleClick={() => openNewBooking(key)}
                   className={`aspect-square rounded-xl border p-1 flex flex-col items-center justify-start text-xs ${
                     selectedDay === key ? 'border-teal-600 bg-teal-50' : 'border-slate-200'
                   } ${isToday ? 'ring-2 ring-teal-400' : ''}`}
@@ -329,7 +361,7 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between mb-2">
               <h4 className="font-bold text-teal-900">{selectedDay}</h4>
               <button
-                onClick={() => openBookingForDay(selectedDay)}
+                onClick={() => openNewBooking(selectedDay)}
                 className="text-sm font-bold text-teal-700 hover:underline"
               >
                 + {t('newBooking')}
@@ -370,7 +402,7 @@ export default function DashboardPage() {
               header: t('bookingRoom'),
               render: (b) => (lang === 'en' && b.rooms?.name_en ? b.rooms.name_en : b.rooms?.name) || '-',
             },
-            { header: t('bookingDate'), render: (b) => b.booking_date },
+            { header: t('bookingDate'), render: (b) => dateOnly(b.booking_date) },
             {
               header: t('status'),
               render: (b) => (
@@ -381,37 +413,54 @@ export default function DashboardPage() {
             },
             {
               header: t('actions'),
-              render: (b) =>
-                canManage && b.status === 'pending' ? (
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => updateStatus(b.id, 'approved')}
-                      className="text-green-600 text-xs font-bold hover:underline"
-                    >
-                      {t('approve')}
-                    </button>
-                    <button
-                      onClick={() => updateStatus(b.id, 'rejected')}
-                      className="text-red-600 text-xs font-bold hover:underline"
-                    >
-                      {t('reject')}
-                    </button>
+              render: (b) => {
+                const isFinal = b.status === 'rejected' || b.status === 'cancelled';
+                if (isFinal) return null;
+                const isOwnerOrManager = canManage || b.booked_by === userId;
+                return (
+                  <div className="flex gap-2 flex-wrap">
+                    {canManage && b.status === 'pending' && (
+                      <>
+                        <button
+                          onClick={() => updateStatus(b.id, 'approved')}
+                          className="text-green-600 text-xs font-bold hover:underline"
+                        >
+                          {t('approve')}
+                        </button>
+                        <button
+                          onClick={() => updateStatus(b.id, 'rejected')}
+                          className="text-red-600 text-xs font-bold hover:underline"
+                        >
+                          {t('reject')}
+                        </button>
+                      </>
+                    )}
+                    {isOwnerOrManager && (
+                      <>
+                        <button
+                          onClick={() => openEditBooking(b)}
+                          className="text-teal-600 text-xs font-bold hover:underline"
+                        >
+                          {t('edit')}
+                        </button>
+                        <button
+                          onClick={() => updateStatus(b.id, 'cancelled')}
+                          className="text-slate-500 text-xs font-bold hover:underline"
+                        >
+                          {t('cancel')}
+                        </button>
+                      </>
+                    )}
                   </div>
-                ) : b.booked_by === userId && b.status === 'pending' ? (
-                  <button
-                    onClick={() => updateStatus(b.id, 'cancelled')}
-                    className="text-slate-500 text-xs font-bold hover:underline"
-                  >
-                    {t('cancel')}
-                  </button>
-                ) : null,
+                );
+              },
             },
           ]}
         />
       </Card>
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={t('newBooking')}>
-        <form onSubmit={handleAddBooking} className="space-y-3">
+      <Modal open={modalOpen} onClose={closeModal} title={editingId ? t('editBooking') : t('newBooking')}>
+        <form onSubmit={handleSubmitBooking} className="space-y-3">
           <div>
             <label className="text-sm font-bold text-slate-600 mb-1 block">
               {t('bookingRoom')}
