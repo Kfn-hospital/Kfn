@@ -8,13 +8,12 @@ const supabaseAdmin = createClient(
 );
 
 export async function POST(request: Request) {
-  const { name, email, phone, password } = await request.json();
+  const { name, email, phone, department, password } = await request.json();
 
-  if (!name || !email || !phone || !password) {
+  if (!name || !email || !phone || !department || !password) {
     return NextResponse.json({ ok: false, error: 'من فضلك أكمل كل الحقول' }, { status: 400 });
   }
 
-  // امنع تكرار رقم الهاتف
   const { data: existingPhone } = await supabaseAdmin
     .from('profiles')
     .select('id')
@@ -31,7 +30,7 @@ export async function POST(request: Request) {
     email,
     password,
     email_confirm: true,
-    user_metadata: { name, phone },
+    user_metadata: { name, phone, department },
   });
 
   if (error || !data.user) {
@@ -43,6 +42,7 @@ export async function POST(request: Request) {
     email,
     name,
     phone,
+    department,
     role: 'employee',
     status: 'pending',
   });

@@ -6,16 +6,12 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 
-type LoginMode = 'email' | 'phone';
-
 export default function LoginPage() {
   const router = useRouter();
   const supabase = createClient();
   const { t, toggleLang } = useLanguage();
 
-  const [mode, setMode] = useState<LoginMode>('email');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -25,14 +21,15 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
 
-    let loginEmail = email;
+    const trimmed = identifier.trim();
+    let loginEmail = trimmed;
 
-    if (mode === 'phone') {
+    if (!trimmed.includes('@')) {
       try {
         const res = await fetch('/api/auth/resolve-phone', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phone }),
+          body: JSON.stringify({ phone: trimmed }),
         });
         const json = await res.json();
         if (!json.ok) {
@@ -59,13 +56,6 @@ export default function LoginPage() {
     router.refresh();
   }
 
-  function switchMode(next: LoginMode) {
-    setMode(next);
-    setError('');
-    setEmail('');
-    setPhone('');
-  }
-
   return (
     <main className="min-h-screen flex items-center justify-center p-4 relative">
       <button
@@ -83,49 +73,16 @@ export default function LoginPage() {
           {t('loginSubtitle')}
         </p>
 
-        <div className="flex justify-center gap-2 mb-5">
-          <button
-            type="button"
-            onClick={() => switchMode('email')}
-            className={`text-xs font-bold px-3 py-1.5 rounded-lg ${
-              mode === 'email' ? 'bg-teal-700 text-white' : 'bg-slate-100 text-slate-600'
-            }`}
-          >
-            {t('loginWithEmail')}
-          </button>
-          <button
-            type="button"
-            onClick={() => switchMode('phone')}
-            className={`text-xs font-bold px-3 py-1.5 rounded-lg ${
-              mode === 'phone' ? 'bg-teal-700 text-white' : 'bg-slate-100 text-slate-600'
-            }`}
-          >
-            {t('loginWithPhone')}
-          </button>
-        </div>
-
         <form onSubmit={handleLogin} className="space-y-3">
-          {mode === 'email' ? (
-            <input
-              type="email"
-              required
-              placeholder={t('emailPlaceholder')}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full border rounded-xl px-3 py-2.5"
-              dir="ltr"
-            />
-          ) : (
-            <input
-              type="tel"
-              required
-              placeholder={t('phonePlaceholder')}
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              className="w-full border rounded-xl px-3 py-2.5"
-              dir="ltr"
-            />
-          )}
+          <input
+            type="text"
+            required
+            placeholder={t('emailOrPhonePlaceholder')}
+            value={identifier}
+            onChange={(e) => setIdentifier(e.target.value)}
+            className="w-full border rounded-xl px-3 py-2.5"
+            dir="ltr"
+          />
           <input
             type="password"
             required

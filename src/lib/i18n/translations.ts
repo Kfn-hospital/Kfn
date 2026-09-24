@@ -3,6 +3,7 @@
 
 export const translations = {
   ar: {
+  emailOrPhonePlaceholder: 'البريد الإلكتروني أو رقم الهاتف',
   roomManagers: 'المسؤولون عن الموافقة',
   addManager: 'إضافة',
   noManagersAssigned: 'لسه محددش حد',
@@ -181,6 +182,7 @@ userCreated: 'تم إنشاء المستخدم بنجاح',
     
   },
   en: {
+  emailOrPhonePlaceholder: 'Email or phone number',
   roomManagers: 'Room Approvers',
   addManager: 'Add',
   noManagersAssigned: 'No one assigned yet',

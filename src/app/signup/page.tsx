@@ -12,7 +12,7 @@ export default function SignupPage() {
   const { t } = useLanguage();
   const router = useRouter();
 
-  const [form, setForm] = useState({ name: '', email: '', phone: '', password: '' });
+  const [form, setForm] = useState({ name: '', email: '', phone: '', department: '', password: '' });
   const [saving, setSaving] = useState(false);
   const [alert, setAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
@@ -71,6 +71,13 @@ export default function SignupPage() {
               type="text"
               value={form.phone}
               onChange={(v: string) => setForm((f) => ({ ...f, phone: v }))}
+              required
+            />
+            <FormField
+              label={t('userDepartment')}
+              type="text"
+              value={form.department}
+              onChange={(v: string) => setForm((f) => ({ ...f, department: v }))}
               required
             />
             <FormField
