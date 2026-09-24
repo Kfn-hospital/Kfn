@@ -49,7 +49,8 @@ export default function SettingsPage() {
   }, [supabase]);
 
   const upsertSetting = async (key: string, value: unknown) => {
-    await supabase.from('app_settings').upsert({ key, value, updated_at: new Date().toISOString() });
+    const { error } = await supabase.from('app_settings').upsert({ key, value });
+    if (error) throw error;
   };
 
   const handleSave = async () => {
