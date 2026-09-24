@@ -13,6 +13,7 @@ type Tab = 'pending' | 'calendar' | 'log' | 'audit';
 
 interface BookingRow {
   id: string;
+  room_id: string;
   title: string;
   booking_date: string;
   start_time: string;
@@ -52,6 +53,8 @@ export default function AdminControlPanelPage() {
   const [tab, setTab] = useState<Tab>('pending');
   const [bookings, setBookings] = useState<BookingRow[]>([]);
   const [auditLog, setAuditLog] = useState<AuditRow[]>([]);
+  const [myRole, setMyRole] = useState<string | null>(null);
+  const [myRoomIds, setMyRoomIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [actingId, setActingId] = useState<string | null>(null);
   const [alert, setAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -65,7 +68,7 @@ export default function AdminControlPanelPage() {
     const { data, error } = await supabase
       .from('bookings')
       .select(
-        'id, title, booking_date, start_time, end_time, status, notes, rooms(name, name_en), profiles(name)'
+        'id, room_id, title, booking_date, start_time, end_time, status, notes, rooms(name, name_en), profiles(name)'
       )
       .order('booking_date', { ascending: false });
 
@@ -82,10 +85,30 @@ export default function AdminControlPanelPage() {
     if (!error && data) setAuditLog(data as unknown as AuditRow[]);
   }, [supabase]);
 
+  const loadMyAccess = useCallback(async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+    setMyRole(profile?.role ?? null);
+
+    const { data: rm } = await supabase.from('room_managers').select('room_id').eq('user_id', user.id);
+    setMyRoomIds(((rm as { room_id: string }[] | null) ?? []).map((r) => r.room_id));
+  }, [supabase]);
+
   useEffect(() => {
     setLoading(true);
-    Promise.all([loadBookings(), loadAuditLog()]).finally(() => setLoading(false));
-  }, [loadBookings, loadAuditLog]);
+    Promise.all([loadBookings(), loadAuditLog(), loadMyAccess()]).finally(() => setLoading(false));
+  }, [loadBookings, loadAuditLog, loadMyAccess]);
+
+  const canSeeRoom = useCallback(
+    (roomId: string) => myRole === 'admin' || myRole === 'room_manager' || myRoomIds.includes(roomId),
+    [myRole, myRoomIds]
+  );
+
+  const visibleBookings = useMemo(() => bookings.filter((b) => canSeeRoom(b.room_id)), [bookings, canSeeRoom]);
 
   const handleDecision = async (booking: BookingRow, decision: 'approved' | 'rejected') => {
     setActingId(booking.id);
@@ -121,7 +144,7 @@ export default function AdminControlPanelPage() {
     setActingId(null);
   };
 
-  const pendingBookings = bookings.filter((b) => b.status === 'pending');
+  const pendingBookings = visibleBookings.filter((b) => b.status === 'pending');
 
   const statusLabel = (status: BookingStatus) =>
     status === 'pending'
@@ -146,13 +169,13 @@ export default function AdminControlPanelPage() {
   // ---- Calendar data ----
   const bookingsByDate = useMemo(() => {
     const map = new Map<string, BookingRow[]>();
-    bookings.forEach((b) => {
+    visibleBookings.forEach((b) => {
       const list = map.get(b.booking_date) ?? [];
       list.push(b);
       map.set(b.booking_date, list);
     });
     return map;
-  }, [bookings]);
+  }, [visibleBookings]);
 
   const calendarCells = useMemo(() => {
     const year = calendarMonth.getFullYear();
@@ -355,7 +378,7 @@ export default function AdminControlPanelPage() {
         <Card>
           <DataTable
             emptyMessage={t('noData')}
-            rows={bookings}
+            rows={visibleBookings}
             columns={[
               { header: t('bookingRoom'), render: roomName },
               { header: t('bookedBy'), render: (b) => b.profiles?.name ?? '—' },

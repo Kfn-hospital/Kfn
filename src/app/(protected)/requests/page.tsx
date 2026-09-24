@@ -10,6 +10,9 @@ import Alert from '@/components/ui/Alert';
 import DataTable from '@/components/ui/DataTable';
 import type { CoordinationRequest, RequestCategory, Profile } from '@/types/database';
 
+const CAN_MANAGE_ROLES = ['admin', 'coordinator', 'coordination_admin'];
+const ASSIGNABLE_ROLES = ['coordinator', 'coordination_admin'];
+
 export default function RequestsPage() {
   const supabase = createClient();
   const { t } = useLanguage();
@@ -17,6 +20,7 @@ export default function RequestsPage() {
   const [requests, setRequests] = useState<CoordinationRequest[]>([]);
   const [categories, setCategories] = useState<RequestCategory[]>([]);
   const [users, setUsers] = useState<Profile[]>([]);
+  const [myRole, setMyRole] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -38,13 +42,27 @@ export default function RequestsPage() {
     const { data: cats } = await supabase.from('request_categories').select('*');
     setCategories((cats as RequestCategory[]) || []);
 
-    const { data: profs } = await supabase.from('profiles').select('*').eq('status', 'active');
+    const { data: profs } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('status', 'active')
+      .in('role', ASSIGNABLE_ROLES);
     setUsers((profs as Profile[]) || []);
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (user) {
+      const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+      setMyRole(profile?.role ?? null);
+    }
   }
 
   useEffect(() => {
     loadData();
   }, []);
+
+  const canManageRequests = !!myRole && CAN_MANAGE_ROLES.includes(myRole);
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
@@ -75,6 +93,7 @@ export default function RequestsPage() {
   }
 
   async function updateStatus(id: string, status: string) {
+    if (!canManageRequests) return;
     await supabase.from('requests').update({ status }).eq('id', id);
     loadData();
   }
@@ -114,19 +133,24 @@ export default function RequestsPage() {
             { header: t('requestAssignedTo'), render: (r) => r.assignee?.name || '-' },
             {
               header: t('status'),
-              render: (r) => (
-                <select
-                  value={r.status}
-                  onChange={(e) => updateStatus(r.id, e.target.value)}
-                  className={`px-2 py-1 rounded-full text-xs font-bold border-0 ${statusColor[r.status]}`}
-                >
-                  {Object.entries(statusLabel).map(([val, label]) => (
-                    <option key={val} value={val}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              ),
+              render: (r) =>
+                canManageRequests ? (
+                  <select
+                    value={r.status}
+                    onChange={(e) => updateStatus(r.id, e.target.value)}
+                    className={`px-2 py-1 rounded-full text-xs font-bold border-0 ${statusColor[r.status]}`}
+                  >
+                    {Object.entries(statusLabel).map(([val, label]) => (
+                      <option key={val} value={val}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <span className={`px-2 py-1 rounded-full text-xs font-bold ${statusColor[r.status]}`}>
+                    {statusLabel[r.status]}
+                  </span>
+                ),
             },
           ]}
         />

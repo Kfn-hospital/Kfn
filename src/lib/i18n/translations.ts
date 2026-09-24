@@ -3,6 +3,13 @@
 
 export const translations = {
   ar: {
+  roomManagers: 'المسؤولون عن الموافقة',
+  addManager: 'إضافة',
+  noManagersAssigned: 'لسه محددش حد',
+  searchUsersPlaceholder: 'ابحث بالاسم...',
+  fileNameAr: 'اسم الملف (عربي)',
+  fileNameEn: 'اسم الملف (إنجليزي)',
+  roleCoordinationAdmin: 'ادمن تنسيق ومتابعة',
   aiAssistantTitle: 'اسأل المساعد الذكي',
   aiAssistantPlaceholder: 'مثال: عايز أحجز قاعة الاجتماعات بكرة الساعة 10 الصبح',
   aiAssistantSend: 'إرسال',
@@ -174,6 +181,13 @@ userCreated: 'تم إنشاء المستخدم بنجاح',
     
   },
   en: {
+  roomManagers: 'Room Approvers',
+  addManager: 'Add',
+  noManagersAssigned: 'No one assigned yet',
+  searchUsersPlaceholder: 'Search by name...',
+  fileNameAr: 'File Name (Arabic)',
+  fileNameEn: 'File Name (English)',
+  roleCoordinationAdmin: 'Coordination & Follow-up Admin',
   aiAssistantTitle: 'Ask AI Assistant',
   aiAssistantPlaceholder: 'e.g. Book the meeting room tomorrow at 10 AM',
   aiAssistantSend: 'Send',

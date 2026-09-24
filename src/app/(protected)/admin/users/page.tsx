@@ -10,7 +10,7 @@ import type { Profile, UserRole } from '@/types/database';
 
 type Tab = 'regular' | 'admins';
 
-const ADMIN_ROLES: UserRole[] = ['admin', 'room_manager', 'coordinator'];
+const ADMIN_ROLES: UserRole[] = ['admin', 'room_manager', 'coordinator', 'coordination_admin'];
 
 export default function UsersPage() {
   const supabase = createClient();
@@ -49,6 +49,7 @@ export default function UsersPage() {
     admin: t('roleAdmin'),
     room_manager: t('roleRoomManager'),
     coordinator: t('roleCoordinator'),
+    coordination_admin: t('roleCoordinationAdmin'),
     employee: t('roleEmployee'),
   };
 

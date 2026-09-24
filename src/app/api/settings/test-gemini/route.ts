@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 
+const GEMINI_MODELS = ['gemini-2.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.8-flash'];
+
 export async function POST(request: Request) {
   const { apiKey } = await request.json();
 
@@ -7,29 +9,32 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: 'Missing API key' }, { status: 400 });
   }
 
-  try {
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: 'Reply with the single word: OK' }] }],
-        }),
+  let lastError = 'Request failed';
+
+  for (const model of GEMINI_MODELS) {
+    try {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: 'Reply with the single word: OK' }] }],
+          }),
+        }
+      );
+
+      const json = await res.json();
+
+      if (res.ok && json.candidates?.[0]?.content?.parts?.[0]?.text) {
+        return NextResponse.json({ ok: true });
       }
-    );
 
-    const json = await res.json();
-
-    if (!res.ok) {
-      return NextResponse.json({ ok: false, error: json.error?.message ?? 'Request failed' }, { status: 200 });
+      lastError = json.error?.message ?? `فشل مع نموذج ${model}`;
+    } catch (err) {
+      lastError = err instanceof Error ? err.message : String(err);
     }
-
-    return NextResponse.json({ ok: true });
-  } catch (err) {
-    return NextResponse.json(
-      { ok: false, error: err instanceof Error ? err.message : String(err) },
-      { status: 200 }
-    );
   }
+
+  return NextResponse.json({ ok: false, error: lastError }, { status: 200 });
 }

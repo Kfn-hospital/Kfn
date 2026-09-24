@@ -7,6 +7,33 @@ const supabaseAdmin = createClient(
   { auth: { autoRefreshToken: false, persistSession: false } }
 );
 
+// نجرب النماذج دي بالترتيب - لو واحد اتوقف بيجرب اللي بعده تلقائيًا
+const GEMINI_MODELS = ['gemini-2.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.8-flash'];
+
+async function callGemini(apiKey: string, prompt: string): Promise<string> {
+  let lastError = '';
+  for (const model of GEMINI_MODELS) {
+    try {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+        }
+      );
+      const json = await res.json();
+      if (res.ok && json.candidates?.[0]?.content?.parts?.[0]?.text) {
+        return json.candidates[0].content.parts[0].text as string;
+      }
+      lastError = json.error?.message || `فشل مع نموذج ${model}`;
+    } catch (e) {
+      lastError = e instanceof Error ? e.message : 'خطأ غير معروف';
+    }
+  }
+  throw new Error(lastError || 'كل نماذج Gemini المتاحة فشلت');
+}
+
 export async function POST(request: Request) {
   const { message, userId } = await request.json();
 
@@ -71,20 +98,12 @@ ${categoriesList}
   };
 
   try {
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
-      }
-    );
-    const geminiJson = await geminiRes.json();
-    const text: string = geminiJson.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+    const text = await callGemini(geminiKey, prompt);
     const cleaned = text.replace(/```json/gi, '').replace(/```/g, '').trim();
     parsed = JSON.parse(cleaned);
-  } catch {
-    return NextResponse.json({ ok: false, error: 'تعذر فهم رد المساعد الذكي، حاول تصيغ طلبك بشكل أوضح.' });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : '';
+    return NextResponse.json({ ok: false, error: `تعذر الاتصال بالمساعد الذكي: ${msg || 'حاول تصيغ طلبك بشكل أوضح'}` });
   }
 
   if (parsed.intent === 'clarify') {

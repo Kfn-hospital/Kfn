@@ -1,6 +1,6 @@
 // أنواع TypeScript مطابقة لجداول قاعدة البيانات
 
-export type UserRole = 'admin' | 'room_manager' | 'coordinator' | 'employee';
+export type UserRole = 'admin' | 'room_manager' | 'coordinator' | 'coordination_admin' | 'employee';
 export type UserStatus = 'active' | 'suspended' | 'pending';
 export type BookingStatus = 'pending' | 'approved' | 'rejected' | 'cancelled';
 export type RequestStatus = 'pending' | 'in_progress' | 'completed' | 'rejected';
@@ -111,6 +111,7 @@ export interface SharedFile {
   file_name: string;
   file_path: string;
   pdf_path: string | null;
+  file_name_en: string | null;
   uploaded_by: string;
   uploaded_at: string;
   profiles?: Profile;

@@ -81,6 +81,9 @@ export default function NewUserPage() {
             className="w-full border rounded-xl p-3 text-sm"
           >
             <option value="employee">{t('roleEmployee')}</option>
+            <option value="room_manager">{t('roleRoomManager')}</option>
+            <option value="coordinator">{t('roleCoordinator')}</option>
+            <option value="coordination_admin">{t('roleCoordinationAdmin')}</option>
             <option value="admin">{t('roleAdmin')}</option>
           </select>
         </div>
