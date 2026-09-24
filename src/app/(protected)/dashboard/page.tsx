@@ -94,14 +94,12 @@ export default function DashboardPage() {
     }
   }
 
-  async function loadCalendarBookings(month: Date) {
-    const start = toDateKey(new Date(month.getFullYear(), month.getMonth(), 1));
-    const end = toDateKey(new Date(month.getFullYear(), month.getMonth() + 1, 0));
+  async function loadCalendarBookings() {
     const { data } = await supabase
       .from('bookings')
       .select('*, rooms(*), profiles(*)')
-      .gte('booking_date', start)
-      .lte('booking_date', end);
+      .order('booking_date', { ascending: false })
+      .limit(500);
     setCalendarBookings((data as Booking[]) || []);
   }
 
@@ -110,7 +108,7 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    loadCalendarBookings(calendarMonth);
+    loadCalendarBookings();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [calendarMonth]);
 
@@ -167,13 +165,13 @@ export default function DashboardPage() {
     setEditingId(null);
     setForm({ ...EMPTY_FORM });
     loadData();
-    loadCalendarBookings(calendarMonth);
+    loadCalendarBookings();
   }
 
   async function updateStatus(id: string, status: 'approved' | 'rejected' | 'cancelled') {
     await supabase.from('bookings').update({ status }).eq('id', id);
     loadData();
-    loadCalendarBookings(calendarMonth);
+    loadCalendarBookings();
   }
 
   async function handleAiSubmit() {
@@ -191,7 +189,7 @@ export default function DashboardPage() {
       if (json.ok) {
         setAiMessage('');
         loadData();
-        loadCalendarBookings(calendarMonth);
+        loadCalendarBookings();
       }
     } catch (err) {
       setAiReply(err instanceof Error ? err.message : String(err));
