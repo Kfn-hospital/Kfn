@@ -49,6 +49,7 @@ export default function DashboardPage() {
 
   const [rooms, setRooms] = useState<Room[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [myBookings, setMyBookings] = useState<Booking[]>([]);
   const [userId, setUserId] = useState<string>('');
   const [userRole, setUserRole] = useState<string>('');
   const [modalOpen, setModalOpen] = useState(false);
@@ -76,17 +77,13 @@ export default function DashboardPage() {
       .order('name');
     setRooms((roomsData as Room[]) || []);
 
-    const { data: bookingsData } = await supabase
-      .from('bookings')
-      .select('*, rooms(*), profiles(*)')
-      .order('booking_date', { ascending: false })
-      .limit(50);
-    setBookings((bookingsData as Booking[]) || []);
-
     const {
       data: { user },
     } = await supabase.auth.getUser();
+
+    let uid = '';
     if (user) {
+      uid = user.id;
       setUserId(user.id);
       const { data: profile } = await supabase
         .from('profiles')
@@ -94,6 +91,23 @@ export default function DashboardPage() {
         .eq('id', user.id)
         .single();
       if (profile) setUserRole(profile.role);
+    }
+
+    const { data: bookingsData } = await supabase
+      .from('bookings')
+      .select('*, rooms(*), profiles(*)')
+      .order('booking_date', { ascending: false })
+      .limit(50);
+    setBookings((bookingsData as Booking[]) || []);
+
+    if (uid) {
+      const { data: mineData } = await supabase
+        .from('bookings')
+        .select('*, rooms(*), profiles(*)')
+        .eq('booked_by', uid)
+        .order('booking_date', { ascending: false })
+        .limit(50);
+      setMyBookings((mineData as Booking[]) || []);
     }
   }
 
@@ -217,6 +231,67 @@ export default function DashboardPage() {
 
   const selectedDayBookings = selectedDay ? bookingsByDate.get(selectedDay) ?? [] : [];
 
+  const bookingColumns = (ownList: boolean) => [
+    { header: t('bookingTitle'), render: (b: Booking) => b.title },
+    {
+      header: t('bookingRoom'),
+      render: (b: Booking) => (lang === 'en' && b.rooms?.name_en ? b.rooms.name_en : b.rooms?.name) || '-',
+    },
+    { header: t('bookingDate'), render: (b: Booking) => dateOnly(b.booking_date) },
+    {
+      header: t('status'),
+      render: (b: Booking) => (
+        <span className="px-2 py-1 rounded-full text-xs font-bold" style={statusBadgeStyle(b.status)}>
+          {statusLabel[b.status]}
+        </span>
+      ),
+    },
+    {
+      header: t('actions'),
+      render: (b: Booking) => {
+        const isFinal = b.status === 'rejected' || b.status === 'cancelled';
+        if (isFinal) return null;
+        const isOwnerOrManager = ownList || canManage || b.booked_by === userId;
+        return (
+          <div className="flex gap-2 flex-wrap">
+            {!ownList && canManage && b.status === 'pending' && (
+              <>
+                <button
+                  onClick={() => updateStatus(b.id, 'approved')}
+                  className="text-green-600 text-xs font-bold hover:underline"
+                >
+                  {t('approve')}
+                </button>
+                <button
+                  onClick={() => updateStatus(b.id, 'rejected')}
+                  className="text-red-600 text-xs font-bold hover:underline"
+                >
+                  {t('reject')}
+                </button>
+              </>
+            )}
+            {isOwnerOrManager && (
+              <>
+                <button
+                  onClick={() => openEditBooking(b)}
+                  className="text-[var(--c-teal-600)] text-xs font-bold hover:underline"
+                >
+                  {t('edit')}
+                </button>
+                <button
+                  onClick={() => updateStatus(b.id, 'cancelled')}
+                  className="text-[var(--c-text-muted)] text-xs font-bold hover:underline"
+                >
+                  {t('cancel')}
+                </button>
+              </>
+            )}
+          </div>
+        );
+      },
+    },
+  ];
+
   return (
     <main className="p-6">
       <div className="flex items-center justify-between mb-6">
@@ -231,189 +306,142 @@ export default function DashboardPage() {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        {rooms.map((room) => (
-          <Card key={room.id}>
-            <h3 className="font-bold">
-              {lang === 'en' && room.name_en ? room.name_en : room.name}
-            </h3>
-            <p className="text-sm text-[var(--c-text-muted)]">
-              {lang === 'en' && room.location_en ? room.location_en : room.location} —{' '}
-              {room.capacity}
-            </p>
-          </Card>
-        ))}
-        {!rooms.length && (
-          <p className="text-[var(--c-text-muted)] col-span-full text-center py-6">{t('noData')}</p>
-        )}
-      </div>
-
-      {/* ---- Calendar ---- */}
-      <Card className="mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <button
-            onClick={() => setCalendarMonth((m) => new Date(m.getFullYear(), m.getMonth() - 1, 1))}
-            className="px-3 py-1 rounded-lg bg-[var(--c-surface-muted)] text-[var(--c-text)] font-bold"
-          >
-            {lang === 'ar' ? '▶' : '◀'}
-          </button>
-          <h3 className="font-extrabold text-[var(--c-teal-900)]">📅 {t('tabCalendar')} — {monthLabel}</h3>
-          <button
-            onClick={() => setCalendarMonth((m) => new Date(m.getFullYear(), m.getMonth() + 1, 1))}
-            className="px-3 py-1 rounded-lg bg-[var(--c-surface-muted)] text-[var(--c-text)] font-bold"
-          >
-            {lang === 'ar' ? '◀' : '▶'}
-          </button>
-        </div>
-
-        <div className="grid grid-cols-7 gap-2 text-center text-xs font-bold text-[var(--c-text-muted)] mb-2">
-          {(lang === 'ar'
-            ? ['أحد', 'إثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة', 'سبت']
-            : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-          ).map((d) => (
-            <div key={d}>{d}</div>
+      <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-4">
+        {/* ---- القاعات (يسار) ---- */}
+        <div className="space-y-3">
+          <h2 className="font-extrabold text-[var(--c-teal-900)]">🏢 {t('roomsListLabel')}</h2>
+          {rooms.map((room) => (
+            <Card key={room.id}>
+              <h3 className="font-bold">
+                {lang === 'en' && room.name_en ? room.name_en : room.name}
+              </h3>
+              <p className="text-sm text-[var(--c-text-muted)]">
+                {lang === 'en' && room.location_en ? room.location_en : room.location} —{' '}
+                {room.capacity}
+              </p>
+            </Card>
           ))}
+          {!rooms.length && (
+            <p className="text-[var(--c-text-muted)] text-center py-6">{t('noData')}</p>
+          )}
         </div>
 
-        <div className="grid grid-cols-7 gap-2">
-          {calendarCells.map((date, i) => {
-            if (!date) return <div key={i} />;
-            const key = toDateKey(date);
-            const dayBookings = bookingsByDate.get(key) ?? [];
-            const isToday = key === toDateKey(new Date());
-            return (
-              <div key={key} className="flex flex-col items-stretch">
-                <button
-                  onClick={() => setSelectedDay(key)}
-                  onDoubleClick={() => openNewBooking(key)}
-                  className={`min-h-[92px] rounded-xl border p-1.5 flex flex-col items-stretch text-xs overflow-hidden ${
-                    selectedDay === key ? 'border-[var(--c-teal-600)] bg-[var(--c-teal-50)]' : 'border-[var(--c-border)]'
-                  } ${isToday ? 'ring-2 ring-[var(--c-teal-400)]' : ''}`}
-                >
-                  <span className="font-bold text-[var(--c-text)] text-center mb-1">{date.getDate()}</span>
-                  <div className="flex flex-col gap-0.5 w-full">
-                    {dayBookings.slice(0, 3).map((b) => (
-                      <span
-                        key={b.id}
-                        title={`${b.title} — ${b.profiles?.name || b.profiles?.email || ''} — ${timeLabel(b.start_time)}-${timeLabel(b.end_time)}`}
-                        style={statusDotStyle(b.status)}
-                        className="block w-full truncate text-[10px] leading-4 font-bold text-white rounded px-1"
-                      >
-                        {b.title}
-                      </span>
-                    ))}
-                    {dayBookings.length > 3 && (
-                      <span className="text-[10px] text-[var(--c-text-muted)] text-center">
-                        +{dayBookings.length - 3}
-                      </span>
-                    )}
-                  </div>
-                </button>
-              </div>
-            );
-          })}
-        </div>
-
-        {selectedDay && (
-          <div className="mt-5 border-t pt-4">
-            <div className="flex items-center justify-between mb-2">
-              <h4 className="font-bold text-[var(--c-teal-900)]">{selectedDay}</h4>
+        {/* ---- الأجندة + حجوزاتي (يمين) ---- */}
+        <div className="space-y-4">
+          <Card>
+            <div className="flex items-center justify-between mb-4">
               <button
-                onClick={() => openNewBooking(selectedDay)}
-                className="text-sm font-bold text-[var(--c-teal-700)] hover:underline"
+                onClick={() => setCalendarMonth((m) => new Date(m.getFullYear(), m.getMonth() - 1, 1))}
+                className="px-3 py-1 rounded-lg bg-[var(--c-surface-muted)] text-[var(--c-text)] font-bold"
               >
-                + {t('newBooking')}
+                {lang === 'ar' ? '▶' : '◀'}
+              </button>
+              <h3 className="font-extrabold text-[var(--c-teal-900)]">📅 {t('tabCalendar')} — {monthLabel}</h3>
+              <button
+                onClick={() => setCalendarMonth((m) => new Date(m.getFullYear(), m.getMonth() + 1, 1))}
+                className="px-3 py-1 rounded-lg bg-[var(--c-surface-muted)] text-[var(--c-text)] font-bold"
+              >
+                {lang === 'ar' ? '◀' : '▶'}
               </button>
             </div>
-            {selectedDayBookings.length === 0 ? (
-              <p className="text-[var(--c-text-muted)] text-sm">{t('noData')}</p>
-            ) : (
-              <div className="space-y-2">
-                {selectedDayBookings.map((b) => (
-                  <div key={b.id} className="flex items-center justify-between bg-[var(--c-bg)] rounded-lg p-2">
-                    <div>
-                      <p className="font-bold text-sm text-[var(--c-text)]">{b.title}</p>
-                      <p className="text-xs text-[var(--c-text-muted)]">
-                        {(lang === 'en' && b.rooms?.name_en ? b.rooms.name_en : b.rooms?.name) || '-'} · {timeLabel(b.start_time)}-{timeLabel(b.end_time)} · {b.profiles?.name || b.profiles?.email || '—'}
-                      </p>
-                    </div>
-                    <span className="text-xs font-bold px-2 py-1 rounded-full" style={statusBadgeStyle(b.status)}>
-                      {statusLabel[b.status]}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </Card>
 
-      <Card>
-        <DataTable
-          emptyMessage={t('noData')}
-          rows={bookings}
-          columns={[
-            { header: t('bookingTitle'), render: (b) => b.title },
-            {
-              header: t('bookingRoom'),
-              render: (b) => (lang === 'en' && b.rooms?.name_en ? b.rooms.name_en : b.rooms?.name) || '-',
-            },
-            { header: t('bookingDate'), render: (b) => dateOnly(b.booking_date) },
-            {
-              header: t('status'),
-              render: (b) => (
-                <span className="px-2 py-1 rounded-full text-xs font-bold" style={statusBadgeStyle(b.status)}>
-                  {statusLabel[b.status]}
-                </span>
-              ),
-            },
-            {
-              header: t('actions'),
-              render: (b) => {
-                const isFinal = b.status === 'rejected' || b.status === 'cancelled';
-                if (isFinal) return null;
-                const isOwnerOrManager = canManage || b.booked_by === userId;
+            <div className="grid grid-cols-7 gap-2 text-center text-xs font-bold text-[var(--c-text-muted)] mb-2">
+              {(lang === 'ar'
+                ? ['أحد', 'إثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة', 'سبت']
+                : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+              ).map((d) => (
+                <div key={d}>{d}</div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-7 gap-2">
+              {calendarCells.map((date, i) => {
+                if (!date) return <div key={i} />;
+                const key = toDateKey(date);
+                const dayBookings = bookingsByDate.get(key) ?? [];
+                const isToday = key === toDateKey(new Date());
                 return (
-                  <div className="flex gap-2 flex-wrap">
-                    {canManage && b.status === 'pending' && (
-                      <>
-                        <button
-                          onClick={() => updateStatus(b.id, 'approved')}
-                          className="text-green-600 text-xs font-bold hover:underline"
-                        >
-                          {t('approve')}
-                        </button>
-                        <button
-                          onClick={() => updateStatus(b.id, 'rejected')}
-                          className="text-red-600 text-xs font-bold hover:underline"
-                        >
-                          {t('reject')}
-                        </button>
-                      </>
-                    )}
-                    {isOwnerOrManager && (
-                      <>
-                        <button
-                          onClick={() => openEditBooking(b)}
-                          className="text-[var(--c-teal-600)] text-xs font-bold hover:underline"
-                        >
-                          {t('edit')}
-                        </button>
-                        <button
-                          onClick={() => updateStatus(b.id, 'cancelled')}
-                          className="text-[var(--c-text-muted)] text-xs font-bold hover:underline"
-                        >
-                          {t('cancel')}
-                        </button>
-                      </>
-                    )}
+                  <div key={key} className="flex flex-col items-stretch">
+                    <button
+                      onClick={() => setSelectedDay(key)}
+                      onDoubleClick={() => openNewBooking(key)}
+                      className={`min-h-[92px] rounded-xl border p-1.5 flex flex-col items-stretch text-xs overflow-hidden ${
+                        selectedDay === key ? 'border-[var(--c-teal-600)] bg-[var(--c-teal-50)]' : 'border-[var(--c-border)]'
+                      } ${isToday ? 'ring-2 ring-[var(--c-teal-400)]' : ''}`}
+                    >
+                      <span className="font-bold text-[var(--c-text)] text-center mb-1">{date.getDate()}</span>
+                      <div className="flex flex-col gap-0.5 w-full">
+                        {dayBookings.slice(0, 3).map((b) => (
+                          <span
+                            key={b.id}
+                            title={`${b.title} — ${b.profiles?.name || b.profiles?.email || ''} — ${timeLabel(b.start_time)}-${timeLabel(b.end_time)}`}
+                            style={statusDotStyle(b.status)}
+                            className="block w-full truncate text-[10px] leading-4 font-bold text-white rounded px-1"
+                          >
+                            {b.title}
+                          </span>
+                        ))}
+                        {dayBookings.length > 3 && (
+                          <span className="text-[10px] text-[var(--c-text-muted)] text-center">
+                            +{dayBookings.length - 3}
+                          </span>
+                        )}
+                      </div>
+                    </button>
                   </div>
                 );
-              },
-            },
-          ]}
-        />
-      </Card>
+              })}
+            </div>
+
+            {selectedDay && (
+              <div className="mt-5 border-t pt-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="font-bold text-[var(--c-teal-900)]">{selectedDay}</h4>
+                  <button
+                    onClick={() => openNewBooking(selectedDay)}
+                    className="text-sm font-bold text-[var(--c-teal-700)] hover:underline"
+                  >
+                    + {t('newBooking')}
+                  </button>
+                </div>
+                {selectedDayBookings.length === 0 ? (
+                  <p className="text-[var(--c-text-muted)] text-sm">{t('noData')}</p>
+                ) : (
+                  <div className="space-y-2">
+                    {selectedDayBookings.map((b) => (
+                      <div key={b.id} className="flex items-center justify-between bg-[var(--c-bg)] rounded-lg p-2">
+                        <div>
+                          <p className="font-bold text-sm text-[var(--c-text)]">{b.title}</p>
+                          <p className="text-xs text-[var(--c-text-muted)]">
+                            {(lang === 'en' && b.rooms?.name_en ? b.rooms.name_en : b.rooms?.name) || '-'} · {timeLabel(b.start_time)}-{timeLabel(b.end_time)} · {b.profiles?.name || b.profiles?.email || '—'}
+                          </p>
+                        </div>
+                        <span className="text-xs font-bold px-2 py-1 rounded-full" style={statusBadgeStyle(b.status)}>
+                          {statusLabel[b.status]}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </Card>
+
+          {/* ---- حجوزاتي الخاصة (تحت الأجندة مباشرة) ---- */}
+          <Card>
+            <h3 className="font-extrabold text-[var(--c-teal-900)] mb-3">🙋 {t('myBookingsTitle')}</h3>
+            <DataTable emptyMessage={t('noData')} rows={myBookings} columns={bookingColumns(true)} />
+          </Card>
+        </div>
+      </div>
+
+      {/* ---- كل الحجوزات — لإدارة الأدمن/مسؤول القاعة بس ---- */}
+      {canManage && (
+        <Card className="mt-6">
+          <h3 className="font-extrabold text-[var(--c-teal-900)] mb-3">📋 {t('allBookingsTitle')}</h3>
+          <DataTable emptyMessage={t('noData')} rows={bookings} columns={bookingColumns(false)} />
+        </Card>
+      )}
 
       <Modal open={modalOpen} onClose={closeModal} title={editingId ? t('editBooking') : t('newBooking')}>
         <form onSubmit={handleSubmitBooking} className="space-y-3">

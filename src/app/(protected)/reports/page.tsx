@@ -41,6 +41,7 @@ export default function ReportsPage() {
   const [assigneeRows, setAssigneeRows] = useState<AssigneeStatRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [isPersonalView, setIsPersonalView] = useState(false);
+  const [role, setRole] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -48,14 +49,20 @@ export default function ReportsPage() {
         data: { user },
       } = await supabase.auth.getUser();
 
-      let role: string | null = null;
+      let userRole: string | null = null;
       if (user) {
         const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-        role = profile?.role ?? null;
+        userRole = profile?.role ?? null;
       }
 
-      const personal = role === 'employee';
+      const personal = userRole === 'employee';
       setIsPersonalView(personal);
+      setRole(userRole);
+
+      // فريق التنسيق والمتابعة (أدمن/منسّق/ادمن تنسيق) يشوف إحصائيات الطلبات.
+      // مسؤول القاعة يشوف إحصائيات الحجوزات بس. الأدمن يشوف الاتنين.
+      const wantsRequests = personal || userRole === 'admin' || userRole === 'coordinator' || userRole === 'coordination_admin';
+      const wantsBookings = personal || userRole === 'admin' || userRole === 'room_manager';
 
       let bookingsQuery = supabase.from('bookings').select('id, booking_date, status, rooms(name, name_en)');
       let requestsQuery = supabase.from('requests').select('id, status, category_id, request_categories(name)');
@@ -67,17 +74,20 @@ export default function ReportsPage() {
 
       const assigneesQuery = supabase.from('request_assignees').select('user_id, status, profiles(name)');
 
-      const [{ data: b }, { data: r }, { data: a }] = await Promise.all([
-        bookingsQuery,
-        requestsQuery,
-        assigneesQuery,
+      const [bRes, rRes, aRes] = await Promise.all([
+        wantsBookings ? bookingsQuery : Promise.resolve({ data: null }),
+        wantsRequests ? requestsQuery : Promise.resolve({ data: null }),
+        wantsRequests ? assigneesQuery : Promise.resolve({ data: null }),
       ]);
-      if (b) setBookings(b as unknown as BookingRow[]);
-      if (r) setRequests(r as unknown as RequestRow[]);
-      if (a) setAssigneeRows(a as unknown as AssigneeStatRow[]);
+      if (bRes.data) setBookings(bRes.data as unknown as BookingRow[]);
+      if (rRes.data) setRequests(rRes.data as unknown as RequestRow[]);
+      if (aRes.data) setAssigneeRows(aRes.data as unknown as AssigneeStatRow[]);
       setLoading(false);
     })();
   }, [supabase]);
+
+  const showRequestSection = isPersonalView || role === 'admin' || role === 'coordinator' || role === 'coordination_admin';
+  const showBookingSection = isPersonalView || role === 'admin' || role === 'room_manager';
 
   const statusCounts = useMemo(() => {
     const counts = { pending: 0, approved: 0, rejected: 0, cancelled: 0 };
@@ -180,113 +190,127 @@ export default function ReportsPage() {
           </h1>
           <p className="text-[var(--c-text-muted)]">{isPersonalView ? t('myStatsSubtitle') : t('reportsSubtitle')}</p>
         </div>
-        <button
-          onClick={exportCsv}
-          className="bg-[var(--c-teal-700)] text-white font-bold rounded-xl px-4 py-2"
-        >
-          ⬇ {t('exportCsv')}
-        </button>
+        {showBookingSection && (
+          <button
+            onClick={exportCsv}
+            className="bg-[var(--c-teal-700)] text-white font-bold rounded-xl px-4 py-2"
+          >
+            ⬇ {t('exportCsv')}
+          </button>
+        )}
       </div>
 
-      <div>
-        <h2 className="font-bold text-[var(--c-teal-900)] mb-3">🗓️ {t('bookingStatusBreakdown')}</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {statusCounts.map((s, i) => (
-            <Card key={s.name}>
-              <p className="text-sm text-[var(--c-text-muted)]">{s.name}</p>
-              <p className="text-3xl font-extrabold" style={{ color: COLORS[i] }}>{s.value}</p>
+      {/* ============ طلبات التنسيق والمتابعة (بالأول) ============ */}
+      {showRequestSection && (
+        <div className="space-y-4">
+          <div>
+            <h2 className="font-bold text-[var(--c-teal-900)] mb-3">📋 {t('requestsSectionTitle')}</h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {requestStatusCounts.map((s, i) => (
+                <Card key={s.key}>
+                  <p className="text-sm text-[var(--c-text-muted)]">{s.name}</p>
+                  <p className="text-3xl font-extrabold" style={{ color: REQUEST_STATUS_COLORS[i] }}>{s.value}</p>
+                </Card>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-4">
+            <Card>
+              <h3 className="font-bold text-[var(--c-teal-900)] mb-3">{t('requestsByCategory')}</h3>
+              <ResponsiveContainer width="100%" height={260}>
+                <PieChart>
+                  <Pie data={requestsByCategory} dataKey="value" nameKey="name" outerRadius={90} label>
+                    {requestsByCategory.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                  </Pie>
+                  <Tooltip />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
             </Card>
-          ))}
-        </div>
-      </div>
 
-      <div>
-        <h2 className="font-bold text-[var(--c-teal-900)] mb-3">📋 {t('requestsSectionTitle')}</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {requestStatusCounts.map((s, i) => (
-            <Card key={s.key}>
-              <p className="text-sm text-[var(--c-text-muted)]">{s.name}</p>
-              <p className="text-3xl font-extrabold" style={{ color: REQUEST_STATUS_COLORS[i] }}>{s.value}</p>
+            <Card>
+              <h3 className="font-bold text-[var(--c-teal-900)] mb-3">{t('requestStatusBreakdown')}</h3>
+              <ResponsiveContainer width="100%" height={260}>
+                <PieChart>
+                  <Pie data={requestStatusCounts} dataKey="value" nameKey="name" outerRadius={90} label>
+                    {requestStatusCounts.map((_, i) => <Cell key={i} fill={REQUEST_STATUS_COLORS[i % REQUEST_STATUS_COLORS.length]} />)}
+                  </Pie>
+                  <Tooltip />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
             </Card>
-          ))}
-        </div>
-      </div>
+          </div>
 
-      <div className="grid md:grid-cols-2 gap-4">
-        <Card>
-          <h3 className="font-bold text-[var(--c-teal-900)] mb-3">{t('bookingsByMonth')}</h3>
-          <ResponsiveContainer width="100%" height={260}>
-            <LineChart data={monthlyTrend}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" fontSize={12} />
-              <YAxis allowDecimals={false} fontSize={12} />
-              <Tooltip />
-              <Line type="monotone" dataKey="count" stroke="#0f766e" strokeWidth={2} />
-            </LineChart>
-          </ResponsiveContainer>
-        </Card>
-
-        <Card>
-          <h3 className="font-bold text-[var(--c-teal-900)] mb-3">{t('topRooms')}</h3>
-          <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={topRooms} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis type="number" allowDecimals={false} fontSize={12} />
-              <YAxis type="category" dataKey="name" width={110} fontSize={12} />
-              <Tooltip />
-              <Bar dataKey="count" fill="#0f766e" radius={[0, 4, 4, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </Card>
-
-        <Card>
-          <h3 className="font-bold text-[var(--c-teal-900)] mb-3">{t('requestsByCategory')}</h3>
-          <ResponsiveContainer width="100%" height={260}>
-            <PieChart>
-              <Pie data={requestsByCategory} dataKey="value" nameKey="name" outerRadius={90} label>
-                {requestsByCategory.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-              </Pie>
-              <Tooltip />
-              <Legend />
-            </PieChart>
-          </ResponsiveContainer>
-        </Card>
-
-        <Card>
-          <h3 className="font-bold text-[var(--c-teal-900)] mb-3">{t('requestStatusBreakdown')}</h3>
-          <ResponsiveContainer width="100%" height={260}>
-            <PieChart>
-              <Pie data={requestStatusCounts} dataKey="value" nameKey="name" outerRadius={90} label>
-                {requestStatusCounts.map((_, i) => <Cell key={i} fill={REQUEST_STATUS_COLORS[i % REQUEST_STATUS_COLORS.length]} />)}
-              </Pie>
-              <Tooltip />
-              <Legend />
-            </PieChart>
-          </ResponsiveContainer>
-        </Card>
-      </div>
-
-      {!isPersonalView && (
-        <Card>
-          <h3 className="font-bold text-[var(--c-teal-900)] mb-1">{t('requestsByAssigneeTitle')}</h3>
-          <p className="text-xs text-[var(--c-text-muted)] mb-3">{t('requestsByAssigneeSubtitle')}</p>
-          {requestsByAssignee.length ? (
-            <ResponsiveContainer width="100%" height={Math.max(220, requestsByAssignee.length * 46)}>
-              <BarChart data={requestsByAssignee} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis type="number" allowDecimals={false} fontSize={12} />
-                <YAxis type="category" dataKey="name" width={130} fontSize={12} />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="pending" name={t('assigneeStatusPending')} stackId="a" fill={REQUEST_STATUS_COLORS[0]} />
-                <Bar dataKey="in_progress" name={t('assigneeStatusInProgress')} stackId="a" fill={REQUEST_STATUS_COLORS[1]} />
-                <Bar dataKey="completed" name={t('assigneeStatusCompleted')} stackId="a" fill={REQUEST_STATUS_COLORS[2]} radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : (
-            <p className="text-sm text-[var(--c-text-muted)]">{t('noAssigneeData')}</p>
+          {!isPersonalView && (
+            <Card>
+              <h3 className="font-bold text-[var(--c-teal-900)] mb-1">{t('requestsByAssigneeTitle')}</h3>
+              <p className="text-xs text-[var(--c-text-muted)] mb-3">{t('requestsByAssigneeSubtitle')}</p>
+              {requestsByAssignee.length ? (
+                <ResponsiveContainer width="100%" height={Math.max(220, requestsByAssignee.length * 46)}>
+                  <BarChart data={requestsByAssignee} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis type="number" allowDecimals={false} fontSize={12} />
+                    <YAxis type="category" dataKey="name" width={130} fontSize={12} />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="pending" name={t('assigneeStatusPending')} stackId="a" fill={REQUEST_STATUS_COLORS[0]} />
+                    <Bar dataKey="in_progress" name={t('assigneeStatusInProgress')} stackId="a" fill={REQUEST_STATUS_COLORS[1]} />
+                    <Bar dataKey="completed" name={t('assigneeStatusCompleted')} stackId="a" fill={REQUEST_STATUS_COLORS[2]} radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <p className="text-sm text-[var(--c-text-muted)]">{t('noAssigneeData')}</p>
+              )}
+            </Card>
           )}
-        </Card>
+        </div>
+      )}
+
+      {/* ============ الحجوزات (تحت طلبات التنسيق) ============ */}
+      {showBookingSection && (
+        <div className="space-y-4">
+          <div>
+            <h2 className="font-bold text-[var(--c-teal-900)] mb-3">🗓️ {t('bookingStatusBreakdown')}</h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {statusCounts.map((s, i) => (
+                <Card key={s.name}>
+                  <p className="text-sm text-[var(--c-text-muted)]">{s.name}</p>
+                  <p className="text-3xl font-extrabold" style={{ color: COLORS[i] }}>{s.value}</p>
+                </Card>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-4">
+            <Card>
+              <h3 className="font-bold text-[var(--c-teal-900)] mb-3">{t('bookingsByMonth')}</h3>
+              <ResponsiveContainer width="100%" height={260}>
+                <LineChart data={monthlyTrend}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" fontSize={12} />
+                  <YAxis allowDecimals={false} fontSize={12} />
+                  <Tooltip />
+                  <Line type="monotone" dataKey="count" stroke="#0f766e" strokeWidth={2} />
+                </LineChart>
+              </ResponsiveContainer>
+            </Card>
+
+            <Card>
+              <h3 className="font-bold text-[var(--c-teal-900)] mb-3">{t('topRooms')}</h3>
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart data={topRooms} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis type="number" allowDecimals={false} fontSize={12} />
+                  <YAxis type="category" dataKey="name" width={110} fontSize={12} />
+                  <Tooltip />
+                  <Bar dataKey="count" fill="#0f766e" radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </Card>
+          </div>
+        </div>
       )}
     </div>
   );
