@@ -126,11 +126,11 @@ export default function ChecklistsPage() {
             <Card key={c.id} className="cursor-pointer hover:shadow-lg" >
               <div onClick={() => setDetailId(c.id)}>
                 <h3 className="font-extrabold text-[var(--c-teal-900)]">{c.title}</h3>
-                <p className="text-slate-500 text-xs mb-3">{c.description}</p>
-                <div className="w-full bg-slate-100 rounded-full h-2 mb-1.5">
+                <p className="text-[var(--c-text-muted)] text-xs mb-3">{c.description}</p>
+                <div className="w-full bg-[var(--c-surface-muted)] rounded-full h-2 mb-1.5">
                   <div className="bg-[var(--c-teal-600)] h-2 rounded-full" style={{ width: `${pct}%` }} />
                 </div>
-                <div className="text-xs text-slate-500">
+                <div className="text-xs text-[var(--c-text-muted)]">
                   {c.doneCount} / {c.totalCount} · {c.itemsCount} {t('checklistItems')}
                 </div>
               </div>
@@ -138,7 +138,7 @@ export default function ChecklistsPage() {
           );
         })}
         {!checklists.length && (
-          <p className="text-slate-400 col-span-full text-center py-10">{t('noData')}</p>
+          <p className="text-[var(--c-text-muted)] col-span-full text-center py-10">{t('noData')}</p>
         )}
       </div>
 
@@ -342,7 +342,7 @@ function ChecklistDetailModal({
 
   return (
     <Modal open={true} onClose={onClose} title={checklist.title}>
-      <p className="text-slate-500 text-sm mb-4">{checklist.description}</p>
+      <p className="text-[var(--c-text-muted)] text-sm mb-4">{checklist.description}</p>
 
       <div className="space-y-3 mb-5">
         {items.map((item) => {
@@ -370,7 +370,7 @@ function ChecklistDetailModal({
                       onChange={() => toggleAssignment(a.id, a.is_done)}
                       className="w-4 h-4 accent-[var(--c-teal-600)]"
                     />
-                    <span className={a.is_done ? 'line-through text-slate-400' : ''}>
+                    <span className={a.is_done ? 'line-through text-[var(--c-text-muted)]' : ''}>
                       {a.profiles?.name}
                     </span>
                   </label>
@@ -400,7 +400,7 @@ function ChecklistDetailModal({
       <div className="mb-5 pt-4 border-t">
         <div className="text-sm font-bold text-[var(--c-teal-800)] mb-2">{t('attachments')}</div>
         {attachments.map((f) => (
-          <div key={f.id} className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-2 text-sm mb-1.5">
+          <div key={f.id} className="flex items-center justify-between bg-[var(--c-bg)] rounded-lg px-3 py-2 text-sm mb-1.5">
             <span>📄 {f.file_name}</span>
             {(f.uploaded_by === userId || canEdit) && (
               <span
@@ -437,13 +437,13 @@ function ChecklistDetailModal({
           <div className="mb-5 pt-4 border-t">
             <div className="text-sm font-bold text-[var(--c-teal-800)] mb-2">{t('checklistAccess')}</div>
             {access.map((a) => (
-              <div key={a.user_id} className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-2 text-sm mb-1.5">
+              <div key={a.user_id} className="flex items-center justify-between bg-[var(--c-bg)] rounded-lg px-3 py-2 text-sm mb-1.5">
                 <span className="font-bold">{a.profiles?.name}</span>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => toggleAccessEdit(a.user_id, a.can_edit)}
                     className={`px-2 py-1 rounded-full text-[10px] font-bold ${
-                      a.can_edit ? 'bg-[var(--c-teal-600)] text-white' : 'bg-slate-200 text-slate-600'
+                      a.can_edit ? 'bg-[var(--c-teal-600)] text-white' : 'bg-slate-200 text-[var(--c-text)]'
                     }`}
                   >
                     {a.can_edit ? t('canEdit') : t('viewOnly')}

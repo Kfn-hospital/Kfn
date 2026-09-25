@@ -13,14 +13,14 @@ export default function DataTable<T extends { id: string }>({
   emptyMessage: string;
 }) {
   if (!rows.length) {
-    return <p className="text-slate-400 text-center py-10">{emptyMessage}</p>;
+    return <p className="text-[var(--c-text-muted)] text-center py-10">{emptyMessage}</p>;
   }
 
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="text-slate-500 border-b">
+          <tr className="text-[var(--c-text-muted)] border-b">
             {columns.map((col, i) => (
               <th key={i} className="p-2 text-start font-bold">
                 {col.header}

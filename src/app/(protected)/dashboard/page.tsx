@@ -208,7 +208,7 @@ export default function DashboardPage() {
     pending: 'bg-yellow-100 text-yellow-700',
     approved: 'bg-green-100 text-green-700',
     rejected: 'bg-red-100 text-red-700',
-    cancelled: 'bg-slate-100 text-slate-500',
+    cancelled: 'bg-[var(--c-surface-muted)] text-[var(--c-text-muted)]',
   };
 
   const canManage = userRole === 'admin' || userRole === 'room_manager';
@@ -264,14 +264,14 @@ export default function DashboardPage() {
             <h3 className="font-bold">
               {lang === 'en' && room.name_en ? room.name_en : room.name}
             </h3>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-[var(--c-text-muted)]">
               {lang === 'en' && room.location_en ? room.location_en : room.location} —{' '}
               {room.capacity}
             </p>
           </Card>
         ))}
         {!rooms.length && (
-          <p className="text-slate-400 col-span-full text-center py-6">{t('noData')}</p>
+          <p className="text-[var(--c-text-muted)] col-span-full text-center py-6">{t('noData')}</p>
         )}
       </div>
 
@@ -296,7 +296,7 @@ export default function DashboardPage() {
           </button>
         </div>
         {aiReply && (
-          <p className="text-sm text-slate-600 bg-slate-50 rounded-xl p-3 mt-3">{aiReply}</p>
+          <p className="text-sm text-[var(--c-text)] bg-[var(--c-bg)] rounded-xl p-3 mt-3">{aiReply}</p>
         )}
       </Card>
 
@@ -305,20 +305,20 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between mb-4">
           <button
             onClick={() => setCalendarMonth((m) => new Date(m.getFullYear(), m.getMonth() - 1, 1))}
-            className="px-3 py-1 rounded-lg bg-slate-100 text-slate-600 font-bold"
+            className="px-3 py-1 rounded-lg bg-[var(--c-surface-muted)] text-[var(--c-text)] font-bold"
           >
             {lang === 'ar' ? '▶' : '◀'}
           </button>
           <h3 className="font-extrabold text-[var(--c-teal-900)]">📅 {t('tabCalendar')} — {monthLabel}</h3>
           <button
             onClick={() => setCalendarMonth((m) => new Date(m.getFullYear(), m.getMonth() + 1, 1))}
-            className="px-3 py-1 rounded-lg bg-slate-100 text-slate-600 font-bold"
+            className="px-3 py-1 rounded-lg bg-[var(--c-surface-muted)] text-[var(--c-text)] font-bold"
           >
             {lang === 'ar' ? '◀' : '▶'}
           </button>
         </div>
 
-        <div className="grid grid-cols-7 gap-2 text-center text-xs font-bold text-slate-400 mb-2">
+        <div className="grid grid-cols-7 gap-2 text-center text-xs font-bold text-[var(--c-text-muted)] mb-2">
           {(lang === 'ar'
             ? ['أحد', 'إثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة', 'سبت']
             : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -339,10 +339,10 @@ export default function DashboardPage() {
                   onClick={() => setSelectedDay(key)}
                   onDoubleClick={() => openNewBooking(key)}
                   className={`min-h-[92px] rounded-xl border p-1.5 flex flex-col items-stretch text-xs overflow-hidden ${
-                    selectedDay === key ? 'border-[var(--c-teal-600)] bg-[var(--c-teal-50)]' : 'border-slate-200'
+                    selectedDay === key ? 'border-[var(--c-teal-600)] bg-[var(--c-teal-50)]' : 'border-[var(--c-border)]'
                   } ${isToday ? 'ring-2 ring-[var(--c-teal-400)]' : ''}`}
                 >
-                  <span className="font-bold text-slate-600 text-center mb-1">{date.getDate()}</span>
+                  <span className="font-bold text-[var(--c-text)] text-center mb-1">{date.getDate()}</span>
                   <div className="flex flex-col gap-0.5 w-full">
                     {dayBookings.slice(0, 3).map((b) => (
                       <span
@@ -354,7 +354,7 @@ export default function DashboardPage() {
                       </span>
                     ))}
                     {dayBookings.length > 3 && (
-                      <span className="text-[10px] text-slate-400 text-center">
+                      <span className="text-[10px] text-[var(--c-text-muted)] text-center">
                         +{dayBookings.length - 3}
                       </span>
                     )}
@@ -377,14 +377,14 @@ export default function DashboardPage() {
               </button>
             </div>
             {selectedDayBookings.length === 0 ? (
-              <p className="text-slate-400 text-sm">{t('noData')}</p>
+              <p className="text-[var(--c-text-muted)] text-sm">{t('noData')}</p>
             ) : (
               <div className="space-y-2">
                 {selectedDayBookings.map((b) => (
-                  <div key={b.id} className="flex items-center justify-between bg-slate-50 rounded-lg p-2">
+                  <div key={b.id} className="flex items-center justify-between bg-[var(--c-bg)] rounded-lg p-2">
                     <div>
-                      <p className="font-bold text-sm text-slate-700">{b.title}</p>
-                      <p className="text-xs text-slate-500">
+                      <p className="font-bold text-sm text-[var(--c-text)]">{b.title}</p>
+                      <p className="text-xs text-[var(--c-text-muted)]">
                         {(lang === 'en' && b.rooms?.name_en ? b.rooms.name_en : b.rooms?.name) || '-'} · {b.start_time}-{b.end_time} · {b.profiles?.name || b.profiles?.email || '—'}
                       </p>
                     </div>
@@ -452,7 +452,7 @@ export default function DashboardPage() {
                         </button>
                         <button
                           onClick={() => updateStatus(b.id, 'cancelled')}
-                          className="text-slate-500 text-xs font-bold hover:underline"
+                          className="text-[var(--c-text-muted)] text-xs font-bold hover:underline"
                         >
                           {t('cancel')}
                         </button>
@@ -469,7 +469,7 @@ export default function DashboardPage() {
       <Modal open={modalOpen} onClose={closeModal} title={editingId ? t('editBooking') : t('newBooking')}>
         <form onSubmit={handleSubmitBooking} className="space-y-3">
           <div>
-            <label className="text-sm font-bold text-slate-600 mb-1 block">
+            <label className="text-sm font-bold text-[var(--c-text)] mb-1 block">
               {t('bookingRoom')}
             </label>
             <select

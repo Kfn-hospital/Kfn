@@ -43,10 +43,10 @@ export default function SignupPage() {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-6 bg-slate-50">
+    <main className="min-h-screen flex items-center justify-center p-6 bg-[var(--c-bg)]">
       <div className="w-full max-w-md space-y-4">
         <h1 className="text-2xl font-extrabold text-[var(--c-teal-900)] text-center">{t('signupTitle')}</h1>
-        <p className="text-slate-500 text-center text-sm">{t('signupSubtitle')}</p>
+        <p className="text-[var(--c-text-muted)] text-center text-sm">{t('signupSubtitle')}</p>
 
         {alert && <Alert type={alert.type} message={alert.message} />}
 
@@ -97,7 +97,7 @@ export default function SignupPage() {
           </form>
         </Card>
 
-        <p className="text-center text-sm text-slate-500">
+        <p className="text-center text-sm text-[var(--c-text-muted)]">
           {t('signupHasAccount')}{' '}
           <Link href="/login" className="text-[var(--c-teal-700)] font-bold">
             {t('signupLoginLink')}

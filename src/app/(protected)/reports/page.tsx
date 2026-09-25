@@ -106,14 +106,14 @@ export default function ReportsPage() {
     URL.revokeObjectURL(url);
   };
 
-  if (loading) return <p className="text-slate-400">{t('loading')}</p>;
+  if (loading) return <p className="text-[var(--c-text-muted)]">{t('loading')}</p>;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-extrabold text-[var(--c-teal-900)]">📊 {t('reportsTitle')}</h1>
-          <p className="text-slate-500">{t('reportsSubtitle')}</p>
+          <p className="text-[var(--c-text-muted)]">{t('reportsSubtitle')}</p>
         </div>
         <button
           onClick={exportCsv}
@@ -126,7 +126,7 @@ export default function ReportsPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {statusCounts.map((s, i) => (
           <Card key={s.name}>
-            <p className="text-sm text-slate-500">{s.name}</p>
+            <p className="text-sm text-[var(--c-text-muted)]">{s.name}</p>
             <p className="text-3xl font-extrabold" style={{ color: COLORS[i] }}>{s.value}</p>
           </Card>
         ))}

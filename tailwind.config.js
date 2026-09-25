@@ -9,6 +9,9 @@ module.exports = {
           700: '#0f766e',
         },
       },
+      borderColor: {
+        DEFAULT: 'var(--c-border)',
+      },
     },
   },
   plugins: [],

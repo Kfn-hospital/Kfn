@@ -169,7 +169,7 @@ export default function FilesPage() {
 
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={t('uploadNewFile')}>
         <div className="space-y-3">
-          <p className="text-sm text-slate-500">📄 {pendingFile?.name}</p>
+          <p className="text-sm text-[var(--c-text-muted)]">📄 {pendingFile?.name}</p>
           <FormField label={t('fileNameAr')} value={nameAr} onChange={setNameAr} required />
           <FormField label={t('fileNameEn')} value={nameEn} onChange={setNameEn} />
           <Alert type="error" message={error} />

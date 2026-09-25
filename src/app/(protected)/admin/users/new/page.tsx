@@ -74,7 +74,7 @@ export default function NewUserPage() {
           />
         </div>
         <div className="mt-3">
-          <label className="block text-sm font-bold text-slate-600 mb-1">{t('newUserRole')}</label>
+          <label className="block text-sm font-bold text-[var(--c-text)] mb-1">{t('newUserRole')}</label>
           <select
             value={form.role}
             onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}

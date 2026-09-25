@@ -162,7 +162,7 @@ export default function AdminControlPanelPage() {
       ? 'bg-green-100 text-green-700'
       : status === 'rejected'
       ? 'bg-red-100 text-red-700'
-      : 'bg-slate-100 text-slate-500';
+      : 'bg-[var(--c-surface-muted)] text-[var(--c-text-muted)]';
 
   const roomName = (b: BookingRow) => (lang === 'ar' ? b.rooms?.name : b.rooms?.name_en || b.rooms?.name);
 
@@ -197,14 +197,14 @@ export default function AdminControlPanelPage() {
   const selectedDayBookings = selectedDay ? bookingsByDate.get(selectedDay) ?? [] : [];
 
   if (loading) {
-    return <p className="text-slate-400">{t('loading')}</p>;
+    return <p className="text-[var(--c-text-muted)]">{t('loading')}</p>;
   }
 
   return (
     <main className="p-6 space-y-6">
       <div>
         <h1 className="text-2xl font-extrabold text-[var(--c-teal-900)]">⚙️ {t('adminPanelTitle')}</h1>
-        <p className="text-slate-500">{t('adminPanelSubtitle')}</p>
+        <p className="text-[var(--c-text-muted)]">{t('adminPanelSubtitle')}</p>
       </div>
 
       {alert && <Alert type={alert.type} message={alert.message} />}
@@ -213,7 +213,7 @@ export default function AdminControlPanelPage() {
         <button
           onClick={() => setTab('pending')}
           className={`px-4 py-2 rounded-xl text-sm font-bold ${
-            tab === 'pending' ? 'bg-[var(--c-teal-700)] text-white' : 'bg-white text-slate-600'
+            tab === 'pending' ? 'bg-[var(--c-teal-700)] text-white' : 'bg-[var(--c-surface)] text-[var(--c-text)]'
           }`}
         >
           {t('tabPendingBookings')} {pendingBookings.length > 0 && `(${pendingBookings.length})`}
@@ -221,7 +221,7 @@ export default function AdminControlPanelPage() {
         <button
           onClick={() => setTab('calendar')}
           className={`px-4 py-2 rounded-xl text-sm font-bold ${
-            tab === 'calendar' ? 'bg-[var(--c-teal-700)] text-white' : 'bg-white text-slate-600'
+            tab === 'calendar' ? 'bg-[var(--c-teal-700)] text-white' : 'bg-[var(--c-surface)] text-[var(--c-text)]'
           }`}
         >
           📅 {t('tabCalendar')}
@@ -229,7 +229,7 @@ export default function AdminControlPanelPage() {
         <button
           onClick={() => setTab('log')}
           className={`px-4 py-2 rounded-xl text-sm font-bold ${
-            tab === 'log' ? 'bg-[var(--c-teal-700)] text-white' : 'bg-white text-slate-600'
+            tab === 'log' ? 'bg-[var(--c-teal-700)] text-white' : 'bg-[var(--c-surface)] text-[var(--c-text)]'
           }`}
         >
           {t('tabFullBookingLog')}
@@ -237,24 +237,24 @@ export default function AdminControlPanelPage() {
         <button
           onClick={() => setTab('audit')}
           className={`px-4 py-2 rounded-xl text-sm font-bold ${
-            tab === 'audit' ? 'bg-[var(--c-teal-700)] text-white' : 'bg-white text-slate-600'
+            tab === 'audit' ? 'bg-[var(--c-teal-700)] text-white' : 'bg-[var(--c-surface)] text-[var(--c-text)]'
           }`}
         >
           {t('tabAuditLog')}
         </button>
-        <Link href="/requests" className="px-4 py-2 rounded-xl text-sm font-bold bg-white text-slate-600">
+        <Link href="/requests" className="px-4 py-2 rounded-xl text-sm font-bold bg-[var(--c-surface)] text-[var(--c-text)]">
           {t('requestsTitle')} ↗
         </Link>
-        <Link href="/admin/rooms" className="px-4 py-2 rounded-xl text-sm font-bold bg-white text-slate-600">
+        <Link href="/admin/rooms" className="px-4 py-2 rounded-xl text-sm font-bold bg-[var(--c-surface)] text-[var(--c-text)]">
           {t('roomsManagement')} ↗
         </Link>
-        <Link href="/admin/users" className="px-4 py-2 rounded-xl text-sm font-bold bg-white text-slate-600">
+        <Link href="/admin/users" className="px-4 py-2 rounded-xl text-sm font-bold bg-[var(--c-surface)] text-[var(--c-text)]">
           {t('usersTitle')} ↗
         </Link>
-        <Link href="/admin/settings" className="px-4 py-2 rounded-xl text-sm font-bold bg-white text-slate-600">
+        <Link href="/admin/settings" className="px-4 py-2 rounded-xl text-sm font-bold bg-[var(--c-surface)] text-[var(--c-text)]">
           🛠️ {t('settingsTitle')} ↗
         </Link>
-        <Link href="/reports" className="px-4 py-2 rounded-xl text-sm font-bold bg-white text-slate-600">
+        <Link href="/reports" className="px-4 py-2 rounded-xl text-sm font-bold bg-[var(--c-surface)] text-[var(--c-text)]">
           📊 {t('reportsTitle')} ↗
         </Link>
       </div>
@@ -262,7 +262,7 @@ export default function AdminControlPanelPage() {
       {tab === 'pending' ? (
         pendingBookings.length === 0 ? (
           <Card>
-            <p className="text-slate-400 text-center py-10">{t('noPendingBookings')}</p>
+            <p className="text-[var(--c-text-muted)] text-center py-10">{t('noPendingBookings')}</p>
           </Card>
         ) : (
           <div className="grid md:grid-cols-2 gap-4">
@@ -272,11 +272,11 @@ export default function AdminControlPanelPage() {
                   {statusLabel(b.status)}
                 </span>
                 <h3 className="font-extrabold text-[var(--c-teal-900)] mb-1">{roomName(b)}</h3>
-                <p className="text-sm text-slate-500 mb-1">👤 {b.profiles?.name ?? '—'}</p>
-                <p className="text-sm text-slate-500 mb-1">
+                <p className="text-sm text-[var(--c-text-muted)] mb-1">👤 {b.profiles?.name ?? '—'}</p>
+                <p className="text-sm text-[var(--c-text-muted)] mb-1">
                   📅 {b.booking_date} · {b.start_time} - {b.end_time}
                 </p>
-                {b.notes && <p className="text-sm text-slate-600 mb-3">📝 {b.notes}</p>}
+                {b.notes && <p className="text-sm text-[var(--c-text)] mb-3">📝 {b.notes}</p>}
                 <div className="flex gap-2 mt-3">
                   <button
                     disabled={actingId === b.id}
@@ -302,20 +302,20 @@ export default function AdminControlPanelPage() {
           <div className="flex items-center justify-between mb-4">
             <button
               onClick={() => setCalendarMonth((m) => new Date(m.getFullYear(), m.getMonth() - 1, 1))}
-              className="px-3 py-1 rounded-lg bg-slate-100 text-slate-600 font-bold"
+              className="px-3 py-1 rounded-lg bg-[var(--c-surface-muted)] text-[var(--c-text)] font-bold"
             >
               {lang === 'ar' ? '▶' : '◀'}
             </button>
             <h3 className="font-extrabold text-[var(--c-teal-900)]">{monthLabel}</h3>
             <button
               onClick={() => setCalendarMonth((m) => new Date(m.getFullYear(), m.getMonth() + 1, 1))}
-              className="px-3 py-1 rounded-lg bg-slate-100 text-slate-600 font-bold"
+              className="px-3 py-1 rounded-lg bg-[var(--c-surface-muted)] text-[var(--c-text)] font-bold"
             >
               {lang === 'ar' ? '◀' : '▶'}
             </button>
           </div>
 
-          <div className="grid grid-cols-7 gap-2 text-center text-xs font-bold text-slate-400 mb-2">
+          <div className="grid grid-cols-7 gap-2 text-center text-xs font-bold text-[var(--c-text-muted)] mb-2">
             {(lang === 'ar'
               ? ['أحد', 'إثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة', 'سبت']
               : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -335,10 +335,10 @@ export default function AdminControlPanelPage() {
                   key={key}
                   onClick={() => setSelectedDay(key)}
                   className={`aspect-square rounded-xl border p-1 flex flex-col items-center justify-start text-xs ${
-                    selectedDay === key ? 'border-[var(--c-teal-600)] bg-[var(--c-teal-50)]' : 'border-slate-200'
+                    selectedDay === key ? 'border-[var(--c-teal-600)] bg-[var(--c-teal-50)]' : 'border-[var(--c-border)]'
                   } ${isToday ? 'ring-2 ring-[var(--c-teal-400)]' : ''}`}
                 >
-                  <span className="font-bold text-slate-600">{date.getDate()}</span>
+                  <span className="font-bold text-[var(--c-text)]">{date.getDate()}</span>
                   <div className="flex gap-0.5 mt-1 flex-wrap justify-center">
                     {dayBookings.slice(0, 4).map((b) => (
                       <span key={b.id} className={`w-1.5 h-1.5 rounded-full ${STATUS_DOT[b.status]}`} />
@@ -353,14 +353,14 @@ export default function AdminControlPanelPage() {
             <div className="mt-5 border-t pt-4">
               <h4 className="font-bold text-[var(--c-teal-900)] mb-2">{selectedDay}</h4>
               {selectedDayBookings.length === 0 ? (
-                <p className="text-slate-400 text-sm">{t('noData')}</p>
+                <p className="text-[var(--c-text-muted)] text-sm">{t('noData')}</p>
               ) : (
                 <div className="space-y-2">
                   {selectedDayBookings.map((b) => (
-                    <div key={b.id} className="flex items-center justify-between bg-slate-50 rounded-lg p-2">
+                    <div key={b.id} className="flex items-center justify-between bg-[var(--c-bg)] rounded-lg p-2">
                       <div>
-                        <p className="font-bold text-sm text-slate-700">{roomName(b)}</p>
-                        <p className="text-xs text-slate-500">
+                        <p className="font-bold text-sm text-[var(--c-text)]">{roomName(b)}</p>
+                        <p className="text-xs text-[var(--c-text-muted)]">
                           {b.start_time}-{b.end_time} · {b.profiles?.name ?? '—'}
                         </p>
                       </div>

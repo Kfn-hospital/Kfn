@@ -16,7 +16,6 @@ interface Settings {
   voice_recording_link: string;
   theme_primary: string;
   theme_text: string;
-  theme_background: string;
 }
 
 const DEFAULTS: Settings = {
@@ -27,7 +26,6 @@ const DEFAULTS: Settings = {
   voice_recording_link: '',
   theme_primary: DEFAULT_THEME.primary,
   theme_text: DEFAULT_THEME.text,
-  theme_background: DEFAULT_THEME.background,
 };
 
 export default function SettingsPage() {
@@ -60,7 +58,7 @@ export default function SettingsPage() {
     if (error) throw error;
   };
 
-  const previewTheme = (p: string, tC: string, b: string) => applyTheme(p, tC, b);
+  const previewTheme = (p: string, tC: string) => applyTheme(p, tC);
 
   const handleSave = async () => {
     setSaving(true);
@@ -86,11 +84,10 @@ export default function SettingsPage() {
         upsertSetting('voice_recording_link', settings.voice_recording_link),
         upsertSetting('theme_primary', settings.theme_primary),
         upsertSetting('theme_text', settings.theme_text),
-        upsertSetting('theme_background', settings.theme_background),
       ]);
 
       setSettings((s) => ({ ...s, logo_url: logoUrl }));
-      applyTheme(settings.theme_primary, settings.theme_text, settings.theme_background);
+      applyTheme(settings.theme_primary, settings.theme_text);
       setAlert({ type: 'success', message: t('saveSuccess') });
     } catch (err) {
       setAlert({ type: 'error', message: err instanceof Error ? err.message : String(err) });
@@ -104,9 +101,8 @@ export default function SettingsPage() {
       ...s,
       theme_primary: DEFAULT_THEME.primary,
       theme_text: DEFAULT_THEME.text,
-      theme_background: DEFAULT_THEME.background,
     }));
-    previewTheme(DEFAULT_THEME.primary, DEFAULT_THEME.text, DEFAULT_THEME.background);
+    previewTheme(DEFAULT_THEME.primary, DEFAULT_THEME.text);
   };
 
   const testGemini = async () => {
@@ -134,69 +130,54 @@ export default function SettingsPage() {
   const portalUrl = typeof window !== 'undefined' ? window.location.origin : '';
   const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(portalUrl)}`;
 
-  if (loading) return <p className="text-slate-400">{t('loading')}</p>;
+  if (loading) return <p className="text-[var(--c-text-muted)]">{t('loading')}</p>;
 
   return (
     <div className="space-y-6 max-w-3xl">
       <div>
         <h1 className="text-2xl font-extrabold text-[var(--c-teal-900)]">⚙️ {t('settingsTitle')}</h1>
-        <p className="text-slate-500">{t('settingsSubtitle')}</p>
+        <p className="text-[var(--c-text-muted)]">{t('settingsSubtitle')}</p>
       </div>
 
       {alert && <Alert type={alert.type} message={alert.message} />}
 
       <Card>
         <h3 className="font-bold text-[var(--c-teal-900)] mb-3">🎨 {t('siteColors')}</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-bold text-slate-600 mb-1">{t('primaryColor')}</label>
+            <label className="block text-sm font-bold text-[var(--c-text)] mb-1">{t('primaryColor')}</label>
             <div className="flex items-center gap-3">
               <input
                 type="color"
                 value={settings.theme_primary}
                 onChange={(e) => {
                   setSettings((s) => ({ ...s, theme_primary: e.target.value }));
-                  previewTheme(e.target.value, settings.theme_text, settings.theme_background);
+                  previewTheme(e.target.value, settings.theme_text);
                 }}
                 className="w-12 h-10 rounded border cursor-pointer"
               />
-              <span className="text-xs text-slate-500">{settings.theme_primary}</span>
+              <span className="text-xs text-[var(--c-text-muted)]">{settings.theme_primary}</span>
             </div>
           </div>
           <div>
-            <label className="block text-sm font-bold text-slate-600 mb-1">{t('textColor')}</label>
+            <label className="block text-sm font-bold text-[var(--c-text)] mb-1">{t('textColor')}</label>
             <div className="flex items-center gap-3">
               <input
                 type="color"
                 value={settings.theme_text}
                 onChange={(e) => {
                   setSettings((s) => ({ ...s, theme_text: e.target.value }));
-                  previewTheme(settings.theme_primary, e.target.value, settings.theme_background);
+                  previewTheme(settings.theme_primary, e.target.value);
                 }}
                 className="w-12 h-10 rounded border cursor-pointer"
               />
-              <span className="text-xs text-slate-500">{settings.theme_text}</span>
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-bold text-slate-600 mb-1">{t('backgroundColor')}</label>
-            <div className="flex items-center gap-3">
-              <input
-                type="color"
-                value={settings.theme_background}
-                onChange={(e) => {
-                  setSettings((s) => ({ ...s, theme_background: e.target.value }));
-                  previewTheme(settings.theme_primary, settings.theme_text, e.target.value);
-                }}
-                className="w-12 h-10 rounded border cursor-pointer"
-              />
-              <span className="text-xs text-slate-500">{settings.theme_background}</span>
+              <span className="text-xs text-[var(--c-text-muted)]">{settings.theme_text}</span>
             </div>
           </div>
         </div>
         <button
           onClick={handleResetColors}
-          className="mt-3 text-xs font-bold text-slate-500 hover:underline"
+          className="mt-3 text-xs font-bold text-[var(--c-text-muted)] hover:underline"
           type="button"
         >
           {t('resetDefaultColors')}
@@ -229,7 +210,7 @@ export default function SettingsPage() {
           placeholder={t('aiAssistantName')}
         />
         <div className="mt-3">
-          <label className="block text-sm font-bold text-slate-600 mb-1">{t('aiInstructions')}</label>
+          <label className="block text-sm font-bold text-[var(--c-text)] mb-1">{t('aiInstructions')}</label>
           <textarea
             value={settings.ai_instructions}
             onChange={(e) => setSettings((s) => ({ ...s, ai_instructions: e.target.value }))}
@@ -251,7 +232,7 @@ export default function SettingsPage() {
         <button
           onClick={testGemini}
           disabled={testing || !settings.gemini_api_key}
-          className="mt-3 bg-slate-100 text-slate-700 font-bold rounded-xl px-4 py-2 text-sm disabled:opacity-50"
+          className="mt-3 bg-[var(--c-surface-muted)] text-[var(--c-text)] font-bold rounded-xl px-4 py-2 text-sm disabled:opacity-50"
         >
           {testing ? t('loading') : t('testConnection')}
         </button>
@@ -272,7 +253,7 @@ export default function SettingsPage() {
         <h3 className="font-bold text-[var(--c-teal-900)] mb-3">{t('qrCodeTitle')}</h3>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={qrSrc} alt="QR code" className="rounded-lg border" />
-        <p className="text-xs text-slate-400 mt-2">{portalUrl}</p>
+        <p className="text-xs text-[var(--c-text-muted)] mt-2">{portalUrl}</p>
       </Card>
 
       <button

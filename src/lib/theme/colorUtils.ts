@@ -64,10 +64,9 @@ function deriveShade(baseHex: string, lightness: number) {
 export const DEFAULT_THEME = {
   primary: '#0f766e',
   text: '#134e4a',
-  background: '#f8fafc',
 };
 
-export function applyTheme(primary: string, text: string, background: string) {
+export function applyTheme(primary: string, text: string) {
   if (typeof document === 'undefined') return;
   const root = document.documentElement;
   Object.entries(LIGHTNESS).forEach(([shade, lightness]) => {
@@ -75,5 +74,26 @@ export function applyTheme(primary: string, text: string, background: string) {
   });
   root.style.setProperty('--c-teal-700', primary);
   root.style.setProperty('--c-teal-900', text);
-  root.style.setProperty('--c-bg', background);
+}
+
+export type ThemeMode = 'light' | 'dark';
+
+export function applyMode(mode: ThemeMode) {
+  if (typeof document === 'undefined') return;
+  document.documentElement.setAttribute('data-theme', mode);
+  try {
+    localStorage.setItem('theme-mode', mode);
+  } catch {
+    // localStorage غير متاح
+  }
+}
+
+export function getStoredMode(): ThemeMode {
+  try {
+    const stored = localStorage.getItem('theme-mode');
+    if (stored === 'dark' || stored === 'light') return stored;
+  } catch {
+    // تجاهل
+  }
+  return 'light';
 }

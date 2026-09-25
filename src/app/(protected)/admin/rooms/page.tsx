@@ -36,7 +36,7 @@ function RoomManagersEditor({
     <div className="min-w-[200px]">
       <div className="flex flex-wrap gap-1 mb-2">
         {assigned.length === 0 ? (
-          <span className="text-xs text-slate-400">{t('noManagersAssigned')}</span>
+          <span className="text-xs text-[var(--c-text-muted)]">{t('noManagersAssigned')}</span>
         ) : (
           assigned.map((u) => (
             <span
@@ -53,7 +53,7 @@ function RoomManagersEditor({
       </div>
 
       {open ? (
-        <div className="border rounded-lg p-2 bg-white shadow-sm">
+        <div className="border rounded-lg p-2 bg-[var(--c-surface)] shadow-sm">
           <input
             autoFocus
             value={search}
@@ -63,7 +63,7 @@ function RoomManagersEditor({
           />
           <div className="max-h-32 overflow-y-auto space-y-1">
             {matches.length === 0 ? (
-              <p className="text-xs text-slate-400">{t('noData')}</p>
+              <p className="text-xs text-[var(--c-text-muted)]">{t('noData')}</p>
             ) : (
               matches.map((u) => (
                 <button
@@ -79,7 +79,7 @@ function RoomManagersEditor({
               ))
             )}
           </div>
-          <button onClick={() => setOpen(false)} className="text-xs text-slate-400 mt-2">
+          <button onClick={() => setOpen(false)} className="text-xs text-[var(--c-text-muted)] mt-2">
             {t('cancel')}
           </button>
         </div>

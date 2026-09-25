@@ -86,7 +86,7 @@ function AssigneesEditor({
             </div>
           </div>
         ))}
-        {!assigned.length && <span className="text-xs text-slate-400">-</span>}
+        {!assigned.length && <span className="text-xs text-[var(--c-text-muted)]">-</span>}
       </div>
       <input
         type="text"
@@ -96,7 +96,7 @@ function AssigneesEditor({
         className="w-full border rounded-lg px-2 py-1 text-xs"
       />
       {results.length > 0 && (
-        <div className="border rounded-lg mt-1 bg-white shadow-sm max-h-32 overflow-auto z-10 relative">
+        <div className="border rounded-lg mt-1 bg-[var(--c-surface)] shadow-sm max-h-32 overflow-auto z-10 relative">
           {results.map((u) => (
             <button
               key={u.id}
@@ -285,7 +285,7 @@ export default function RequestsPage() {
                     onStatusChange={updateAssigneeStatus}
                   />
                 ) : (
-                  <span className="text-xs text-slate-600">
+                  <span className="text-xs text-[var(--c-text)]">
                     {(assigneesByRequest[r.id] || []).map((a) => a.profile.name).join('، ') || '-'}
                   </span>
                 ),
@@ -342,7 +342,7 @@ export default function RequestsPage() {
             onChange={(v) => setForm({ ...form, description: v })}
           />
           <div>
-            <label className="text-sm font-bold text-slate-600 mb-1 block">
+            <label className="text-sm font-bold text-[var(--c-text)] mb-1 block">
               {t('requestCategory')}
             </label>
             <select
@@ -359,7 +359,7 @@ export default function RequestsPage() {
             </select>
           </div>
           <div>
-            <label className="text-sm font-bold text-slate-600 mb-1 block">
+            <label className="text-sm font-bold text-[var(--c-text)] mb-1 block">
               {t('requestAssignedTo')}
             </label>
             <select

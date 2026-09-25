@@ -125,7 +125,7 @@ export default function UsersPage() {
         <button
           onClick={() => setTab('regular')}
           className={`px-4 py-2 rounded-xl text-sm font-bold ${
-            tab === 'regular' ? 'bg-[var(--c-teal-700)] text-white' : 'bg-white text-slate-600'
+            tab === 'regular' ? 'bg-[var(--c-teal-700)] text-white' : 'bg-[var(--c-surface)] text-[var(--c-text)]'
           }`}
         >
           {t('usersTabRegular')} {pendingCount > 0 && `(${pendingCount} ${t('pendingApproval')})`}
@@ -133,7 +133,7 @@ export default function UsersPage() {
         <button
           onClick={() => setTab('admins')}
           className={`px-4 py-2 rounded-xl text-sm font-bold ${
-            tab === 'admins' ? 'bg-[var(--c-teal-700)] text-white' : 'bg-white text-slate-600'
+            tab === 'admins' ? 'bg-[var(--c-teal-700)] text-white' : 'bg-[var(--c-surface)] text-[var(--c-text)]'
           }`}
         >
           {t('usersTabAdmins')}

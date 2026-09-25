@@ -8,6 +8,7 @@ html {
 
 body {
   font-family: 'Tajawal', system-ui, sans-serif;
+  color: var(--c-text);
 }
 
 :root {
@@ -20,5 +21,20 @@ body {
   --c-teal-700: #0f766e;
   --c-teal-800: #115e59;
   --c-teal-900: #134e4a;
+
   --c-bg: #f8fafc;
+  --c-surface: #ffffff;
+  --c-surface-muted: #f1f5f9;
+  --c-border: #e2e8f0;
+  --c-text: #0f172a;
+  --c-text-muted: #64748b;
+}
+
+[data-theme='dark'] {
+  --c-bg: #0f172a;
+  --c-surface: #1e293b;
+  --c-surface-muted: #334155;
+  --c-border: #334155;
+  --c-text: #f1f5f9;
+  --c-text-muted: #94a3b8;
 }

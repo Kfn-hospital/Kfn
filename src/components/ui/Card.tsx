@@ -6,7 +6,7 @@ export default function Card({
   className?: string;
 }) {
   return (
-    <div className={`bg-white rounded-2xl shadow p-5 ${className}`}>
+    <div className={`bg-[var(--c-surface)] rounded-2xl shadow p-5 ${className}`}>
       {children}
     </div>
   );

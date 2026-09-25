@@ -65,11 +65,11 @@ export default function LoginPage() {
         🌐 {t('langToggle')}
       </button>
 
-      <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-sm">
+      <div className="bg-[var(--c-surface)] rounded-2xl shadow-lg p-8 w-full max-w-sm">
         <h1 className="text-xl font-extrabold text-[var(--c-teal-900)] mb-1 text-center">
           {t('loginTitle')}
         </h1>
-        <p className="text-sm text-slate-500 mb-4 text-center">
+        <p className="text-sm text-[var(--c-text-muted)] mb-4 text-center">
           {t('loginSubtitle')}
         </p>
 
@@ -105,7 +105,7 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <p className="text-center text-sm text-slate-500 mt-5">
+        <p className="text-center text-sm text-[var(--c-text-muted)] mt-5">
           {t('noAccountPrompt')}{' '}
           <Link href="/signup" className="text-[var(--c-teal-700)] font-bold">
             {t('signupSubmit')}

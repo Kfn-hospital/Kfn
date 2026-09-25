@@ -3,6 +3,9 @@
 
 export const translations = {
   ar: {
+  navReports: 'التقارير',
+  darkMode: 'الوضع الداكن',
+  lightMode: 'الوضع الفاتح',
   siteColors: 'ألوان الموقع',
   primaryColor: 'اللون الرئيسي',
   textColor: 'لون العناوين',
@@ -198,6 +201,9 @@ userCreated: 'تم إنشاء المستخدم بنجاح',
     
   },
   en: {
+  navReports: 'Reports',
+  darkMode: 'Dark Mode',
+  lightMode: 'Light Mode',
   siteColors: 'Site Colors',
   primaryColor: 'Primary Color',
   textColor: 'Heading Text Color',

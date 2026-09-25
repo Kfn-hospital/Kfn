@@ -10,8 +10,9 @@ export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
-  const { t, toggleLang } = useLanguage();
+  const { t } = useLanguage();
   const [isAdmin, setIsAdmin] = useState(false);
+  const [logoUrl, setLogoUrl] = useState('');
 
   useEffect(() => {
     async function checkRole() {
@@ -26,7 +27,13 @@ export default function Sidebar() {
         .single();
       if (profile?.role === 'admin') setIsAdmin(true);
     }
+    async function loadLogo() {
+      const { data } = await supabase.from('app_settings').select('value').eq('key', 'logo_url').maybeSingle();
+      if (data?.value) setLogoUrl(data.value as string);
+    }
     checkRole();
+    loadLogo();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const links = [
@@ -34,9 +41,16 @@ export default function Sidebar() {
     { href: '/requests', label: t('navRequests') },
     { href: '/checklists', label: t('navChecklists') },
     { href: '/files', label: t('navFiles') },
+    { href: '/reports', label: t('navReports') },
     { href: '/admin/rooms', label: t('navRoomsAdmin') },
     { href: '/admin/users', label: t('navUsers') },
-    ...(isAdmin ? [{ href: '/admin', label: `⚙️ ${t('adminPanelTitle')}` }] : []),
+    { href: '/appearance', label: `🎨 ${t('appearanceTitle')}` },
+    ...(isAdmin
+      ? [
+          { href: '/admin/settings', label: `⚙️ ${t('settingsTitle')}` },
+          { href: '/admin', label: `📊 ${t('adminPanelTitle')}` },
+        ]
+      : []),
   ];
 
   async function handleLogout() {
@@ -46,8 +60,12 @@ export default function Sidebar() {
   }
 
   return (
-    <aside className="w-64 bg-[var(--c-teal-900)] text-white min-h-screen p-4 flex flex-col">
-      <div className="mb-8 text-center">
+    <aside className="w-64 shrink-0 bg-[var(--c-teal-900)] text-white h-screen sticky top-0 overflow-y-auto p-4 flex flex-col">
+      <div className="mb-8 flex items-center justify-center gap-2">
+        {logoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={logoUrl} alt="logo" className="h-10 w-10 object-contain rounded-lg bg-[var(--c-surface)]/10 p-1" />
+        ) : null}
         <h2 className="font-extrabold">{t('appName')}</h2>
       </div>
 
@@ -58,7 +76,7 @@ export default function Sidebar() {
             href={link.href}
             className={`block px-3 py-2.5 rounded-xl text-sm font-bold transition ${
               pathname === link.href
-                ? 'bg-white text-[var(--c-teal-900)]'
+                ? 'bg-[var(--c-surface)] text-[var(--c-teal-900)]'
                 : 'text-[var(--c-teal-100)] hover:bg-[var(--c-teal-800)]'
             }`}
           >
@@ -68,17 +86,10 @@ export default function Sidebar() {
       </nav>
 
       <button
-        onClick={toggleLang}
-        className="mb-2 border border-[var(--c-teal-600)] rounded-xl px-3 py-2 text-sm font-bold text-[var(--c-teal-100)] hover:bg-[var(--c-teal-800)]"
-      >
-        🌐 {t('langToggle')}
-      </button>
-
-      <button
         onClick={handleLogout}
-        className="text-sm font-bold text-[var(--c-teal-300)] hover:text-white text-start px-3 py-2"
+        className="mt-2 shrink-0 text-sm font-bold text-[var(--c-teal-300)] hover:text-white text-start px-3 py-2 border-t border-[var(--c-teal-800)] pt-4"
       >
-        {t('logout')}
+        🚪 {t('logout')}
       </button>
     </aside>
   );
