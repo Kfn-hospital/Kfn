@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { checkRateLimit, getClientIp } from '@/lib/security/rateLimit';
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -8,10 +9,27 @@ const supabaseAdmin = createClient(
 );
 
 export async function POST(request: Request) {
+  const ip = getClientIp(request);
+  const ipLimit = checkRateLimit(`signup:ip:${ip}`, 8, 60 * 60 * 1000); // 8 محاولات/ساعة لكل IP
+  if (!ipLimit.allowed) {
+    return NextResponse.json(
+      { ok: false, error: 'محاولات كتير في وقت قصير، جرّب تاني بعد شوية' },
+      { status: 429 }
+    );
+  }
+
   const { name, email, phone, department, password } = await request.json();
 
   if (!name || !email || !phone || !department || !password) {
     return NextResponse.json({ ok: false, error: 'من فضلك أكمل كل الحقول' }, { status: 400 });
+  }
+
+  const emailLimit = checkRateLimit(`signup:email:${email.toLowerCase()}`, 3, 60 * 60 * 1000);
+  if (!emailLimit.allowed) {
+    return NextResponse.json(
+      { ok: false, error: 'محاولات كتير بنفس البريد الإلكتروني، جرّب تاني بعد شوية' },
+      { status: 429 }
+    );
   }
 
   const { data: existingPhone } = await supabaseAdmin
