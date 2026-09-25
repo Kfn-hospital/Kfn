@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { requireAdmin } from '@/lib/auth/apiGuards';
 
 export async function POST(request: Request) {
+  const guard = await requireAdmin();
+  if ('error' in guard) return guard.error;
+
   const { email, password, name, role } = await request.json();
 
   if (!email || !password || !name) {

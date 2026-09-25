@@ -1,11 +1,19 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { requireAdmin } from '@/lib/auth/apiGuards';
 
 export async function POST(request: Request) {
+  const guard = await requireAdmin();
+  if ('error' in guard) return guard.error;
+
   const { userId } = await request.json();
 
   if (!userId) {
     return NextResponse.json({ ok: false, error: 'بيانات ناقصة' }, { status: 400 });
+  }
+
+  if (userId === guard.user.id) {
+    return NextResponse.json({ ok: false, error: 'لا يمكنك حذف حسابك الخاص' }, { status: 400 });
   }
 
   const supabaseAdmin = createClient(

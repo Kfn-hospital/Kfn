@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
 import { sendEmailVia } from '@/lib/email/sendEmail';
+import { requireAdmin } from '@/lib/auth/apiGuards';
 
 export async function POST(request: Request) {
+  const guard = await requireAdmin();
+  if ('error' in guard) return guard.error;
+
   const { smtpLogin, smtpKey, from, to } = await request.json();
 
   if (!smtpLogin || !smtpKey || !to) {

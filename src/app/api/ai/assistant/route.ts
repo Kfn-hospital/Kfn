@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { notifyRequestCreated } from '@/lib/email/notifications';
+import { requireUser } from '@/lib/auth/apiGuards';
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -71,9 +72,13 @@ async function callGeminiAudio(
 }
 
 export async function POST(request: Request) {
-  const { message, audioBase64, mimeType, userId } = await request.json();
+  const guard = await requireUser();
+  if ('error' in guard) return guard.error;
+  const userId = guard.user.id; // مصدر الهوية الوحيد هو الجلسة نفسها، مش أي قيمة جاية من العميل
 
-  if ((!message && !audioBase64) || !userId) {
+  const { message, audioBase64, mimeType } = await request.json();
+
+  if (!message && !audioBase64) {
     return NextResponse.json({ ok: false, error: 'بيانات ناقصة' }, { status: 400 });
   }
 

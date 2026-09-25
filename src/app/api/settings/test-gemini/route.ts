@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server';
+import { requireAdmin } from '@/lib/auth/apiGuards';
 
 const GEMINI_MODELS = ['gemini-2.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.8-flash'];
 
 export async function POST(request: Request) {
+  const guard = await requireAdmin();
+  if ('error' in guard) return guard.error;
+
   const { apiKey } = await request.json();
 
   if (!apiKey) {
