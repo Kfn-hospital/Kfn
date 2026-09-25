@@ -161,6 +161,7 @@ export default function RequestsPage() {
   const [categories, setCategories] = useState<RequestCategory[]>([]);
   const [users, setUsers] = useState<Profile[]>([]);
   const [assigneesByRequest, setAssigneesByRequest] = useState<Record<string, AssigneeItem[]>>({});
+  const [creatorsById, setCreatorsById] = useState<Record<string, Profile>>({});
   const [myRole, setMyRole] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -178,7 +179,20 @@ export default function RequestsPage() {
       .from('requests')
       .select('*, request_categories(*), assignee:profiles!requests_assigned_to_fkey(*)')
       .order('created_at', { ascending: false });
-    setRequests((data as CoordinationRequest[]) || []);
+    const requestRows = (data as CoordinationRequest[]) || [];
+    setRequests(requestRows);
+
+    const creatorIds = Array.from(new Set(requestRows.map((r) => r.created_by).filter(Boolean)));
+    if (creatorIds.length) {
+      const { data: creatorRows } = await supabase.from('profiles').select('*').in('id', creatorIds);
+      const map: Record<string, Profile> = {};
+      ((creatorRows as Profile[]) || []).forEach((p) => {
+        map[p.id] = p;
+      });
+      setCreatorsById(map);
+    } else {
+      setCreatorsById({});
+    }
 
     const { data: cats } = await supabase.from('request_categories').select('*');
     setCategories((cats as RequestCategory[]) || []);
@@ -252,6 +266,15 @@ export default function RequestsPage() {
       setError(error.message);
       return;
     }
+
+    if (inserted?.id) {
+      fetch('/api/requests/notify-created', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requestId: inserted.id }),
+      }).catch(() => {});
+    }
+
     setModalOpen(false);
     setForm({ title: '', description: '', category_id: '', assigned_to: '' });
     loadData();
@@ -296,6 +319,14 @@ export default function RequestsPage() {
     if (!canManageRequests) return;
     await supabase.from('requests').update({ status }).eq('id', id);
     loadData();
+
+    if (status === 'completed') {
+      fetch('/api/requests/notify-completed', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ requestId: id }),
+      }).catch(() => {});
+    }
   }
 
   const statusLabel: Record<string, string> = {
@@ -329,6 +360,10 @@ export default function RequestsPage() {
           rows={requests}
           columns={[
             { header: t('requestTitle'), render: (r) => r.title },
+            {
+              header: t('requestCreatedBy'),
+              render: (r) => creatorsById[r.created_by]?.name || creatorsById[r.created_by]?.email || '-',
+            },
             { header: t('requestCategory'), render: (r) => r.request_categories?.name || '-' },
             {
               header: t('requestAssignedTo'),

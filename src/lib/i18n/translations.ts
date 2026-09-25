@@ -4,6 +4,16 @@
 export const translations = {
   ar: {
 
+  emailSettingsTitle: 'إعدادات الإيميل',
+  resendApiKeyLabel: 'مفتاح Resend API',
+  emailFromLabel: 'عنوان المرسل',
+  testEmailRecipientLabel: 'بريد اختبار الإرسال',
+  sendTestEmail: 'إرسال إيميل اختباري',
+  emailDomainNote: 'ملحوظة: بدون توثيق نطاق في حساب Resend، هيقدر يرسل بس لبريدك المسجل في Resend نفسه.',
+  requestCreatedBy: 'أنشأه',
+  analyzingVoice: 'جارِ تحليل الرسالة الصوتية...',
+  voiceProcessError: 'تعذر تحليل الرسالة الصوتية، جرّب تسجّلها تاني بصوت أوضح',
+
   bookingColorsTitle: 'ألوان حالات الحجز والقائمة الجانبية',
   colorPending: 'لون قيد الانتظار',
   colorApproved: 'لون معتمد',
@@ -234,6 +244,16 @@ userCreated: 'تم إنشاء المستخدم بنجاح',
     
   },
   en: {
+
+  emailSettingsTitle: 'Email Settings',
+  resendApiKeyLabel: 'Resend API Key',
+  emailFromLabel: 'From Address',
+  testEmailRecipientLabel: 'Test Recipient Email',
+  sendTestEmail: 'Send Test Email',
+  emailDomainNote: 'Note: without a verified domain in your Resend account, it can only send to your own Resend account email.',
+  requestCreatedBy: 'Created By',
+  analyzingVoice: 'Analyzing voice message...',
+  voiceProcessError: 'Could not analyze the voice message, try recording again more clearly',
 
   bookingColorsTitle: 'Booking Status & Sidebar Colors',
   colorPending: 'Pending Color',

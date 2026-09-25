@@ -35,6 +35,8 @@ interface Settings {
   booking_color_rejected: string;
   booking_color_cancelled: string;
   sidebar_hover_color: string;
+  resend_api_key: string;
+  email_from_address: string;
 }
 
 const DEFAULTS: Settings = {
@@ -57,6 +59,8 @@ const DEFAULTS: Settings = {
   booking_color_rejected: DEFAULT_BOOKING_COLORS.rejected,
   booking_color_cancelled: DEFAULT_BOOKING_COLORS.cancelled,
   sidebar_hover_color: DEFAULT_SIDEBAR_HOVER,
+  resend_api_key: '',
+  email_from_address: '',
 };
 
 export default function SettingsPage() {
@@ -69,6 +73,8 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
+  const [testEmailRecipient, setTestEmailRecipient] = useState('');
+  const [testingEmail, setTestingEmail] = useState(false);
   const [alert, setAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   useEffect(() => {
@@ -139,6 +145,8 @@ export default function SettingsPage() {
         upsertSetting('booking_color_rejected', settings.booking_color_rejected),
         upsertSetting('booking_color_cancelled', settings.booking_color_cancelled),
         upsertSetting('sidebar_hover_color', settings.sidebar_hover_color),
+        upsertSetting('resend_api_key', settings.resend_api_key),
+        upsertSetting('email_from_address', settings.email_from_address),
       ]);
 
       setSettings((s) => ({ ...s, logo_url: logoUrl, assistant_icon_url: assistantIconUrl }));
@@ -192,6 +200,32 @@ export default function SettingsPage() {
       setAlert({ type: 'error', message: err instanceof Error ? err.message : String(err) });
     } finally {
       setTesting(false);
+    }
+  };
+
+  const testEmail = async () => {
+    setTestingEmail(true);
+    setAlert(null);
+    try {
+      const res = await fetch('/api/settings/test-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          apiKey: settings.resend_api_key,
+          from: settings.email_from_address,
+          to: testEmailRecipient,
+        }),
+      });
+      const json = await res.json();
+      setAlert(
+        json.ok
+          ? { type: 'success', message: t('testSuccess') }
+          : { type: 'error', message: `${t('testFailed')}: ${json.error ?? ''}` }
+      );
+    } catch (err) {
+      setAlert({ type: 'error', message: err instanceof Error ? err.message : String(err) });
+    } finally {
+      setTestingEmail(false);
     }
   };
 
@@ -428,6 +462,46 @@ export default function SettingsPage() {
           onChange={(v: string) => setSettings((s) => ({ ...s, voice_recording_link: v }))}
           placeholder="https://..."
         />
+      </Card>
+
+      <Card>
+        <h3 className="font-bold text-[var(--c-teal-900)] mb-3">📧 {t('emailSettingsTitle')}</h3>
+        <FormField
+          label={t('resendApiKeyLabel')}
+          type="password"
+          value={settings.resend_api_key}
+          onChange={(v: string) => setSettings((s) => ({ ...s, resend_api_key: v }))}
+          placeholder="re_..."
+        />
+        <div className="mt-3">
+          <FormField
+            label={t('emailFromLabel')}
+            type="text"
+            value={settings.email_from_address}
+            onChange={(v: string) => setSettings((s) => ({ ...s, email_from_address: v }))}
+            placeholder="Khorfakkan Portal <onboarding@resend.dev>"
+          />
+        </div>
+        <div className="mt-3 flex items-end gap-3 flex-wrap">
+          <div className="flex-1 min-w-[200px]">
+            <FormField
+              label={t('testEmailRecipientLabel')}
+              type="text"
+              value={testEmailRecipient}
+              onChange={(v: string) => setTestEmailRecipient(v)}
+              placeholder="you@example.com"
+            />
+          </div>
+          <button
+            onClick={testEmail}
+            disabled={testingEmail || !settings.resend_api_key || !testEmailRecipient}
+            className="bg-[var(--c-surface-muted)] text-[var(--c-text)] font-bold rounded-xl px-4 py-2 text-sm disabled:opacity-50"
+            type="button"
+          >
+            {testingEmail ? t('loading') : t('sendTestEmail')}
+          </button>
+        </div>
+        <p className="text-xs text-[var(--c-text-muted)] mt-2">{t('emailDomainNote')}</p>
       </Card>
 
       <Card>

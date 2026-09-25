@@ -22,6 +22,18 @@ function formatClock(seconds: number) {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
+function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const result = reader.result as string;
+      resolve(result.split(',')[1] || '');
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
 function VoiceBubble({ url, duration }: { url: string; duration: number | null }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [playing, setPlaying] = useState(false);
@@ -94,15 +106,16 @@ export default function FloatingAssistant() {
   const supabase = createClient();
 
   const [userId, setUserId] = useState('');
+  const [open, setOpen] = useState(false);
   const [visible, setVisible] = useState(true);
   const [iconEmoji, setIconEmoji] = useState('🤖');
   const [iconUrl, setIconUrl] = useState('');
-  const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<AssistantMessage[]>([]);
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const [recording, setRecording] = useState(false);
   const [recordSeconds, setRecordSeconds] = useState(0);
+  const [analyzingVoice, setAnalyzingVoice] = useState(false);
 
   const listRef = useRef<HTMLDivElement | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -152,7 +165,7 @@ export default function FloatingAssistant() {
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' });
-  }, [messages, open]);
+  }, [messages, open, analyzingVoice]);
 
   async function insertMessage(row: Partial<AssistantMessage>) {
     const { data } = await supabase
@@ -161,7 +174,12 @@ export default function FloatingAssistant() {
       .select()
       .single();
     if (data) setMessages((prev) => [...prev, data as AssistantMessage]);
-    return data;
+    return data as AssistantMessage | null;
+  }
+
+  async function updateMessageContent(id: string, content: string) {
+    setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, content } : m)));
+    await supabase.from('assistant_messages').update({ content }).eq('id', id);
   }
 
   async function handleSend() {
@@ -208,15 +226,49 @@ export default function FloatingAssistant() {
         const finalDuration = recordSecondsRef.current;
         setRecording(false);
         setRecordSeconds(0);
+
         const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
         if (blob.size === 0 || !userId) return;
+
         const path = `${userId}/${Date.now()}.webm`;
         const { error: uploadError } = await supabase.storage
           .from('voice-messages')
           .upload(path, blob, { contentType: 'audio/webm' });
         if (uploadError) return;
         const { data: pub } = supabase.storage.from('voice-messages').getPublicUrl(path);
-        await insertMessage({ sender: 'user', type: 'voice', audio_url: pub.publicUrl, duration: finalDuration });
+
+        const voiceMessage = await insertMessage({
+          sender: 'user',
+          type: 'voice',
+          audio_url: pub.publicUrl,
+          duration: finalDuration,
+        });
+
+        // نبعت الصوت للمساعد الذكي يحلله وينفذ المطلوب (حجز أو طلب تنسيق) زي بالظبط الرسالة النصية
+        setAnalyzingVoice(true);
+        try {
+          const audioBase64 = await blobToBase64(blob);
+          const res = await fetch('/api/ai/assistant', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ audioBase64, mimeType: 'audio/webm', userId }),
+          });
+          const json = await res.json();
+
+          if (voiceMessage?.id && json.transcript) {
+            await updateMessageContent(voiceMessage.id, json.transcript);
+          }
+
+          await insertMessage({
+            sender: 'assistant',
+            type: 'text',
+            content: json.message || json.error || t('voiceProcessError'),
+          });
+        } catch {
+          await insertMessage({ sender: 'assistant', type: 'text', content: t('voiceProcessError') });
+        } finally {
+          setAnalyzingVoice(false);
+        }
       };
       mediaRecorderRef.current = recorder;
       recorder.start();
@@ -261,7 +313,7 @@ export default function FloatingAssistant() {
           </div>
 
           <div ref={listRef} className="flex-1 overflow-y-auto p-3 flex flex-col gap-2 bg-[var(--c-bg)]">
-            {!messages.length && (
+            {!messages.length && !analyzingVoice && (
               <p className="text-center text-xs text-[var(--c-text-muted)] mt-6">{t('assistantChatEmpty')}</p>
             )}
             {messages.map((m) => (
@@ -274,12 +326,25 @@ export default function FloatingAssistant() {
                 }`}
               >
                 {m.type === 'voice' && m.audio_url ? (
-                  <VoiceBubble url={m.audio_url} duration={m.duration} />
+                  <div className="flex flex-col gap-1">
+                    <VoiceBubble url={m.audio_url} duration={m.duration} />
+                    {m.content && (
+                      <p className="text-xs opacity-80 whitespace-pre-wrap break-words border-t border-white/20 pt-1 mt-0.5">
+                        {m.content}
+                      </p>
+                    )}
+                  </div>
                 ) : (
                   <p className="whitespace-pre-wrap break-words">{m.content}</p>
                 )}
               </div>
             ))}
+            {analyzingVoice && (
+              <div className="self-start bg-[var(--c-surface-muted)] text-[var(--c-text-muted)] rounded-2xl rounded-bl-sm px-3 py-2 text-xs flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
+                {t('analyzingVoice')}
+              </div>
+            )}
           </div>
 
           <div className="p-2 border-t border-[var(--c-border)] bg-[var(--c-surface)] shrink-0">
