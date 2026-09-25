@@ -1,13 +1,14 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { applyMode, applyTheme, DEFAULT_THEME, getStoredMode, type ThemeMode } from '@/lib/theme/colorUtils';
 
 export default function Header() {
   const pathname = usePathname();
+  const router = useRouter();
   const { t, lang, setLang } = useLanguage();
   const supabase = createClient();
   const [logoUrl, setLogoUrl] = useState('');
@@ -110,6 +111,12 @@ export default function Header() {
     setColorSavedMsg(t('appearanceReset'));
   }
 
+  async function handleLogout() {
+    await supabase.auth.signOut();
+    router.push('/login');
+    router.refresh();
+  }
+
   function handleToggleMode() {
     const next: ThemeMode = mode === 'light' ? 'dark' : 'light';
     setMode(next);
@@ -144,6 +151,15 @@ export default function Header() {
       </div>
 
       <div className="flex items-center gap-1 shrink-0">
+        <button
+          onClick={handleLogout}
+          title={t('logout')}
+          type="button"
+          className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-[var(--c-surface-muted)] text-lg"
+        >
+          🚪
+        </button>
+
         <div className="relative" ref={colorMenuRef}>
           <button
             onClick={openColorMenu}
