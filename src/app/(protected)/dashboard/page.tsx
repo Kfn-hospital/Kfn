@@ -345,7 +345,11 @@ export default function DashboardPage() {
                   <span className="font-bold text-slate-600">{date.getDate()}</span>
                   <div className="flex gap-0.5 mt-1 flex-wrap justify-center">
                     {dayBookings.slice(0, 4).map((b) => (
-                      <span key={b.id} className={`w-1.5 h-1.5 rounded-full ${STATUS_DOT[b.status]}`} />
+                      <span
+                        key={b.id}
+                        title={`${b.title} — ${b.profiles?.name || b.profiles?.email || ''} — ${b.start_time}-${b.end_time}`}
+                        className={`w-1.5 h-1.5 rounded-full ${STATUS_DOT[b.status]}`}
+                      />
                     ))}
                   </div>
                 </button>
@@ -372,11 +376,9 @@ export default function DashboardPage() {
                 {selectedDayBookings.map((b) => (
                   <div key={b.id} className="flex items-center justify-between bg-slate-50 rounded-lg p-2">
                     <div>
-                      <p className="font-bold text-sm text-slate-700">
-                        {lang === 'en' && b.rooms?.name_en ? b.rooms.name_en : b.rooms?.name}
-                      </p>
+                      <p className="font-bold text-sm text-slate-700">{b.title}</p>
                       <p className="text-xs text-slate-500">
-                        {b.start_time}-{b.end_time} · {b.profiles?.name ?? '—'}
+                        {(lang === 'en' && b.rooms?.name_en ? b.rooms.name_en : b.rooms?.name) || '-'} · {b.start_time}-{b.end_time} · {b.profiles?.name || b.profiles?.email || '—'}
                       </p>
                     </div>
                     <span className={`text-xs font-bold px-2 py-1 rounded-full ${statusColor[b.status]}`}>
