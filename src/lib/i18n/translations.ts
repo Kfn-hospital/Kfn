@@ -3,6 +3,17 @@
 
 export const translations = {
   ar: {
+
+  iconControlTitle: 'التحكم في أيقونات الهيدر',
+  showColorIcon: 'إظهار أيقونة الألوان',
+  showLanguageIcon: 'إظهار أيقونة اللغة',
+  showDarkModeIcon: 'إظهار أيقونة الوضع الداكن',
+  showLogoutIcon: 'إظهار أيقونة الخروج',
+  assistantIconTitle: 'أيقونة المساعد الذكي',
+  showAssistantIcon: 'إظهار المساعد الذكي العائم',
+  assistantIconEmojiLabel: 'إيموجي الأيقونة',
+  assistantIconUploadLabel: 'أو ارفع صورة مخصصة',
+  assistantIconUploadHint: 'لو رفعت صورة هيتم استخدامها بدل الإيموجي',
   am: 'ص',
   pm: 'م',
   assigneeNote: 'ملاحظة',
@@ -216,6 +227,17 @@ userCreated: 'تم إنشاء المستخدم بنجاح',
     
   },
   en: {
+
+  iconControlTitle: 'Header Icon Control',
+  showColorIcon: 'Show Color Icon',
+  showLanguageIcon: 'Show Language Icon',
+  showDarkModeIcon: 'Show Dark Mode Icon',
+  showLogoutIcon: 'Show Logout Icon',
+  assistantIconTitle: 'AI Assistant Icon',
+  showAssistantIcon: 'Show Floating AI Assistant',
+  assistantIconEmojiLabel: 'Icon Emoji',
+  assistantIconUploadLabel: 'Or upload a custom image',
+  assistantIconUploadHint: 'If you upload an image it will be used instead of the emoji',
   am: 'AM',
   pm: 'PM',
   assigneeNote: 'Note',

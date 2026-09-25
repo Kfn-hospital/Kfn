@@ -12,6 +12,12 @@ export default function Header() {
   const { t, lang, setLang } = useLanguage();
   const supabase = createClient();
   const [logoUrl, setLogoUrl] = useState('');
+  const [iconVisibility, setIconVisibility] = useState({
+    colors: true,
+    language: true,
+    darkmode: true,
+    logout: true,
+  });
   const [mode, setMode] = useState<ThemeMode>('light');
 
   const [colorMenuOpen, setColorMenuOpen] = useState(false);
@@ -26,8 +32,17 @@ export default function Header() {
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase.from('app_settings').select('value').eq('key', 'logo_url').maybeSingle();
-      if (data?.value) setLogoUrl(data.value as string);
+      const { data } = await supabase
+        .from('app_settings')
+        .select('key, value')
+        .in('key', ['logo_url', 'icon_show_colors', 'icon_show_language', 'icon_show_darkmode', 'icon_show_logout']);
+      (data as { key: string; value: string | null }[] | null)?.forEach((row) => {
+        if (row.key === 'logo_url' && row.value) setLogoUrl(row.value);
+        if (row.key === 'icon_show_colors') setIconVisibility((v) => ({ ...v, colors: row.value !== 'false' }));
+        if (row.key === 'icon_show_language') setIconVisibility((v) => ({ ...v, language: row.value !== 'false' }));
+        if (row.key === 'icon_show_darkmode') setIconVisibility((v) => ({ ...v, darkmode: row.value !== 'false' }));
+        if (row.key === 'icon_show_logout') setIconVisibility((v) => ({ ...v, logout: row.value !== 'false' }));
+      });
     })();
     setMode(getStoredMode());
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -151,15 +166,18 @@ export default function Header() {
       </div>
 
       <div className="flex items-center gap-1 shrink-0">
-        <button
-          onClick={handleLogout}
-          title={t('logout')}
-          type="button"
-          className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-[var(--c-surface-muted)] text-lg"
-        >
-          🚪
-        </button>
+        {iconVisibility.logout && (
+          <button
+            onClick={handleLogout}
+            title={t('logout')}
+            type="button"
+            className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-[var(--c-surface-muted)] text-lg"
+          >
+            🚪
+          </button>
+        )}
 
+        {iconVisibility.colors && (
         <div className="relative" ref={colorMenuRef}>
           <button
             onClick={openColorMenu}
@@ -226,7 +244,9 @@ export default function Header() {
             </div>
           )}
         </div>
+        )}
 
+        {iconVisibility.language && (
         <div className="relative" ref={langMenuRef}>
           <button
             onClick={() => {
@@ -268,15 +288,18 @@ export default function Header() {
             </div>
           )}
         </div>
+        )}
 
-        <button
-          onClick={handleToggleMode}
-          title={mode === 'light' ? t('darkMode') : t('lightMode')}
-          type="button"
-          className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-[var(--c-surface-muted)] text-lg"
-        >
-          {mode === 'light' ? '🌙' : '☀️'}
-        </button>
+        {iconVisibility.darkmode && (
+          <button
+            onClick={handleToggleMode}
+            title={mode === 'light' ? t('darkMode') : t('lightMode')}
+            type="button"
+            className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-[var(--c-surface-muted)] text-lg"
+          >
+            {mode === 'light' ? '🌙' : '☀️'}
+          </button>
+        )}
       </div>
     </header>
   );

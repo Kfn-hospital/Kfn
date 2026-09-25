@@ -16,6 +16,13 @@ interface Settings {
   voice_recording_link: string;
   theme_primary: string;
   theme_text: string;
+  icon_show_colors: string;
+  icon_show_language: string;
+  icon_show_darkmode: string;
+  icon_show_logout: string;
+  icon_show_assistant: string;
+  assistant_icon_emoji: string;
+  assistant_icon_url: string;
 }
 
 const DEFAULTS: Settings = {
@@ -26,6 +33,13 @@ const DEFAULTS: Settings = {
   voice_recording_link: '',
   theme_primary: DEFAULT_THEME.primary,
   theme_text: DEFAULT_THEME.text,
+  icon_show_colors: 'true',
+  icon_show_language: 'true',
+  icon_show_darkmode: 'true',
+  icon_show_logout: 'true',
+  icon_show_assistant: 'true',
+  assistant_icon_emoji: '🤖',
+  assistant_icon_url: '',
 };
 
 export default function SettingsPage() {
@@ -34,6 +48,7 @@ export default function SettingsPage() {
 
   const [settings, setSettings] = useState<Settings>(DEFAULTS);
   const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [assistantIconFile, setAssistantIconFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -65,6 +80,7 @@ export default function SettingsPage() {
     setAlert(null);
     try {
       let logoUrl = settings.logo_url;
+      let assistantIconUrl = settings.assistant_icon_url;
 
       if (logoFile) {
         const path = `logo-${Date.now()}-${logoFile.name}`;
@@ -76,6 +92,16 @@ export default function SettingsPage() {
         logoUrl = pub.publicUrl;
       }
 
+      if (assistantIconFile) {
+        const path = `assistant-icon-${Date.now()}-${assistantIconFile.name}`;
+        const { error: uploadError } = await supabase.storage
+          .from('branding')
+          .upload(path, assistantIconFile, { upsert: true });
+        if (uploadError) throw uploadError;
+        const { data: pub } = supabase.storage.from('branding').getPublicUrl(path);
+        assistantIconUrl = pub.publicUrl;
+      }
+
       await Promise.all([
         upsertSetting('logo_url', logoUrl),
         upsertSetting('ai_assistant_name', settings.ai_assistant_name),
@@ -84,9 +110,16 @@ export default function SettingsPage() {
         upsertSetting('voice_recording_link', settings.voice_recording_link),
         upsertSetting('theme_primary', settings.theme_primary),
         upsertSetting('theme_text', settings.theme_text),
+        upsertSetting('icon_show_colors', settings.icon_show_colors),
+        upsertSetting('icon_show_language', settings.icon_show_language),
+        upsertSetting('icon_show_darkmode', settings.icon_show_darkmode),
+        upsertSetting('icon_show_logout', settings.icon_show_logout),
+        upsertSetting('icon_show_assistant', settings.icon_show_assistant),
+        upsertSetting('assistant_icon_emoji', settings.assistant_icon_emoji),
+        upsertSetting('assistant_icon_url', assistantIconUrl),
       ]);
 
-      setSettings((s) => ({ ...s, logo_url: logoUrl }));
+      setSettings((s) => ({ ...s, logo_url: logoUrl, assistant_icon_url: assistantIconUrl }));
       applyTheme(settings.theme_primary, settings.theme_text);
       setAlert({ type: 'success', message: t('saveSuccess') });
     } catch (err) {
@@ -248,6 +281,91 @@ export default function SettingsPage() {
           onChange={(v: string) => setSettings((s) => ({ ...s, voice_recording_link: v }))}
           placeholder="https://..."
         />
+      </Card>
+
+      <Card>
+        <h3 className="font-bold text-[var(--c-teal-900)] mb-3">🎛️ {t('iconControlTitle')}</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <label className="flex items-center gap-2 text-sm text-[var(--c-text)]">
+            <input
+              type="checkbox"
+              checked={settings.icon_show_colors !== 'false'}
+              onChange={(e) => setSettings((s) => ({ ...s, icon_show_colors: e.target.checked ? 'true' : 'false' }))}
+              className="w-4 h-4"
+            />
+            🎨 {t('showColorIcon')}
+          </label>
+          <label className="flex items-center gap-2 text-sm text-[var(--c-text)]">
+            <input
+              type="checkbox"
+              checked={settings.icon_show_language !== 'false'}
+              onChange={(e) => setSettings((s) => ({ ...s, icon_show_language: e.target.checked ? 'true' : 'false' }))}
+              className="w-4 h-4"
+            />
+            🌐 {t('showLanguageIcon')}
+          </label>
+          <label className="flex items-center gap-2 text-sm text-[var(--c-text)]">
+            <input
+              type="checkbox"
+              checked={settings.icon_show_darkmode !== 'false'}
+              onChange={(e) => setSettings((s) => ({ ...s, icon_show_darkmode: e.target.checked ? 'true' : 'false' }))}
+              className="w-4 h-4"
+            />
+            🌙 {t('showDarkModeIcon')}
+          </label>
+          <label className="flex items-center gap-2 text-sm text-[var(--c-text)]">
+            <input
+              type="checkbox"
+              checked={settings.icon_show_logout !== 'false'}
+              onChange={(e) => setSettings((s) => ({ ...s, icon_show_logout: e.target.checked ? 'true' : 'false' }))}
+              className="w-4 h-4"
+            />
+            🚪 {t('showLogoutIcon')}
+          </label>
+        </div>
+      </Card>
+
+      <Card>
+        <h3 className="font-bold text-[var(--c-teal-900)] mb-3">🤖 {t('assistantIconTitle')}</h3>
+        <label className="flex items-center gap-2 text-sm text-[var(--c-text)] mb-4">
+          <input
+            type="checkbox"
+            checked={settings.icon_show_assistant !== 'false'}
+            onChange={(e) => setSettings((s) => ({ ...s, icon_show_assistant: e.target.checked ? 'true' : 'false' }))}
+            className="w-4 h-4"
+          />
+          {t('showAssistantIcon')}
+        </label>
+        <div className="flex items-center gap-4 flex-wrap">
+          <div className="w-14 h-14 rounded-full bg-[var(--c-teal-700)] text-white flex items-center justify-center text-2xl overflow-hidden shrink-0">
+            {settings.assistant_icon_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={settings.assistant_icon_url} alt="assistant icon" className="w-full h-full object-cover" />
+            ) : (
+              settings.assistant_icon_emoji || '🤖'
+            )}
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-[var(--c-text)] mb-1">{t('assistantIconEmojiLabel')}</label>
+            <input
+              type="text"
+              value={settings.assistant_icon_emoji}
+              onChange={(e) => setSettings((s) => ({ ...s, assistant_icon_emoji: e.target.value, assistant_icon_url: '' }))}
+              maxLength={4}
+              className="w-20 border rounded-xl px-3 py-2 text-center text-lg"
+            />
+          </div>
+        </div>
+        <div className="mt-3">
+          <label className="block text-sm font-bold text-[var(--c-text)] mb-1">{t('assistantIconUploadLabel')}</label>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => setAssistantIconFile(e.target.files?.[0] ?? null)}
+            className="text-sm"
+          />
+          <p className="text-xs text-[var(--c-text-muted)] mt-1">{t('assistantIconUploadHint')}</p>
+        </div>
       </Card>
 
       <Card>

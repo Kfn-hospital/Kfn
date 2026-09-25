@@ -94,6 +94,9 @@ export default function FloatingAssistant() {
   const supabase = createClient();
 
   const [userId, setUserId] = useState('');
+  const [visible, setVisible] = useState(true);
+  const [iconEmoji, setIconEmoji] = useState('🤖');
+  const [iconUrl, setIconUrl] = useState('');
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<AssistantMessage[]>([]);
   const [text, setText] = useState('');
@@ -113,6 +116,17 @@ export default function FloatingAssistant() {
         data: { user },
       } = await supabase.auth.getUser();
       if (user) setUserId(user.id);
+    })();
+    (async () => {
+      const { data } = await supabase
+        .from('app_settings')
+        .select('key, value')
+        .in('key', ['icon_show_assistant', 'assistant_icon_emoji', 'assistant_icon_url']);
+      (data as { key: string; value: string | null }[] | null)?.forEach((row) => {
+        if (row.key === 'icon_show_assistant') setVisible(row.value !== 'false');
+        if (row.key === 'assistant_icon_emoji' && row.value) setIconEmoji(row.value);
+        if (row.key === 'assistant_icon_url' && row.value) setIconUrl(row.value);
+      });
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -221,14 +235,22 @@ export default function FloatingAssistant() {
     mediaRecorderRef.current?.stop();
   }
 
-  if (!userId) return null;
+  if (!userId || !visible) return null;
 
   return (
     <>
       {open && (
         <div className="fixed bottom-24 end-5 z-40 w-[92vw] max-w-[360px] h-[70vh] max-h-[520px] bg-[var(--c-surface)] rounded-2xl shadow-2xl border border-[var(--c-border)] flex flex-col overflow-hidden">
           <div className="bg-[var(--c-teal-700)] text-white px-4 py-3 flex items-center justify-between shrink-0">
-            <span className="font-extrabold text-sm">🤖 {t('aiAssistantTitle')}</span>
+            <span className="font-extrabold text-sm flex items-center gap-1.5">
+              {iconUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={iconUrl} alt="" className="w-5 h-5 rounded-full object-cover" />
+              ) : (
+                iconEmoji
+              )}
+              {t('aiAssistantTitle')}
+            </span>
             <button
               type="button"
               onClick={() => setOpen(false)}
@@ -314,9 +336,16 @@ export default function FloatingAssistant() {
         type="button"
         onClick={() => setOpen((o) => !o)}
         title={t('aiAssistantTitle')}
-        className="fixed bottom-5 end-5 z-40 w-14 h-14 rounded-full bg-[var(--c-teal-700)] text-white shadow-2xl flex items-center justify-center text-2xl hover:scale-105 transition-transform"
+        className="fixed bottom-5 end-5 z-40 w-14 h-14 rounded-full bg-[var(--c-teal-700)] text-white shadow-2xl flex items-center justify-center text-2xl hover:scale-105 transition-transform overflow-hidden"
       >
-        {open ? '×' : '🤖'}
+        {open ? (
+          '×'
+        ) : iconUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={iconUrl} alt="" className="w-full h-full object-cover" />
+        ) : (
+          iconEmoji
+        )}
       </button>
     </>
   );
