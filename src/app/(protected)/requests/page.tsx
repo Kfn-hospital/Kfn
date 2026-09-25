@@ -11,7 +11,7 @@ import DataTable from '@/components/ui/DataTable';
 import type { CoordinationRequest, RequestCategory, Profile } from '@/types/database';
 
 const CAN_MANAGE_ROLES = ['admin', 'coordinator', 'coordination_admin'];
-const ASSIGNABLE_ROLES = ['coordinator', 'coordination_admin'];
+const ASSIGNABLE_ROLES = ['admin', 'coordinator', 'coordination_admin'];
 const STATUS_KEYS = ['pending', 'in_progress', 'completed', 'rejected'] as const;
 
 interface AssigneeRow {
@@ -154,6 +154,73 @@ function AssigneesEditor({
   );
 }
 
+
+function AssignedToCombobox({
+  value,
+  onChange,
+  users,
+  placeholder,
+  noneLabel,
+}: {
+  value: string;
+  onChange: (id: string) => void;
+  users: Profile[];
+  placeholder: string;
+  noneLabel: string;
+}) {
+  const [query, setQuery] = useState('');
+  const [open, setOpen] = useState(false);
+  const selected = users.find((u) => u.id === value) || null;
+  const q = query.trim().toLowerCase();
+  const results = q ? users.filter((u) => (u.name || '').toLowerCase().includes(q)) : users;
+
+  return (
+    <div className="relative">
+      <input
+        type="text"
+        value={open ? query : selected?.name || ''}
+        onChange={(e) => setQuery(e.target.value)}
+        onFocus={() => {
+          setQuery('');
+          setOpen(true);
+        }}
+        onBlur={() => setTimeout(() => setOpen(false), 150)}
+        placeholder={placeholder}
+        className="w-full border rounded-xl px-3 py-2.5"
+      />
+      {open && (
+        <div className="absolute z-20 w-full border rounded-xl mt-1 bg-[var(--c-surface)] shadow-lg max-h-48 overflow-auto">
+          <button
+            type="button"
+            onMouseDown={() => {
+              onChange('');
+              setQuery('');
+              setOpen(false);
+            }}
+            className="block w-full text-right px-3 py-2 text-sm hover:bg-[var(--c-teal-50)] text-[var(--c-text-muted)]"
+          >
+            {noneLabel}
+          </button>
+          {results.map((u) => (
+            <button
+              key={u.id}
+              type="button"
+              onMouseDown={() => {
+                onChange(u.id);
+                setQuery('');
+                setOpen(false);
+              }}
+              className="block w-full text-right px-3 py-2 text-sm hover:bg-[var(--c-teal-50)]"
+            >
+              {u.name}
+            </button>
+          ))}
+          {!results.length && <div className="px-3 py-2 text-xs text-[var(--c-text-muted)]">-</div>}
+        </div>
+      )}
+    </div>
+  );
+}
 export default function RequestsPage() {
   const supabase = createClient();
   const { t, lang } = useLanguage();
@@ -620,18 +687,13 @@ export default function RequestsPage() {
             <label className="text-sm font-bold text-[var(--c-text)] mb-1 block">
               {t('requestAssignedTo')}
             </label>
-            <select
+            <AssignedToCombobox
               value={form.assigned_to}
-              onChange={(e) => setForm({ ...form, assigned_to: e.target.value })}
-              className="w-full border rounded-xl px-3 py-2.5"
-            >
-              <option value="">—</option>
-              {users.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.name}
-                </option>
-              ))}
-            </select>
+              onChange={(id) => setForm({ ...form, assigned_to: id })}
+              users={users}
+              placeholder={t('searchToAssign')}
+              noneLabel={t('unassignedOption')}
+            />
           </div>
           <Alert type="error" message={error} />
           <button
