@@ -76,6 +76,62 @@ export function applyTheme(primary: string, text: string) {
   root.style.setProperty('--c-teal-900', text);
 }
 
+export interface BookingColors {
+  pending: string;
+  approved: string;
+  rejected: string;
+  cancelled: string;
+}
+
+export const DEFAULT_BOOKING_COLORS: BookingColors = {
+  pending: '#fbbf24',
+  approved: '#22c55e',
+  rejected: '#ef4444',
+  cancelled: '#94a3b8',
+};
+
+export const DEFAULT_SIDEBAR_HOVER = '#115e59';
+
+export function applyBookingColors(colors: BookingColors) {
+  if (typeof document === 'undefined') return;
+  const root = document.documentElement;
+  root.style.setProperty('--c-status-pending', colors.pending);
+  root.style.setProperty('--c-status-approved', colors.approved);
+  root.style.setProperty('--c-status-rejected', colors.rejected);
+  root.style.setProperty('--c-status-cancelled', colors.cancelled);
+}
+
+export function applySidebarHover(hex: string) {
+  if (typeof document === 'undefined') return;
+  document.documentElement.style.setProperty('--c-sidebar-hover', hex);
+}
+
+function bookingColorFallback(status: string): string {
+  switch (status) {
+    case 'pending':
+      return DEFAULT_BOOKING_COLORS.pending;
+    case 'approved':
+      return DEFAULT_BOOKING_COLORS.approved;
+    case 'rejected':
+      return DEFAULT_BOOKING_COLORS.rejected;
+    case 'cancelled':
+      return DEFAULT_BOOKING_COLORS.cancelled;
+    default:
+      return DEFAULT_BOOKING_COLORS.pending;
+  }
+}
+
+// نمط الدائرة/الشريحة الملوّنة الصلبة لحالة الحجز (تُستخدم في الكاليندر)
+export function statusDotStyle(status: string) {
+  return { backgroundColor: `var(--c-status-${status}, ${bookingColorFallback(status)})` };
+}
+
+// نمط الشارة الباهتة لحالة الحجز (لون فاتح للخلفية ونفس اللون للنص)
+export function statusBadgeStyle(status: string) {
+  const color = `var(--c-status-${status}, ${bookingColorFallback(status)})`;
+  return { backgroundColor: `color-mix(in srgb, ${color} 18%, white)`, color };
+}
+
 export type ThemeMode = 'light' | 'dark';
 
 export function applyMode(mode: ThemeMode) {

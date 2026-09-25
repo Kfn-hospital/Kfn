@@ -9,13 +9,7 @@ import FormField from '@/components/ui/FormField';
 import Alert from '@/components/ui/Alert';
 import DataTable from '@/components/ui/DataTable';
 import type { Room, Booking } from '@/types/database';
-
-const STATUS_DOT: Record<string, string> = {
-  pending: 'bg-amber-400',
-  approved: 'bg-green-500',
-  rejected: 'bg-red-500',
-  cancelled: 'bg-slate-400',
-};
+import { statusDotStyle, statusBadgeStyle } from '@/lib/theme/colorUtils';
 
 function toDateKey(d: Date) {
   const y = d.getFullYear();
@@ -189,12 +183,6 @@ export default function DashboardPage() {
     rejected: t('bookingRejected'),
     cancelled: t('bookingCancelled'),
   };
-  const statusColor: Record<string, string> = {
-    pending: 'bg-yellow-100 text-yellow-700',
-    approved: 'bg-green-100 text-green-700',
-    rejected: 'bg-red-100 text-red-700',
-    cancelled: 'bg-[var(--c-surface-muted)] text-[var(--c-text-muted)]',
-  };
 
   const canManage = userRole === 'admin' || userRole === 'room_manager';
 
@@ -308,7 +296,8 @@ export default function DashboardPage() {
                       <span
                         key={b.id}
                         title={`${b.title} — ${b.profiles?.name || b.profiles?.email || ''} — ${timeLabel(b.start_time)}-${timeLabel(b.end_time)}`}
-                        className={`block w-full truncate text-[10px] leading-4 font-bold text-white rounded px-1 ${STATUS_DOT[b.status]}`}
+                        style={statusDotStyle(b.status)}
+                        className="block w-full truncate text-[10px] leading-4 font-bold text-white rounded px-1"
                       >
                         {b.title}
                       </span>
@@ -348,7 +337,7 @@ export default function DashboardPage() {
                         {(lang === 'en' && b.rooms?.name_en ? b.rooms.name_en : b.rooms?.name) || '-'} · {timeLabel(b.start_time)}-{timeLabel(b.end_time)} · {b.profiles?.name || b.profiles?.email || '—'}
                       </p>
                     </div>
-                    <span className={`text-xs font-bold px-2 py-1 rounded-full ${statusColor[b.status]}`}>
+                    <span className="text-xs font-bold px-2 py-1 rounded-full" style={statusBadgeStyle(b.status)}>
                       {statusLabel[b.status]}
                     </span>
                   </div>
@@ -373,7 +362,7 @@ export default function DashboardPage() {
             {
               header: t('status'),
               render: (b) => (
-                <span className={`px-2 py-1 rounded-full text-xs font-bold ${statusColor[b.status]}`}>
+                <span className="px-2 py-1 rounded-full text-xs font-bold" style={statusBadgeStyle(b.status)}>
                   {statusLabel[b.status]}
                 </span>
               ),

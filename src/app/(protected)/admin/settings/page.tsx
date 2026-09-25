@@ -6,7 +6,14 @@ import { useLanguage } from '@/lib/i18n/LanguageContext';
 import Card from '@/components/ui/Card';
 import FormField from '@/components/ui/FormField';
 import Alert from '@/components/ui/Alert';
-import { applyTheme, DEFAULT_THEME } from '@/lib/theme/colorUtils';
+import {
+  applyTheme,
+  DEFAULT_THEME,
+  applyBookingColors,
+  applySidebarHover,
+  DEFAULT_BOOKING_COLORS,
+  DEFAULT_SIDEBAR_HOVER,
+} from '@/lib/theme/colorUtils';
 
 interface Settings {
   logo_url: string;
@@ -23,6 +30,11 @@ interface Settings {
   icon_show_assistant: string;
   assistant_icon_emoji: string;
   assistant_icon_url: string;
+  booking_color_pending: string;
+  booking_color_approved: string;
+  booking_color_rejected: string;
+  booking_color_cancelled: string;
+  sidebar_hover_color: string;
 }
 
 const DEFAULTS: Settings = {
@@ -40,6 +52,11 @@ const DEFAULTS: Settings = {
   icon_show_assistant: 'true',
   assistant_icon_emoji: '🤖',
   assistant_icon_url: '',
+  booking_color_pending: DEFAULT_BOOKING_COLORS.pending,
+  booking_color_approved: DEFAULT_BOOKING_COLORS.approved,
+  booking_color_rejected: DEFAULT_BOOKING_COLORS.rejected,
+  booking_color_cancelled: DEFAULT_BOOKING_COLORS.cancelled,
+  sidebar_hover_color: DEFAULT_SIDEBAR_HOVER,
 };
 
 export default function SettingsPage() {
@@ -117,6 +134,11 @@ export default function SettingsPage() {
         upsertSetting('icon_show_assistant', settings.icon_show_assistant),
         upsertSetting('assistant_icon_emoji', settings.assistant_icon_emoji),
         upsertSetting('assistant_icon_url', assistantIconUrl),
+        upsertSetting('booking_color_pending', settings.booking_color_pending),
+        upsertSetting('booking_color_approved', settings.booking_color_approved),
+        upsertSetting('booking_color_rejected', settings.booking_color_rejected),
+        upsertSetting('booking_color_cancelled', settings.booking_color_cancelled),
+        upsertSetting('sidebar_hover_color', settings.sidebar_hover_color),
       ]);
 
       setSettings((s) => ({ ...s, logo_url: logoUrl, assistant_icon_url: assistantIconUrl }));
@@ -136,6 +158,19 @@ export default function SettingsPage() {
       theme_text: DEFAULT_THEME.text,
     }));
     previewTheme(DEFAULT_THEME.primary, DEFAULT_THEME.text);
+  };
+
+  const handleResetBookingColors = () => {
+    setSettings((s) => ({
+      ...s,
+      booking_color_pending: DEFAULT_BOOKING_COLORS.pending,
+      booking_color_approved: DEFAULT_BOOKING_COLORS.approved,
+      booking_color_rejected: DEFAULT_BOOKING_COLORS.rejected,
+      booking_color_cancelled: DEFAULT_BOOKING_COLORS.cancelled,
+      sidebar_hover_color: DEFAULT_SIDEBAR_HOVER,
+    }));
+    applyBookingColors(DEFAULT_BOOKING_COLORS);
+    applySidebarHover(DEFAULT_SIDEBAR_HOVER);
   };
 
   const testGemini = async () => {
@@ -211,6 +246,118 @@ export default function SettingsPage() {
         </div>
         <button
           onClick={handleResetColors}
+          className="mt-3 text-xs font-bold text-[var(--c-text-muted)] hover:underline"
+          type="button"
+        >
+          {t('resetDefaultColors')}
+        </button>
+      </Card>
+
+      <Card>
+        <h3 className="font-bold text-[var(--c-teal-900)] mb-3">🎨 {t('bookingColorsTitle')}</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-bold text-[var(--c-text)] mb-1">{t('colorPending')}</label>
+            <div className="flex items-center gap-3">
+              <input
+                type="color"
+                value={settings.booking_color_pending}
+                onChange={(e) => {
+                  const next = { ...settings, booking_color_pending: e.target.value };
+                  setSettings(next);
+                  applyBookingColors({
+                    pending: next.booking_color_pending,
+                    approved: next.booking_color_approved,
+                    rejected: next.booking_color_rejected,
+                    cancelled: next.booking_color_cancelled,
+                  });
+                }}
+                className="w-12 h-10 rounded border cursor-pointer"
+              />
+              <span className="text-xs text-[var(--c-text-muted)]">{settings.booking_color_pending}</span>
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-[var(--c-text)] mb-1">{t('colorApproved')}</label>
+            <div className="flex items-center gap-3">
+              <input
+                type="color"
+                value={settings.booking_color_approved}
+                onChange={(e) => {
+                  const next = { ...settings, booking_color_approved: e.target.value };
+                  setSettings(next);
+                  applyBookingColors({
+                    pending: next.booking_color_pending,
+                    approved: next.booking_color_approved,
+                    rejected: next.booking_color_rejected,
+                    cancelled: next.booking_color_cancelled,
+                  });
+                }}
+                className="w-12 h-10 rounded border cursor-pointer"
+              />
+              <span className="text-xs text-[var(--c-text-muted)]">{settings.booking_color_approved}</span>
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-[var(--c-text)] mb-1">{t('colorRejected')}</label>
+            <div className="flex items-center gap-3">
+              <input
+                type="color"
+                value={settings.booking_color_rejected}
+                onChange={(e) => {
+                  const next = { ...settings, booking_color_rejected: e.target.value };
+                  setSettings(next);
+                  applyBookingColors({
+                    pending: next.booking_color_pending,
+                    approved: next.booking_color_approved,
+                    rejected: next.booking_color_rejected,
+                    cancelled: next.booking_color_cancelled,
+                  });
+                }}
+                className="w-12 h-10 rounded border cursor-pointer"
+              />
+              <span className="text-xs text-[var(--c-text-muted)]">{settings.booking_color_rejected}</span>
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-[var(--c-text)] mb-1">{t('colorCancelled')}</label>
+            <div className="flex items-center gap-3">
+              <input
+                type="color"
+                value={settings.booking_color_cancelled}
+                onChange={(e) => {
+                  const next = { ...settings, booking_color_cancelled: e.target.value };
+                  setSettings(next);
+                  applyBookingColors({
+                    pending: next.booking_color_pending,
+                    approved: next.booking_color_approved,
+                    rejected: next.booking_color_rejected,
+                    cancelled: next.booking_color_cancelled,
+                  });
+                }}
+                className="w-12 h-10 rounded border cursor-pointer"
+              />
+              <span className="text-xs text-[var(--c-text-muted)]">{settings.booking_color_cancelled}</span>
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-[var(--c-text)] mb-1">{t('sidebarHoverColorLabel')}</label>
+            <div className="flex items-center gap-3">
+              <input
+                type="color"
+                value={settings.sidebar_hover_color}
+                onChange={(e) => {
+                  setSettings((s) => ({ ...s, sidebar_hover_color: e.target.value }));
+                  applySidebarHover(e.target.value);
+                }}
+                className="w-12 h-10 rounded border cursor-pointer"
+              />
+              <span className="text-xs text-[var(--c-text-muted)]">{settings.sidebar_hover_color}</span>
+            </div>
+          </div>
+        </div>
+        <button
+          onClick={handleResetBookingColors}
           className="mt-3 text-xs font-bold text-[var(--c-text-muted)] hover:underline"
           type="button"
         >

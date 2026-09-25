@@ -28,6 +28,12 @@ body {
   --c-border: #e2e8f0;
   --c-text: #0f172a;
   --c-text-muted: #64748b;
+
+  --c-status-pending: #fbbf24;
+  --c-status-approved: #22c55e;
+  --c-status-rejected: #ef4444;
+  --c-status-cancelled: #94a3b8;
+  --c-sidebar-hover: #115e59;
 }
 
 [data-theme='dark'] {

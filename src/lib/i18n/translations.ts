@@ -4,6 +4,13 @@
 export const translations = {
   ar: {
 
+  bookingColorsTitle: 'ألوان حالات الحجز والقائمة الجانبية',
+  colorPending: 'لون قيد الانتظار',
+  colorApproved: 'لون معتمد',
+  colorRejected: 'لون مرفوض',
+  colorCancelled: 'لون ملغي',
+  sidebarHoverColorLabel: 'لون تظليل القائمة الجانبية عند المرور',
+
   iconControlTitle: 'التحكم في أيقونات الهيدر',
   showColorIcon: 'إظهار أيقونة الألوان',
   showLanguageIcon: 'إظهار أيقونة اللغة',
@@ -227,6 +234,13 @@ userCreated: 'تم إنشاء المستخدم بنجاح',
     
   },
   en: {
+
+  bookingColorsTitle: 'Booking Status & Sidebar Colors',
+  colorPending: 'Pending Color',
+  colorApproved: 'Approved Color',
+  colorRejected: 'Rejected Color',
+  colorCancelled: 'Cancelled Color',
+  sidebarHoverColorLabel: 'Sidebar Hover Highlight Color',
 
   iconControlTitle: 'Header Icon Control',
   showColorIcon: 'Show Color Icon',

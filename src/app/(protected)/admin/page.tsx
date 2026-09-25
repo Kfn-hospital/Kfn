@@ -7,6 +7,7 @@ import { useLanguage } from '@/lib/i18n/LanguageContext';
 import Card from '@/components/ui/Card';
 import DataTable from '@/components/ui/DataTable';
 import Alert from '@/components/ui/Alert';
+import { statusDotStyle, statusBadgeStyle } from '@/lib/theme/colorUtils';
 
 type BookingStatus = 'pending' | 'approved' | 'rejected' | 'cancelled';
 type Tab = 'pending' | 'calendar' | 'log' | 'audit';
@@ -31,13 +32,6 @@ interface AuditRow {
   created_at: string;
   profiles: { name: string } | null;
 }
-
-const STATUS_DOT: Record<BookingStatus, string> = {
-  pending: 'bg-amber-400',
-  approved: 'bg-green-500',
-  rejected: 'bg-red-500',
-  cancelled: 'bg-slate-400',
-};
 
 function toDateKey(d: Date) {
   const y = d.getFullYear();
@@ -155,15 +149,6 @@ export default function AdminControlPanelPage() {
       ? t('bookingRejected')
       : t('bookingCancelled');
 
-  const statusBadgeClass = (status: BookingStatus) =>
-    status === 'pending'
-      ? 'bg-amber-100 text-amber-700'
-      : status === 'approved'
-      ? 'bg-green-100 text-green-700'
-      : status === 'rejected'
-      ? 'bg-red-100 text-red-700'
-      : 'bg-[var(--c-surface-muted)] text-[var(--c-text-muted)]';
-
   const roomName = (b: BookingRow) => (lang === 'ar' ? b.rooms?.name : b.rooms?.name_en || b.rooms?.name);
 
   // ---- Calendar data ----
@@ -268,7 +253,7 @@ export default function AdminControlPanelPage() {
           <div className="grid md:grid-cols-2 gap-4">
             {pendingBookings.map((b) => (
               <Card key={b.id}>
-                <span className={`inline-block text-xs font-bold px-2 py-1 rounded-lg mb-2 ${statusBadgeClass(b.status)}`}>
+                <span className="inline-block text-xs font-bold px-2 py-1 rounded-lg mb-2" style={statusBadgeStyle(b.status)}>
                   {statusLabel(b.status)}
                 </span>
                 <h3 className="font-extrabold text-[var(--c-teal-900)] mb-1">{roomName(b)}</h3>
@@ -341,7 +326,7 @@ export default function AdminControlPanelPage() {
                   <span className="font-bold text-[var(--c-text)]">{date.getDate()}</span>
                   <div className="flex gap-0.5 mt-1 flex-wrap justify-center">
                     {dayBookings.slice(0, 4).map((b) => (
-                      <span key={b.id} className={`w-1.5 h-1.5 rounded-full ${STATUS_DOT[b.status]}`} />
+                      <span key={b.id} className="w-1.5 h-1.5 rounded-full" style={statusDotStyle(b.status)} />
                     ))}
                   </div>
                 </button>
@@ -364,7 +349,7 @@ export default function AdminControlPanelPage() {
                           {b.start_time}-{b.end_time} · {b.profiles?.name ?? '—'}
                         </p>
                       </div>
-                      <span className={`text-xs font-bold px-2 py-1 rounded-lg ${statusBadgeClass(b.status)}`}>
+                      <span className="text-xs font-bold px-2 py-1 rounded-lg" style={statusBadgeStyle(b.status)}>
                         {statusLabel(b.status)}
                       </span>
                     </div>
@@ -386,7 +371,7 @@ export default function AdminControlPanelPage() {
               {
                 header: t('status'),
                 render: (b) => (
-                  <span className={`text-xs font-bold px-2 py-1 rounded-lg ${statusBadgeClass(b.status)}`}>
+                  <span className="text-xs font-bold px-2 py-1 rounded-lg" style={statusBadgeStyle(b.status)}>
                     {statusLabel(b.status)}
                   </span>
                 ),

@@ -77,7 +77,7 @@ export default function Sidebar() {
             className={`block px-3 py-2.5 rounded-xl text-sm font-bold transition ${
               pathname === link.href
                 ? 'bg-[var(--c-surface)] text-[var(--c-teal-900)]'
-                : 'text-[var(--c-teal-100)] hover:bg-[var(--c-teal-800)]'
+                : 'text-[var(--c-teal-100)] hover:bg-[var(--c-sidebar-hover)]'
             }`}
           >
             {link.label}
