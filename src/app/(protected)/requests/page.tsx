@@ -15,8 +15,12 @@ const ASSIGNABLE_ROLES = ['coordinator', 'coordination_admin'];
 
 interface AssigneeRow {
   request_id: string;
+  user_id: string;
+  status: string;
   profiles: Profile | null;
 }
+
+type AssigneeItem = { user_id: string; status: string; profile: Profile };
 
 function AssigneesEditor({
   requestId,
@@ -24,39 +28,63 @@ function AssigneesEditor({
   allUsers,
   onAdd,
   onRemove,
+  onStatusChange,
 }: {
   requestId: string;
-  assigned: Profile[];
+  assigned: AssigneeItem[];
   allUsers: Profile[];
   onAdd: (requestId: string, userId: string) => void;
   onRemove: (requestId: string, userId: string) => void;
+  onStatusChange: (requestId: string, userId: string, status: string) => void;
 }) {
   const { t } = useLanguage();
   const [query, setQuery] = useState('');
-  const assignedIds = new Set(assigned.map((u) => u.id));
+  const assignedIds = new Set(assigned.map((a) => a.user_id));
   const results = query.trim()
     ? allUsers.filter(
         (u) => !assignedIds.has(u.id) && (u.name || '').toLowerCase().includes(query.trim().toLowerCase())
       )
     : [];
 
+  const statusLabel: Record<string, string> = {
+    pending: t('assigneeStatusPending'),
+    in_progress: t('assigneeStatusInProgress'),
+    completed: t('assigneeStatusCompleted'),
+  };
+  const statusColorClass: Record<string, string> = {
+    pending: 'text-amber-600',
+    in_progress: 'text-blue-600',
+    completed: 'text-green-600',
+  };
+
   return (
-    <div className="min-w-[200px]">
-      <div className="flex flex-wrap gap-1 mb-1">
-        {assigned.map((u) => (
-          <span
-            key={u.id}
-            className="inline-flex items-center gap-1 bg-teal-50 text-teal-700 text-xs font-bold px-2 py-1 rounded-full"
+    <div className="min-w-[220px]">
+      <div className="flex flex-col gap-1 mb-1">
+        {assigned.map((a) => (
+          <div
+            key={a.user_id}
+            className="flex items-center justify-between gap-1 bg-teal-50 text-teal-700 text-xs font-bold px-2 py-1 rounded-lg"
           >
-            {u.name}
-            <button
-              type="button"
-              onClick={() => onRemove(requestId, u.id)}
-              className="text-teal-400 hover:text-red-500"
-            >
-              ×
-            </button>
-          </span>
+            <span className="truncate">{a.profile.name}</span>
+            <div className="flex items-center gap-1 shrink-0">
+              <select
+                value={a.status}
+                onChange={(e) => onStatusChange(requestId, a.user_id, e.target.value)}
+                className={`bg-transparent text-[10px] font-bold border-0 focus:ring-0 p-0 ${statusColorClass[a.status] || ''}`}
+              >
+                <option value="pending">{statusLabel.pending}</option>
+                <option value="in_progress">{statusLabel.in_progress}</option>
+                <option value="completed">{statusLabel.completed}</option>
+              </select>
+              <button
+                type="button"
+                onClick={() => onRemove(requestId, a.user_id)}
+                className="text-teal-400 hover:text-red-500"
+              >
+                ×
+              </button>
+            </div>
+          </div>
         ))}
         {!assigned.length && <span className="text-xs text-slate-400">-</span>}
       </div>
@@ -95,7 +123,7 @@ export default function RequestsPage() {
   const [requests, setRequests] = useState<CoordinationRequest[]>([]);
   const [categories, setCategories] = useState<RequestCategory[]>([]);
   const [users, setUsers] = useState<Profile[]>([]);
-  const [assigneesByRequest, setAssigneesByRequest] = useState<Record<string, Profile[]>>({});
+  const [assigneesByRequest, setAssigneesByRequest] = useState<Record<string, AssigneeItem[]>>({});
   const [myRole, setMyRole] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -127,12 +155,12 @@ export default function RequestsPage() {
 
     const { data: assigneeRows } = await supabase
       .from('request_assignees')
-      .select('request_id, profiles(*)');
-    const grouped: Record<string, Profile[]> = {};
+      .select('request_id, user_id, status, profiles(*)');
+    const grouped: Record<string, AssigneeItem[]> = {};
     ((assigneeRows as unknown as AssigneeRow[]) ?? []).forEach((row) => {
       if (!row.profiles) return;
       if (!grouped[row.request_id]) grouped[row.request_id] = [];
-      grouped[row.request_id].push(row.profiles);
+      grouped[row.request_id].push({ user_id: row.user_id, status: row.status, profile: row.profiles });
     });
     setAssigneesByRequest(grouped);
 
@@ -197,6 +225,15 @@ export default function RequestsPage() {
     loadData();
   }
 
+  async function updateAssigneeStatus(requestId: string, targetUserId: string, status: string) {
+    await supabase
+      .from('request_assignees')
+      .update({ status })
+      .eq('request_id', requestId)
+      .eq('user_id', targetUserId);
+    loadData();
+  }
+
   async function updateStatus(id: string, status: string) {
     if (!canManageRequests) return;
     await supabase.from('requests').update({ status }).eq('id', id);
@@ -245,33 +282,46 @@ export default function RequestsPage() {
                     allUsers={users}
                     onAdd={addAssignee}
                     onRemove={removeAssignee}
+                    onStatusChange={updateAssigneeStatus}
                   />
                 ) : (
                   <span className="text-xs text-slate-600">
-                    {(assigneesByRequest[r.id] || []).map((u) => u.name).join('، ') || '-'}
+                    {(assigneesByRequest[r.id] || []).map((a) => a.profile.name).join('، ') || '-'}
                   </span>
                 ),
             },
             {
               header: t('status'),
-              render: (r) =>
-                canManageRequests ? (
-                  <select
-                    value={r.status}
-                    onChange={(e) => updateStatus(r.id, e.target.value)}
-                    className={`px-2 py-1 rounded-full text-xs font-bold border-0 ${statusColor[r.status]}`}
-                  >
-                    {Object.entries(statusLabel).map(([val, label]) => (
-                      <option key={val} value={val}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <span className={`px-2 py-1 rounded-full text-xs font-bold ${statusColor[r.status]}`}>
-                    {statusLabel[r.status]}
-                  </span>
-                ),
+              render: (r) => (
+                <div className="flex items-center gap-2 flex-wrap">
+                  {canManageRequests ? (
+                    <select
+                      value={r.status}
+                      onChange={(e) => updateStatus(r.id, e.target.value)}
+                      className={`px-2 py-1 rounded-full text-xs font-bold border-0 ${statusColor[r.status]}`}
+                    >
+                      {Object.entries(statusLabel).map(([val, label]) => (
+                        <option key={val} value={val}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <span className={`px-2 py-1 rounded-full text-xs font-bold ${statusColor[r.status]}`}>
+                      {statusLabel[r.status]}
+                    </span>
+                  )}
+                  {canManageRequests && r.status !== 'completed' && (
+                    <button
+                      type="button"
+                      onClick={() => updateStatus(r.id, 'completed')}
+                      className="text-green-600 text-xs font-bold hover:underline whitespace-nowrap"
+                    >
+                      ✓ {t('markFullyCompleted')}
+                    </button>
+                  )}
+                </div>
+              ),
             },
           ]}
         />

@@ -3,6 +3,10 @@
 
 export const translations = {
   ar: {
+  assigneeStatusPending: 'قيد الانتظار',
+  assigneeStatusInProgress: 'جاري العمل',
+  assigneeStatusCompleted: 'مكتمل',
+  markFullyCompleted: 'إنهاء الطلب بالكامل',
   searchToAssign: 'بحث عن موظف لإضافته',
   editBooking: 'تعديل الحجز',
   emailOrPhonePlaceholder: 'البريد الإلكتروني أو رقم الهاتف',
@@ -184,6 +188,10 @@ userCreated: 'تم إنشاء المستخدم بنجاح',
     
   },
   en: {
+  assigneeStatusPending: 'Pending',
+  assigneeStatusInProgress: 'In Progress',
+  assigneeStatusCompleted: 'Completed',
+  markFullyCompleted: 'Mark Fully Completed',
   searchToAssign: 'Search to add a staff member',
   editBooking: 'Edit Booking',
   emailOrPhonePlaceholder: 'Email or phone number',
