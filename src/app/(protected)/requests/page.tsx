@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import Card from '@/components/ui/Card';
@@ -12,6 +12,7 @@ import type { CoordinationRequest, RequestCategory, Profile } from '@/types/data
 
 const CAN_MANAGE_ROLES = ['admin', 'coordinator', 'coordination_admin'];
 const ASSIGNABLE_ROLES = ['coordinator', 'coordination_admin'];
+const STATUS_KEYS = ['pending', 'in_progress', 'completed', 'rejected'] as const;
 
 interface AssigneeRow {
   request_id: string;
@@ -168,6 +169,12 @@ export default function RequestsPage() {
   const [error, setError] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
+  const [search, setSearch] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
+
   const [form, setForm] = useState({
     title: '',
     description: '',
@@ -235,6 +242,43 @@ export default function RequestsPage() {
   }, []);
 
   const canManageRequests = !!myRole && CAN_MANAGE_ROLES.includes(myRole);
+
+  const preStatusFiltered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const from = dateFrom ? new Date(`${dateFrom}T00:00:00`) : null;
+    const to = dateTo ? new Date(`${dateTo}T23:59:59`) : null;
+    return requests.filter((r) => {
+      if (q && !r.title.toLowerCase().includes(q)) return false;
+      if (categoryFilter && r.category_id !== categoryFilter) return false;
+      const created = new Date(r.created_at);
+      if (from && created < from) return false;
+      if (to && created > to) return false;
+      return true;
+    });
+  }, [requests, search, categoryFilter, dateFrom, dateTo]);
+
+  const statusCounts = useMemo(() => {
+    const counts: Record<string, number> = { pending: 0, in_progress: 0, completed: 0, rejected: 0 };
+    preStatusFiltered.forEach((r) => {
+      counts[r.status] = (counts[r.status] || 0) + 1;
+    });
+    return counts;
+  }, [preStatusFiltered]);
+
+  const filteredRequests = useMemo(() => {
+    if (!statusFilter) return preStatusFiltered;
+    return preStatusFiltered.filter((r) => r.status === statusFilter);
+  }, [preStatusFiltered, statusFilter]);
+
+  const hasActiveFilters = !!(search || dateFrom || dateTo || statusFilter || categoryFilter);
+
+  function clearFilters() {
+    setSearch('');
+    setDateFrom('');
+    setDateTo('');
+    setStatusFilter('');
+    setCategoryFilter('');
+  }
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
@@ -357,6 +401,12 @@ export default function RequestsPage() {
     completed: 'bg-green-100 text-green-700',
     rejected: 'bg-red-100 text-red-700',
   };
+  const statusChipColor: Record<string, string> = {
+    pending: 'bg-yellow-50 text-yellow-700 border-yellow-200',
+    in_progress: 'bg-blue-50 text-blue-700 border-blue-200',
+    completed: 'bg-green-50 text-green-700 border-green-200',
+    rejected: 'bg-red-50 text-red-700 border-red-200',
+  };
 
   return (
     <main className="p-6">
@@ -370,10 +420,81 @@ export default function RequestsPage() {
         </button>
       </div>
 
+      <Card className="mb-4">
+        <h2 className="text-sm font-extrabold text-[var(--c-teal-800)] mb-3">🔍 {t('filtersTitle')}</h2>
+        <div className="flex flex-wrap items-center gap-2 mb-4">
+          <button
+            type="button"
+            onClick={() => setStatusFilter('')}
+            className={`px-3 py-1.5 rounded-full text-xs font-bold border transition ${
+              statusFilter === ''
+                ? 'bg-[var(--c-teal-700)] text-white border-[var(--c-teal-700)]'
+                : 'bg-[var(--c-surface)] text-[var(--c-text)] border-[var(--c-teal-100)]'
+            }`}
+          >
+            {t('filterAllStatuses')} ({preStatusFiltered.length})
+          </button>
+          {STATUS_KEYS.map((key) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setStatusFilter(statusFilter === key ? '' : key)}
+              className={`px-3 py-1.5 rounded-full text-xs font-bold border transition ${
+                statusFilter === key ? statusColor[key] + ' border-transparent' : statusChipColor[key]
+              }`}
+            >
+              {statusLabel[key]} ({statusCounts[key] || 0})
+            </button>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
+          <div className="lg:col-span-2">
+            <label className="text-sm font-bold text-[var(--c-text)] mb-1 block">{t('requestTitle')}</label>
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={t('filterSearchPlaceholder')}
+              className="w-full border rounded-xl px-3 py-2.5"
+            />
+          </div>
+          <FormField label={t('filterDateFrom')} type="date" value={dateFrom} onChange={setDateFrom} />
+          <FormField label={t('filterDateTo')} type="date" value={dateTo} onChange={setDateTo} />
+          <div>
+            <label className="text-sm font-bold text-[var(--c-text)] mb-1 block">{t('requestCategory')}</label>
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="w-full border rounded-xl px-3 py-2.5"
+            >
+              <option value="">{t('filterAllCategories')}</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {hasActiveFilters && (
+          <div className="flex justify-end mt-3">
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="text-xs font-bold text-[var(--c-teal-700)] hover:underline"
+            >
+              ✕ {t('clearFilters')}
+            </button>
+          </div>
+        )}
+      </Card>
+
       <Card>
         <DataTable
-          emptyMessage={t('noData')}
-          rows={requests}
+          emptyMessage={hasActiveFilters ? t('noFilteredResults') : t('noData')}
+          rows={filteredRequests}
           columns={[
             { header: t('requestTitle'), render: (r) => r.title },
             {
