@@ -23,7 +23,14 @@ type RequestRow = {
   request_categories: { name: string } | null;
 };
 
+type AssigneeStatRow = {
+  user_id: string;
+  status: string;
+  profiles: { name: string } | null;
+};
+
 const COLORS = ['#0f766e', '#f59e0b', '#ef4444', '#64748b', '#3b82f6', '#a855f7'];
+const REQUEST_STATUS_COLORS = ['#f59e0b', '#3b82f6', '#10b981', '#ef4444'];
 
 export default function ReportsPage() {
   const { t, lang: language } = useLanguage();
@@ -31,6 +38,7 @@ export default function ReportsPage() {
 
   const [bookings, setBookings] = useState<BookingRow[]>([]);
   const [requests, setRequests] = useState<RequestRow[]>([]);
+  const [assigneeRows, setAssigneeRows] = useState<AssigneeStatRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [isPersonalView, setIsPersonalView] = useState(false);
 
@@ -57,9 +65,16 @@ export default function ReportsPage() {
         requestsQuery = requestsQuery.eq('created_by', user.id);
       }
 
-      const [{ data: b }, { data: r }] = await Promise.all([bookingsQuery, requestsQuery]);
+      const assigneesQuery = supabase.from('request_assignees').select('user_id, status, profiles(name)');
+
+      const [{ data: b }, { data: r }, { data: a }] = await Promise.all([
+        bookingsQuery,
+        requestsQuery,
+        assigneesQuery,
+      ]);
       if (b) setBookings(b as unknown as BookingRow[]);
       if (r) setRequests(r as unknown as RequestRow[]);
+      if (a) setAssigneeRows(a as unknown as AssigneeStatRow[]);
       setLoading(false);
     })();
   }, [supabase]);
@@ -107,6 +122,35 @@ export default function ReportsPage() {
     return Array.from(map.entries()).map(([name, value]) => ({ name, value }));
   }, [requests, t]);
 
+  const requestStatusCounts = useMemo(() => {
+    const counts: Record<string, number> = { pending: 0, in_progress: 0, completed: 0, rejected: 0 };
+    requests.forEach((r) => {
+      counts[r.status] = (counts[r.status] ?? 0) + 1;
+    });
+    return [
+      { key: 'pending', name: t('requestPending'), value: counts.pending },
+      { key: 'in_progress', name: t('requestInProgress'), value: counts.in_progress },
+      { key: 'completed', name: t('requestCompleted'), value: counts.completed },
+      { key: 'rejected', name: t('requestRejected'), value: counts.rejected },
+    ];
+  }, [requests, t]);
+
+  const requestsByAssignee = useMemo(() => {
+    const map = new Map<string, { name: string; pending: number; in_progress: number; completed: number; total: number }>();
+    assigneeRows.forEach((row) => {
+      const name = row.profiles?.name || t('uncategorized');
+      if (!map.has(row.user_id)) {
+        map.set(row.user_id, { name, pending: 0, in_progress: 0, completed: 0, total: 0 });
+      }
+      const entry = map.get(row.user_id)!;
+      entry.total += 1;
+      if (row.status === 'pending') entry.pending += 1;
+      else if (row.status === 'in_progress') entry.in_progress += 1;
+      else if (row.status === 'completed') entry.completed += 1;
+    });
+    return Array.from(map.values()).sort((a, b) => b.total - a.total);
+  }, [assigneeRows, t]);
+
   const exportCsv = () => {
     const rows = bookings.map((b) => ({
       id: b.id,
@@ -144,13 +188,28 @@ export default function ReportsPage() {
         </button>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {statusCounts.map((s, i) => (
-          <Card key={s.name}>
-            <p className="text-sm text-[var(--c-text-muted)]">{s.name}</p>
-            <p className="text-3xl font-extrabold" style={{ color: COLORS[i] }}>{s.value}</p>
-          </Card>
-        ))}
+      <div>
+        <h2 className="font-bold text-[var(--c-teal-900)] mb-3">🗓️ {t('bookingStatusBreakdown')}</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {statusCounts.map((s, i) => (
+            <Card key={s.name}>
+              <p className="text-sm text-[var(--c-text-muted)]">{s.name}</p>
+              <p className="text-3xl font-extrabold" style={{ color: COLORS[i] }}>{s.value}</p>
+            </Card>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <h2 className="font-bold text-[var(--c-teal-900)] mb-3">📋 {t('requestsSectionTitle')}</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {requestStatusCounts.map((s, i) => (
+            <Card key={s.key}>
+              <p className="text-sm text-[var(--c-text-muted)]">{s.name}</p>
+              <p className="text-3xl font-extrabold" style={{ color: REQUEST_STATUS_COLORS[i] }}>{s.value}</p>
+            </Card>
+          ))}
+        </div>
       </div>
 
       <div className="grid md:grid-cols-2 gap-4">
@@ -194,11 +253,11 @@ export default function ReportsPage() {
         </Card>
 
         <Card>
-          <h3 className="font-bold text-[var(--c-teal-900)] mb-3">{t('bookingStatusBreakdown')}</h3>
+          <h3 className="font-bold text-[var(--c-teal-900)] mb-3">{t('requestStatusBreakdown')}</h3>
           <ResponsiveContainer width="100%" height={260}>
             <PieChart>
-              <Pie data={statusCounts} dataKey="value" nameKey="name" outerRadius={90} label>
-                {statusCounts.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+              <Pie data={requestStatusCounts} dataKey="value" nameKey="name" outerRadius={90} label>
+                {requestStatusCounts.map((_, i) => <Cell key={i} fill={REQUEST_STATUS_COLORS[i % REQUEST_STATUS_COLORS.length]} />)}
               </Pie>
               <Tooltip />
               <Legend />
@@ -206,6 +265,29 @@ export default function ReportsPage() {
           </ResponsiveContainer>
         </Card>
       </div>
+
+      {!isPersonalView && (
+        <Card>
+          <h3 className="font-bold text-[var(--c-teal-900)] mb-1">{t('requestsByAssigneeTitle')}</h3>
+          <p className="text-xs text-[var(--c-text-muted)] mb-3">{t('requestsByAssigneeSubtitle')}</p>
+          {requestsByAssignee.length ? (
+            <ResponsiveContainer width="100%" height={Math.max(220, requestsByAssignee.length * 46)}>
+              <BarChart data={requestsByAssignee} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis type="number" allowDecimals={false} fontSize={12} />
+                <YAxis type="category" dataKey="name" width={130} fontSize={12} />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="pending" name={t('assigneeStatusPending')} stackId="a" fill={REQUEST_STATUS_COLORS[0]} />
+                <Bar dataKey="in_progress" name={t('assigneeStatusInProgress')} stackId="a" fill={REQUEST_STATUS_COLORS[1]} />
+                <Bar dataKey="completed" name={t('assigneeStatusCompleted')} stackId="a" fill={REQUEST_STATUS_COLORS[2]} radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <p className="text-sm text-[var(--c-text-muted)]">{t('noAssigneeData')}</p>
+          )}
+        </Card>
+      )}
     </div>
   );
 }
