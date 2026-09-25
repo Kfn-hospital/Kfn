@@ -6,19 +6,20 @@ import { translations, type Language, type TranslationKey } from './translations
 interface LanguageContextValue {
   lang: Language;
   toggleLang: () => void;
+  setLang: (lang: Language) => void;
   t: (key: TranslationKey) => string;
 }
 
 const LanguageContext = createContext<LanguageContextValue | null>(null);
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [lang, setLang] = useState<Language>('ar');
+  const [lang, setLangState] = useState<Language>('ar');
 
   // نقرأ اللغة المحفوظة (لو موجودة) بعد ما الصفحة تحمّل في المتصفح، وبعدين
   // نحدّث اتجاه واللغة على مستوى الصفحة كلها (<html dir/lang>) تلقائيًا
   useEffect(() => {
     const saved = localStorage.getItem('appLang') as Language | null;
-    if (saved === 'ar' || saved === 'en') setLang(saved);
+    if (saved === 'ar' || saved === 'en') setLangState(saved);
   }, []);
 
   useEffect(() => {
@@ -28,7 +29,12 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
   function toggleLang() {
     const next: Language = lang === 'ar' ? 'en' : 'ar';
-    setLang(next);
+    setLangState(next);
+    localStorage.setItem('appLang', next);
+  }
+
+  function setLang(next: Language) {
+    setLangState(next);
     localStorage.setItem('appLang', next);
   }
 
@@ -37,7 +43,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <LanguageContext.Provider value={{ lang, toggleLang, t }}>
+    <LanguageContext.Provider value={{ lang, toggleLang, setLang, t }}>
       {children}
     </LanguageContext.Provider>
   );

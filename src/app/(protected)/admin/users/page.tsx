@@ -17,6 +17,7 @@ export default function UsersPage() {
   const { t } = useLanguage();
   const [users, setUsers] = useState<Profile[]>([]);
   const [tab, setTab] = useState<Tab>('regular');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   async function loadUsers() {
     const { data } = await supabase.from('profiles').select('*').order('name');
@@ -43,6 +44,28 @@ export default function UsersPage() {
       .update({ status: current === 'active' ? 'suspended' : 'active' })
       .eq('id', id);
     loadUsers();
+  }
+
+  async function deleteUser(id: string) {
+    if (!window.confirm(t('confirmDeleteUser'))) return;
+    setDeletingId(id);
+    try {
+      const res = await fetch('/api/admin/delete-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: id }),
+      });
+      const json = await res.json();
+      if (json.ok) {
+        loadUsers();
+      } else {
+        alert(json.error || t('errorOccurred'));
+      }
+    } catch (err) {
+      alert(err instanceof Error ? err.message : String(err));
+    } finally {
+      setDeletingId(null);
+    }
   }
 
   const roleLabel: Record<string, string> = {
@@ -107,6 +130,24 @@ export default function UsersPage() {
       ),
     },
     { header: t('status'), render: renderStatus },
+    {
+      header: t('actions'),
+      render: (u: Profile) => (
+        <div className="flex items-center gap-2">
+          <Link href={`/admin/users/${u.id}/edit`} className="text-[var(--c-teal-600)] text-xs font-bold hover:underline">
+            {t('edit')}
+          </Link>
+          <button
+            type="button"
+            onClick={() => deleteUser(u.id)}
+            disabled={deletingId === u.id}
+            className="text-red-600 text-xs font-bold hover:underline disabled:opacity-50"
+          >
+            {t('delete')}
+          </button>
+        </div>
+      ),
+    },
   ];
 
   return (

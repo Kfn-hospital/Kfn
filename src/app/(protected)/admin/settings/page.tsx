@@ -128,7 +128,8 @@ export default function SettingsPage() {
   };
 
   const portalUrl = typeof window !== 'undefined' ? window.location.origin : '';
-  const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(portalUrl)}`;
+  const assistantUrl = `${portalUrl}/assistant`;
+  const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(assistantUrl)}`;
 
   if (loading) return <p className="text-[var(--c-text-muted)]">{t('loading')}</p>;
 
@@ -253,7 +254,7 @@ export default function SettingsPage() {
         <h3 className="font-bold text-[var(--c-teal-900)] mb-3">{t('qrCodeTitle')}</h3>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={qrSrc} alt="QR code" className="rounded-lg border" />
-        <p className="text-xs text-[var(--c-text-muted)] mt-2">{portalUrl}</p>
+        <p className="text-xs text-[var(--c-text-muted)] mt-2">{assistantUrl}</p>
       </Card>
 
       <button

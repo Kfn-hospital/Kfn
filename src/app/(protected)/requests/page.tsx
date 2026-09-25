@@ -17,10 +17,36 @@ interface AssigneeRow {
   request_id: string;
   user_id: string;
   status: string;
+  note: string | null;
   profiles: Profile | null;
 }
 
-type AssigneeItem = { user_id: string; status: string; profile: Profile };
+type AssigneeItem = { user_id: string; status: string; note: string; profile: Profile };
+
+function NoteInput({
+  requestId,
+  userId,
+  defaultValue,
+  onCommit,
+  placeholder,
+}: {
+  requestId: string;
+  userId: string;
+  defaultValue: string;
+  onCommit: (requestId: string, userId: string, note: string) => void;
+  placeholder: string;
+}) {
+  return (
+    <input
+      key={`${requestId}-${userId}`}
+      type="text"
+      defaultValue={defaultValue}
+      onBlur={(e) => onCommit(requestId, userId, e.target.value)}
+      placeholder={placeholder}
+      className="w-full bg-transparent text-[10px] text-[var(--c-text-muted)] border-0 border-t border-[var(--c-teal-100)] focus:ring-0 px-0 pt-0.5 placeholder:text-[var(--c-teal-300)]"
+    />
+  );
+}
 
 function AssigneesEditor({
   requestId,
@@ -29,6 +55,7 @@ function AssigneesEditor({
   onAdd,
   onRemove,
   onStatusChange,
+  onNoteChange,
 }: {
   requestId: string;
   assigned: AssigneeItem[];
@@ -36,6 +63,7 @@ function AssigneesEditor({
   onAdd: (requestId: string, userId: string) => void;
   onRemove: (requestId: string, userId: string) => void;
   onStatusChange: (requestId: string, userId: string, status: string) => void;
+  onNoteChange: (requestId: string, userId: string, note: string) => void;
 }) {
   const { t } = useLanguage();
   const [query, setQuery] = useState('');
@@ -63,27 +91,36 @@ function AssigneesEditor({
         {assigned.map((a) => (
           <div
             key={a.user_id}
-            className="flex items-center justify-between gap-1 bg-[var(--c-teal-50)] text-[var(--c-teal-700)] text-xs font-bold px-2 py-1 rounded-lg"
+            className="flex flex-col gap-0.5 bg-[var(--c-teal-50)] text-[var(--c-teal-700)] text-xs font-bold px-2 py-1 rounded-lg"
           >
-            <span className="truncate">{a.profile.name}</span>
-            <div className="flex items-center gap-1 shrink-0">
-              <select
-                value={a.status}
-                onChange={(e) => onStatusChange(requestId, a.user_id, e.target.value)}
-                className={`bg-transparent text-[10px] font-bold border-0 focus:ring-0 p-0 ${statusColorClass[a.status] || ''}`}
-              >
-                <option value="pending">{statusLabel.pending}</option>
-                <option value="in_progress">{statusLabel.in_progress}</option>
-                <option value="completed">{statusLabel.completed}</option>
-              </select>
-              <button
-                type="button"
-                onClick={() => onRemove(requestId, a.user_id)}
-                className="text-[var(--c-teal-400)] hover:text-red-500"
-              >
-                ×
-              </button>
+            <div className="flex items-center justify-between gap-1">
+              <span className="truncate">{a.profile.name}</span>
+              <div className="flex items-center gap-1 shrink-0">
+                <select
+                  value={a.status}
+                  onChange={(e) => onStatusChange(requestId, a.user_id, e.target.value)}
+                  className={`bg-transparent text-[10px] font-bold border-0 focus:ring-0 p-0 ${statusColorClass[a.status] || ''}`}
+                >
+                  <option value="pending">{statusLabel.pending}</option>
+                  <option value="in_progress">{statusLabel.in_progress}</option>
+                  <option value="completed">{statusLabel.completed}</option>
+                </select>
+                <button
+                  type="button"
+                  onClick={() => onRemove(requestId, a.user_id)}
+                  className="text-[var(--c-teal-400)] hover:text-red-500"
+                >
+                  ×
+                </button>
+              </div>
             </div>
+            <NoteInput
+              requestId={requestId}
+              userId={a.user_id}
+              defaultValue={a.note}
+              onCommit={onNoteChange}
+              placeholder={t('assigneeNotePlaceholder')}
+            />
           </div>
         ))}
         {!assigned.length && <span className="text-xs text-[var(--c-text-muted)]">-</span>}
@@ -155,12 +192,17 @@ export default function RequestsPage() {
 
     const { data: assigneeRows } = await supabase
       .from('request_assignees')
-      .select('request_id, user_id, status, profiles(*)');
+      .select('request_id, user_id, status, note, profiles(*)');
     const grouped: Record<string, AssigneeItem[]> = {};
     ((assigneeRows as unknown as AssigneeRow[]) ?? []).forEach((row) => {
       if (!row.profiles) return;
       if (!grouped[row.request_id]) grouped[row.request_id] = [];
-      grouped[row.request_id].push({ user_id: row.user_id, status: row.status, profile: row.profiles });
+      grouped[row.request_id].push({
+        user_id: row.user_id,
+        status: row.status,
+        note: row.note || '',
+        profile: row.profiles,
+      });
     });
     setAssigneesByRequest(grouped);
 
@@ -234,6 +276,22 @@ export default function RequestsPage() {
     loadData();
   }
 
+  async function updateAssigneeNote(requestId: string, targetUserId: string, note: string) {
+    setAssigneesByRequest((prev) => {
+      const list = prev[requestId];
+      if (!list) return prev;
+      return {
+        ...prev,
+        [requestId]: list.map((a) => (a.user_id === targetUserId ? { ...a, note } : a)),
+      };
+    });
+    await supabase
+      .from('request_assignees')
+      .update({ note: note || null })
+      .eq('request_id', requestId)
+      .eq('user_id', targetUserId);
+  }
+
   async function updateStatus(id: string, status: string) {
     if (!canManageRequests) return;
     await supabase.from('requests').update({ status }).eq('id', id);
@@ -283,11 +341,18 @@ export default function RequestsPage() {
                     onAdd={addAssignee}
                     onRemove={removeAssignee}
                     onStatusChange={updateAssigneeStatus}
+                    onNoteChange={updateAssigneeNote}
                   />
                 ) : (
-                  <span className="text-xs text-[var(--c-text)]">
-                    {(assigneesByRequest[r.id] || []).map((a) => a.profile.name).join('، ') || '-'}
-                  </span>
+                  <div className="flex flex-col gap-1">
+                    {(assigneesByRequest[r.id] || []).map((a) => (
+                      <div key={a.user_id} className="text-xs text-[var(--c-text)]">
+                        <span className="font-bold">{a.profile.name}</span>
+                        {a.note && <span className="block text-[10px] text-[var(--c-text-muted)]">{a.note}</span>}
+                      </div>
+                    ))}
+                    {!(assigneesByRequest[r.id] || []).length && <span className="text-xs text-[var(--c-text-muted)]">-</span>}
+                  </div>
                 ),
             },
             {

@@ -28,6 +28,18 @@ function dateOnly(value: string) {
   return value.slice(0, 10);
 }
 
+function formatTime12(time: string, amLabel: string, pmLabel: string) {
+  if (!time) return '';
+  const [hStr, mStr] = time.split(':');
+  let h = parseInt(hStr, 10);
+  if (Number.isNaN(h)) return time;
+  const m = (mStr || '00').padStart(2, '0');
+  const isPM = h >= 12;
+  h = h % 12;
+  if (h === 0) h = 12;
+  return `${h}:${m} ${isPM ? pmLabel : amLabel}`;
+}
+
 const EMPTY_FORM = {
   room_id: '',
   title: '',
@@ -60,10 +72,7 @@ export default function DashboardPage() {
   });
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
 
-  // ---- AI assistant state ----
-  const [aiMessage, setAiMessage] = useState('');
-  const [aiLoading, setAiLoading] = useState(false);
-  const [aiReply, setAiReply] = useState('');
+  const timeLabel = (time: string) => formatTime12(time, t('am'), t('pm'));
 
   async function loadData() {
     const { data: roomsData } = await supabase
@@ -174,30 +183,6 @@ export default function DashboardPage() {
     loadCalendarBookings();
   }
 
-  async function handleAiSubmit() {
-    if (!aiMessage.trim() || !userId) return;
-    setAiLoading(true);
-    setAiReply('');
-    try {
-      const res = await fetch('/api/ai/assistant', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: aiMessage, userId }),
-      });
-      const json = await res.json();
-      setAiReply(json.message || json.error || t('errorOccurred'));
-      if (json.ok) {
-        setAiMessage('');
-        loadData();
-        loadCalendarBookings();
-      }
-    } catch (err) {
-      setAiReply(err instanceof Error ? err.message : String(err));
-    } finally {
-      setAiLoading(false);
-    }
-  }
-
   const statusLabel: Record<string, string> = {
     pending: t('bookingPending'),
     approved: t('bookingApproved'),
@@ -275,31 +260,6 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* ---- AI Assistant ---- */}
-      <Card className="mb-6">
-        <h3 className="font-extrabold text-[var(--c-teal-900)] mb-2">🤖 {t('aiAssistantTitle')}</h3>
-        <div className="flex flex-col sm:flex-row gap-2">
-          <input
-            type="text"
-            value={aiMessage}
-            onChange={(e) => setAiMessage(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleAiSubmit()}
-            placeholder={t('aiAssistantPlaceholder')}
-            className="flex-1 border rounded-xl px-3 py-2.5"
-          />
-          <button
-            onClick={handleAiSubmit}
-            disabled={aiLoading || !aiMessage.trim()}
-            className="bg-[var(--c-teal-700)] text-white rounded-xl px-5 py-2.5 font-bold disabled:opacity-50"
-          >
-            {aiLoading ? t('loading') : t('aiAssistantSend')}
-          </button>
-        </div>
-        {aiReply && (
-          <p className="text-sm text-[var(--c-text)] bg-[var(--c-bg)] rounded-xl p-3 mt-3">{aiReply}</p>
-        )}
-      </Card>
-
       {/* ---- Calendar ---- */}
       <Card className="mb-6">
         <div className="flex items-center justify-between mb-4">
@@ -347,7 +307,7 @@ export default function DashboardPage() {
                     {dayBookings.slice(0, 3).map((b) => (
                       <span
                         key={b.id}
-                        title={`${b.title} — ${b.profiles?.name || b.profiles?.email || ''} — ${b.start_time}-${b.end_time}`}
+                        title={`${b.title} — ${b.profiles?.name || b.profiles?.email || ''} — ${timeLabel(b.start_time)}-${timeLabel(b.end_time)}`}
                         className={`block w-full truncate text-[10px] leading-4 font-bold text-white rounded px-1 ${STATUS_DOT[b.status]}`}
                       >
                         {b.title}
@@ -385,7 +345,7 @@ export default function DashboardPage() {
                     <div>
                       <p className="font-bold text-sm text-[var(--c-text)]">{b.title}</p>
                       <p className="text-xs text-[var(--c-text-muted)]">
-                        {(lang === 'en' && b.rooms?.name_en ? b.rooms.name_en : b.rooms?.name) || '-'} · {b.start_time}-{b.end_time} · {b.profiles?.name || b.profiles?.email || '—'}
+                        {(lang === 'en' && b.rooms?.name_en ? b.rooms.name_en : b.rooms?.name) || '-'} · {timeLabel(b.start_time)}-{timeLabel(b.end_time)} · {b.profiles?.name || b.profiles?.email || '—'}
                       </p>
                     </div>
                     <span className={`text-xs font-bold px-2 py-1 rounded-full ${statusColor[b.status]}`}>

@@ -1,13 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
   const { t, toggleLang } = useLanguage();
 
@@ -52,7 +53,8 @@ export default function LoginPage() {
       setError(t('loginError'));
       return;
     }
-    router.push('/dashboard');
+    const next = searchParams.get('next');
+    router.push(next && next.startsWith('/') ? next : '/dashboard');
     router.refresh();
   }
 
@@ -113,5 +115,13 @@ export default function LoginPage() {
         </p>
       </div>
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
   );
 }

@@ -1,5 +1,6 @@
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
+import FloatingAssistant from '@/components/FloatingAssistant';
 
 export default function ProtectedLayout({
   children,
@@ -13,6 +14,7 @@ export default function ProtectedLayout({
         <Header />
         <main className="flex-1 overflow-y-auto">{children}</main>
       </div>
+      <FloatingAssistant />
     </div>
   );
 }
