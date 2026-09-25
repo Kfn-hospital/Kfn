@@ -166,6 +166,7 @@ export default function RequestsPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     title: '',
@@ -329,6 +330,21 @@ export default function RequestsPage() {
     }
   }
 
+  async function deleteRequest(id: string) {
+    if (myRole !== 'admin') return;
+    if (!window.confirm(t('confirmDeleteRequest'))) return;
+    setDeletingId(id);
+    // نحذف صفوف المُعيَّنين المرتبطة بالطلب الأول احتياطًا لو مفيش cascade متظبط
+    await supabase.from('request_assignees').delete().eq('request_id', id);
+    const { error: delError } = await supabase.from('requests').delete().eq('id', id);
+    setDeletingId(null);
+    if (delError) {
+      setError(delError.message);
+      return;
+    }
+    loadData();
+  }
+
   const statusLabel: Record<string, string> = {
     pending: t('requestPending'),
     in_progress: t('requestInProgress'),
@@ -427,6 +443,23 @@ export default function RequestsPage() {
                 </div>
               ),
             },
+            ...(myRole === 'admin'
+              ? [
+                  {
+                    header: t('actions'),
+                    render: (r: CoordinationRequest) => (
+                      <button
+                        type="button"
+                        onClick={() => deleteRequest(r.id)}
+                        disabled={deletingId === r.id}
+                        className="text-red-500 text-xs font-bold hover:underline disabled:opacity-50 whitespace-nowrap"
+                      >
+                        🗑️ {t('delete')}
+                      </button>
+                    ),
+                  },
+                ]
+              : []),
           ]}
         />
       </Card>
