@@ -451,6 +451,7 @@ export default function RequestsPage() {
     if (myRole !== 'admin') return;
     if (!window.confirm(t('confirmDeleteRequest'))) return;
     setDeletingId(id);
+    const deletedTitle = requests.find((r) => r.id === id)?.title || id;
     // نحذف صفوف المُعيَّنين المرتبطة بالطلب الأول احتياطًا لو مفيش cascade متظبط
     await supabase.from('request_assignees').delete().eq('request_id', id);
     const { error: delError } = await supabase.from('requests').delete().eq('id', id);
@@ -459,6 +460,14 @@ export default function RequestsPage() {
       setError(delError.message);
       return;
     }
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    await supabase.from('audit_log').insert({
+      action: 'request_deleted',
+      details: `تم حذف طلب: ${deletedTitle}`,
+      performed_by: user?.id ?? null,
+    });
     loadData();
   }
 

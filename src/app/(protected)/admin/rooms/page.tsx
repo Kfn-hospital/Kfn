@@ -191,7 +191,16 @@ export default function AdminRoomsPage() {
 
   async function handleDelete(id: string) {
     if (!confirm(t('deleteConfirm'))) return;
+    const deletedName = rooms.find((r) => r.id === id)?.name || id;
     await supabase.from('rooms').delete().eq('id', id);
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    await supabase.from('audit_log').insert({
+      action: 'room_deleted',
+      details: `تم حذف قاعة: ${deletedName}`,
+      performed_by: user?.id ?? null,
+    });
     loadRooms();
   }
 

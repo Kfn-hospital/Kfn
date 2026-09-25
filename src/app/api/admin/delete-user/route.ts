@@ -22,6 +22,12 @@ export async function POST(request: Request) {
     { auth: { autoRefreshToken: false, persistSession: false } }
   );
 
+  const { data: deletedProfile } = await supabaseAdmin
+    .from('profiles')
+    .select('name, email')
+    .eq('id', userId)
+    .maybeSingle();
+
   const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userId);
   if (authError) {
     return NextResponse.json({ ok: false, error: authError.message }, { status: 200 });
@@ -29,6 +35,12 @@ export async function POST(request: Request) {
 
   // نحذف صف البروفايل يدويًا احتياطًا لو مفيش cascade متظبط على الجدول
   await supabaseAdmin.from('profiles').delete().eq('id', userId);
+
+  await supabaseAdmin.from('audit_log').insert({
+    action: 'user_deleted',
+    details: `تم حذف حساب: ${deletedProfile?.name || deletedProfile?.email || userId}`,
+    performed_by: guard.user.id,
+  });
 
   return NextResponse.json({ ok: true });
 }

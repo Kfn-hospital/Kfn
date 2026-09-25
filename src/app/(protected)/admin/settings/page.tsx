@@ -160,11 +160,20 @@ export default function SettingsPage() {
   async function deleteCategory(id: string) {
     if (!window.confirm(t('categoryDeleteConfirm'))) return;
     setCategoryError('');
+    const deletedName = categories.find((c) => c.id === id)?.name || id;
     const { error } = await supabase.from('request_categories').delete().eq('id', id);
     if (error) {
       setCategoryError(t('categoryInUseError'));
       return;
     }
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    await supabase.from('audit_log').insert({
+      action: 'category_deleted',
+      details: `تم حذف تصنيف: ${deletedName}`,
+      performed_by: user?.id ?? null,
+    });
     loadCategories();
   }
 
