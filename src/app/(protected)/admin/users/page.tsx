@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import Card from '@/components/ui/Card';
@@ -11,22 +12,62 @@ import type { Profile, UserRole } from '@/types/database';
 type Tab = 'regular' | 'admins';
 
 const ADMIN_ROLES: UserRole[] = ['admin', 'room_manager', 'coordinator', 'coordination_admin'];
+const ALWAYS_CAN_UPLOAD_ROLES: UserRole[] = ['admin', 'coordination_admin'];
 
 export default function UsersPage() {
   const supabase = createClient();
+  const router = useRouter();
   const { t } = useLanguage();
   const [users, setUsers] = useState<Profile[]>([]);
+  const [uploaderIds, setUploaderIds] = useState<Set<string>>(new Set());
   const [tab, setTab] = useState<Tab>('regular');
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [authorized, setAuthorized] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        router.push('/login');
+        return;
+      }
+      const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+      if (profile?.role !== 'admin') {
+        router.push('/dashboard');
+        return;
+      }
+      setAuthorized(true);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function loadUsers() {
     const { data } = await supabase.from('profiles').select('*').order('name');
     setUsers((data as Profile[]) || []);
+
+    const { data: uploaders } = await supabase.from('file_uploaders').select('user_id');
+    setUploaderIds(new Set(((uploaders as { user_id: string }[] | null) ?? []).map((r) => r.user_id)));
   }
 
   useEffect(() => {
-    loadUsers();
-  }, []);
+    if (authorized) loadUsers();
+  }, [authorized]);
+
+  async function toggleUploader(id: string, current: boolean) {
+    setUploaderIds((prev) => {
+      const next = new Set(prev);
+      if (current) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+    if (current) {
+      await supabase.from('file_uploaders').delete().eq('user_id', id);
+    } else {
+      await supabase.from('file_uploaders').upsert({ user_id: id });
+    }
+  }
 
   async function updateRole(id: string, role: UserRole) {
     await supabase.from('profiles').update({ role }).eq('id', id);
@@ -131,6 +172,24 @@ export default function UsersPage() {
     },
     { header: t('status'), render: renderStatus },
     {
+      header: t('canUploadFiles'),
+      render: (u: Profile) => {
+        const forced = ALWAYS_CAN_UPLOAD_ROLES.includes(u.role as UserRole);
+        const checked = forced || uploaderIds.has(u.id);
+        return (
+          <label className="flex items-center justify-center" title={forced ? t('canUploadFilesForced') : ''}>
+            <input
+              type="checkbox"
+              checked={checked}
+              disabled={forced}
+              onChange={() => toggleUploader(u.id, uploaderIds.has(u.id))}
+              className="w-4 h-4"
+            />
+          </label>
+        );
+      },
+    },
+    {
       header: t('actions'),
       render: (u: Profile) => (
         <div className="flex items-center gap-2">
@@ -149,6 +208,8 @@ export default function UsersPage() {
       ),
     },
   ];
+
+  if (!authorized) return null;
 
   return (
     <main className="p-6">

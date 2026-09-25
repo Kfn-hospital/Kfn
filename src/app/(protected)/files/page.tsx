@@ -46,7 +46,7 @@ export default function FilesPage() {
         .select('user_id')
         .eq('user_id', user.id)
         .maybeSingle();
-      setCanUpload(profile?.role === 'admin' || !!uploaderRow);
+      setCanUpload(profile?.role === 'admin' || profile?.role === 'coordination_admin' || !!uploaderRow);
     }
   }
 

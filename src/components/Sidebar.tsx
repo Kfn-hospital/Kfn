@@ -42,8 +42,12 @@ export default function Sidebar() {
     { href: '/checklists', label: t('navChecklists') },
     { href: '/files', label: t('navFiles') },
     { href: '/reports', label: t('navReports') },
-    { href: '/admin/rooms', label: t('navRoomsAdmin') },
-    { href: '/admin/users', label: t('navUsers') },
+    ...(isAdmin
+      ? [
+          { href: '/admin/rooms', label: t('navRoomsAdmin') },
+          { href: '/admin/users', label: t('navUsers') },
+        ]
+      : []),
     { href: '/appearance', label: `🎨 ${t('appearanceTitle')}` },
     ...(isAdmin
       ? [

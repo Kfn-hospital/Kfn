@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import Card from '@/components/ui/Card';
@@ -94,6 +95,7 @@ function RoomManagersEditor({
 
 export default function AdminRoomsPage() {
   const supabase = createClient();
+  const router = useRouter();
   const { t, lang } = useLanguage();
 
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -102,6 +104,26 @@ export default function AdminRoomsPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [authorized, setAuthorized] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        router.push('/login');
+        return;
+      }
+      const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+      if (profile?.role !== 'admin') {
+        router.push('/dashboard');
+        return;
+      }
+      setAuthorized(true);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [form, setForm] = useState({
     name: '',
@@ -172,6 +194,8 @@ export default function AdminRoomsPage() {
     await supabase.from('rooms').delete().eq('id', id);
     loadRooms();
   }
+
+  if (!authorized) return null;
 
   return (
     <main className="p-6 max-w-5xl">

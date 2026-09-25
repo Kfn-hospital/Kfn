@@ -18,21 +18,33 @@ function wrapEmail(title: string, bodyHtml: string) {
   `;
 }
 
-export async function notifyRequestCreated(requestId: string) {
+// بنسجل آخر خطأ إرسال إيميل في app_settings عشان الأدمن يقدر يشوفه من صفحة
+// الإعدادات من غير ما يحتاج يدخل على لوجات Vercel. بننضف السجل عند أي نجاح.
+async function logEmailResult(context: string, result: { ok: boolean; error?: string }) {
+  if (result.ok) {
+    await supabaseAdmin.from('app_settings').upsert({ key: 'last_email_error', value: '' });
+    return;
+  }
+  const message = `[${context}] ${result.error || 'خطأ غير معروف'} — ${new Date().toISOString()}`;
+  console.error('Email send failed:', message);
+  await supabaseAdmin.from('app_settings').upsert({ key: 'last_email_error', value: message });
+}
+
+export async function notifyRequestCreated(requestId: string): Promise<{ ok: boolean; error?: string }> {
   try {
     const { data: reqRow } = await supabaseAdmin
       .from('requests')
       .select('title, description, created_by, request_categories(name)')
       .eq('id', requestId)
       .single();
-    if (!reqRow) return;
+    if (!reqRow) return { ok: false, error: 'الطلب غير موجود' };
 
     const { data: creator } = await supabaseAdmin
       .from('profiles')
       .select('name, email')
       .eq('id', reqRow.created_by)
       .single();
-    if (!creator?.email) return;
+    if (!creator?.email) return { ok: false, error: 'لا يوجد بريد إلكتروني لصاحب الطلب' };
 
     const categoryName =
       (reqRow as { request_categories?: { name?: string } | null }).request_categories?.name || '';
@@ -46,27 +58,35 @@ export async function notifyRequestCreated(requestId: string) {
       <p>هيتم متابعة طلبك وإعلامك بالإيميل فور الانتهاء من تنفيذه.</p>
     `;
 
-    await sendEmail(creator.email, `تم استلام طلبك: ${reqRow.title}`, wrapEmail('تم استلام طلبك بنجاح ✅', body));
-  } catch {
-    // لا نوقف تنفيذ الطلب لو فشل الإيميل
+    const result = await sendEmail(
+      creator.email,
+      `تم استلام طلبك: ${reqRow.title}`,
+      wrapEmail('تم استلام طلبك بنجاح ✅', body)
+    );
+    await logEmailResult('notifyRequestCreated', result);
+    return result;
+  } catch (err) {
+    const result = { ok: false, error: err instanceof Error ? err.message : String(err) };
+    await logEmailResult('notifyRequestCreated', result);
+    return result;
   }
 }
 
-export async function notifyRequestCompleted(requestId: string) {
+export async function notifyRequestCompleted(requestId: string): Promise<{ ok: boolean; error?: string }> {
   try {
     const { data: reqRow } = await supabaseAdmin
       .from('requests')
       .select('title, created_by')
       .eq('id', requestId)
       .single();
-    if (!reqRow) return;
+    if (!reqRow) return { ok: false, error: 'الطلب غير موجود' };
 
     const { data: creator } = await supabaseAdmin
       .from('profiles')
       .select('name, email')
       .eq('id', reqRow.created_by)
       .single();
-    if (!creator?.email) return;
+    if (!creator?.email) return { ok: false, error: 'لا يوجد بريد إلكتروني لصاحب الطلب' };
 
     const body = `
       <p>مرحبًا ${creator.name || ''}،</p>
@@ -75,12 +95,16 @@ export async function notifyRequestCompleted(requestId: string) {
       <p>شكرًا لتواصلك مع مكتب التنسيق والمتابعة.</p>
     `;
 
-    await sendEmail(
+    const result = await sendEmail(
       creator.email,
       `تم الانتهاء من تنفيذ طلبك: ${reqRow.title}`,
       wrapEmail('تم الانتهاء من تنفيذ طلبك ✅', body)
     );
-  } catch {
-    // لا نوقف تحديث الحالة لو فشل الإيميل
+    await logEmailResult('notifyRequestCompleted', result);
+    return result;
+  } catch (err) {
+    const result = { ok: false, error: err instanceof Error ? err.message : String(err) };
+    await logEmailResult('notifyRequestCompleted', result);
+    return result;
   }
 }

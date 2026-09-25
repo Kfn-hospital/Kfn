@@ -75,6 +75,7 @@ export default function SettingsPage() {
   const [testing, setTesting] = useState(false);
   const [testEmailRecipient, setTestEmailRecipient] = useState('');
   const [testingEmail, setTestingEmail] = useState(false);
+  const [lastEmailError, setLastEmailError] = useState('');
   const [alert, setAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   useEffect(() => {
@@ -84,6 +85,7 @@ export default function SettingsPage() {
         const merged = { ...DEFAULTS };
         data.forEach((row: { key: string; value: unknown }) => {
           if (row.key in merged && row.value) (merged as Record<string, unknown>)[row.key] = row.value;
+          if (row.key === 'last_email_error' && row.value) setLastEmailError(String(row.value));
         });
         setSettings(merged);
       }
@@ -502,6 +504,11 @@ export default function SettingsPage() {
           </button>
         </div>
         <p className="text-xs text-[var(--c-text-muted)] mt-2">{t('emailDomainNote')}</p>
+        {lastEmailError && (
+          <div className="mt-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg p-3">
+            <strong>{t('lastEmailErrorLabel')}:</strong> {lastEmailError}
+          </div>
+        )}
       </Card>
 
       <Card>

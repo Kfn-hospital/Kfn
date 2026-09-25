@@ -32,13 +32,32 @@ export default function ReportsPage() {
   const [bookings, setBookings] = useState<BookingRow[]>([]);
   const [requests, setRequests] = useState<RequestRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isPersonalView, setIsPersonalView] = useState(false);
 
   useEffect(() => {
     (async () => {
-      const [{ data: b }, { data: r }] = await Promise.all([
-        supabase.from('bookings').select('id, booking_date, status, rooms(name, name_en)'),
-        supabase.from('requests').select('id, status, category_id, request_categories(name)'),
-      ]);
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      let role: string | null = null;
+      if (user) {
+        const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+        role = profile?.role ?? null;
+      }
+
+      const personal = role === 'employee';
+      setIsPersonalView(personal);
+
+      let bookingsQuery = supabase.from('bookings').select('id, booking_date, status, rooms(name, name_en)');
+      let requestsQuery = supabase.from('requests').select('id, status, category_id, request_categories(name)');
+
+      if (personal && user) {
+        bookingsQuery = bookingsQuery.eq('booked_by', user.id);
+        requestsQuery = requestsQuery.eq('created_by', user.id);
+      }
+
+      const [{ data: b }, { data: r }] = await Promise.all([bookingsQuery, requestsQuery]);
       if (b) setBookings(b as unknown as BookingRow[]);
       if (r) setRequests(r as unknown as RequestRow[]);
       setLoading(false);
@@ -112,8 +131,10 @@ export default function ReportsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-extrabold text-[var(--c-teal-900)]">📊 {t('reportsTitle')}</h1>
-          <p className="text-[var(--c-text-muted)]">{t('reportsSubtitle')}</p>
+          <h1 className="text-2xl font-extrabold text-[var(--c-teal-900)]">
+            📊 {isPersonalView ? t('myStatsTitle') : t('reportsTitle')}
+          </h1>
+          <p className="text-[var(--c-text-muted)]">{isPersonalView ? t('myStatsSubtitle') : t('reportsSubtitle')}</p>
         </div>
         <button
           onClick={exportCsv}
