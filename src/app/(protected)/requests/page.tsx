@@ -13,6 +13,81 @@ import type { CoordinationRequest, RequestCategory, Profile } from '@/types/data
 const CAN_MANAGE_ROLES = ['admin', 'coordinator', 'coordination_admin'];
 const ASSIGNABLE_ROLES = ['coordinator', 'coordination_admin'];
 
+interface AssigneeRow {
+  request_id: string;
+  profiles: Profile | null;
+}
+
+function AssigneesEditor({
+  requestId,
+  assigned,
+  allUsers,
+  onAdd,
+  onRemove,
+}: {
+  requestId: string;
+  assigned: Profile[];
+  allUsers: Profile[];
+  onAdd: (requestId: string, userId: string) => void;
+  onRemove: (requestId: string, userId: string) => void;
+}) {
+  const { t } = useLanguage();
+  const [query, setQuery] = useState('');
+  const assignedIds = new Set(assigned.map((u) => u.id));
+  const results = query.trim()
+    ? allUsers.filter(
+        (u) => !assignedIds.has(u.id) && (u.name || '').toLowerCase().includes(query.trim().toLowerCase())
+      )
+    : [];
+
+  return (
+    <div className="min-w-[200px]">
+      <div className="flex flex-wrap gap-1 mb-1">
+        {assigned.map((u) => (
+          <span
+            key={u.id}
+            className="inline-flex items-center gap-1 bg-teal-50 text-teal-700 text-xs font-bold px-2 py-1 rounded-full"
+          >
+            {u.name}
+            <button
+              type="button"
+              onClick={() => onRemove(requestId, u.id)}
+              className="text-teal-400 hover:text-red-500"
+            >
+              ×
+            </button>
+          </span>
+        ))}
+        {!assigned.length && <span className="text-xs text-slate-400">-</span>}
+      </div>
+      <input
+        type="text"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder={t('searchToAssign')}
+        className="w-full border rounded-lg px-2 py-1 text-xs"
+      />
+      {results.length > 0 && (
+        <div className="border rounded-lg mt-1 bg-white shadow-sm max-h-32 overflow-auto z-10 relative">
+          {results.map((u) => (
+            <button
+              key={u.id}
+              type="button"
+              onClick={() => {
+                onAdd(requestId, u.id);
+                setQuery('');
+              }}
+              className="block w-full text-right px-2 py-1 text-xs hover:bg-teal-50"
+            >
+              {u.name}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function RequestsPage() {
   const supabase = createClient();
   const { t } = useLanguage();
@@ -20,6 +95,7 @@ export default function RequestsPage() {
   const [requests, setRequests] = useState<CoordinationRequest[]>([]);
   const [categories, setCategories] = useState<RequestCategory[]>([]);
   const [users, setUsers] = useState<Profile[]>([]);
+  const [assigneesByRequest, setAssigneesByRequest] = useState<Record<string, Profile[]>>({});
   const [myRole, setMyRole] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -49,6 +125,17 @@ export default function RequestsPage() {
       .in('role', ASSIGNABLE_ROLES);
     setUsers((profs as Profile[]) || []);
 
+    const { data: assigneeRows } = await supabase
+      .from('request_assignees')
+      .select('request_id, profiles(*)');
+    const grouped: Record<string, Profile[]> = {};
+    ((assigneeRows as unknown as AssigneeRow[]) ?? []).forEach((row) => {
+      if (!row.profiles) return;
+      if (!grouped[row.request_id]) grouped[row.request_id] = [];
+      grouped[row.request_id].push(row.profiles);
+    });
+    setAssigneesByRequest(grouped);
+
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -73,14 +160,22 @@ export default function RequestsPage() {
       data: { user },
     } = await supabase.auth.getUser();
 
-    const { error } = await supabase.from('requests').insert({
-      title: form.title,
-      description: form.description || null,
-      category_id: form.category_id || null,
-      assigned_to: form.assigned_to || null,
-      created_by: user?.id,
-      status: 'pending',
-    });
+    const { data: inserted, error } = await supabase
+      .from('requests')
+      .insert({
+        title: form.title,
+        description: form.description || null,
+        category_id: form.category_id || null,
+        assigned_to: form.assigned_to || null,
+        created_by: user?.id,
+        status: 'pending',
+      })
+      .select()
+      .single();
+
+    if (!error && inserted && form.assigned_to) {
+      await supabase.from('request_assignees').insert({ request_id: inserted.id, user_id: form.assigned_to });
+    }
 
     setLoading(false);
     if (error) {
@@ -89,6 +184,16 @@ export default function RequestsPage() {
     }
     setModalOpen(false);
     setForm({ title: '', description: '', category_id: '', assigned_to: '' });
+    loadData();
+  }
+
+  async function addAssignee(requestId: string, userId: string) {
+    await supabase.from('request_assignees').insert({ request_id: requestId, user_id: userId });
+    loadData();
+  }
+
+  async function removeAssignee(requestId: string, userId: string) {
+    await supabase.from('request_assignees').delete().eq('request_id', requestId).eq('user_id', userId);
     loadData();
   }
 
@@ -130,7 +235,23 @@ export default function RequestsPage() {
           columns={[
             { header: t('requestTitle'), render: (r) => r.title },
             { header: t('requestCategory'), render: (r) => r.request_categories?.name || '-' },
-            { header: t('requestAssignedTo'), render: (r) => r.assignee?.name || '-' },
+            {
+              header: t('requestAssignedTo'),
+              render: (r) =>
+                canManageRequests ? (
+                  <AssigneesEditor
+                    requestId={r.id}
+                    assigned={assigneesByRequest[r.id] || []}
+                    allUsers={users}
+                    onAdd={addAssignee}
+                    onRemove={removeAssignee}
+                  />
+                ) : (
+                  <span className="text-xs text-slate-600">
+                    {(assigneesByRequest[r.id] || []).map((u) => u.name).join('، ') || '-'}
+                  </span>
+                ),
+            },
             {
               header: t('status'),
               render: (r) =>

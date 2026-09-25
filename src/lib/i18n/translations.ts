@@ -3,6 +3,7 @@
 
 export const translations = {
   ar: {
+  searchToAssign: 'بحث عن موظف لإضافته',
   editBooking: 'تعديل الحجز',
   emailOrPhonePlaceholder: 'البريد الإلكتروني أو رقم الهاتف',
   roomManagers: 'المسؤولون عن الموافقة',
@@ -183,6 +184,7 @@ userCreated: 'تم إنشاء المستخدم بنجاح',
     
   },
   en: {
+  searchToAssign: 'Search to add a staff member',
   editBooking: 'Edit Booking',
   emailOrPhonePlaceholder: 'Email or phone number',
   roomManagers: 'Room Approvers',
