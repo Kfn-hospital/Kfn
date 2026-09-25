@@ -2,14 +2,15 @@ import { NextResponse } from 'next/server';
 import { sendEmailVia } from '@/lib/email/sendEmail';
 
 export async function POST(request: Request) {
-  const { apiKey, from, to } = await request.json();
+  const { smtpLogin, smtpKey, from, to } = await request.json();
 
-  if (!apiKey || !to) {
+  if (!smtpLogin || !smtpKey || !to) {
     return NextResponse.json({ ok: false, error: 'بيانات ناقصة' }, { status: 400 });
   }
 
   const result = await sendEmailVia(
-    apiKey,
+    smtpLogin,
+    smtpKey,
     from,
     to,
     'رسالة اختبار من بوابة خورفكان الإدارية',

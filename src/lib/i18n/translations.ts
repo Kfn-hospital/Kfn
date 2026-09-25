@@ -5,7 +5,8 @@ export const translations = {
   ar: {
 
   emailSettingsTitle: 'إعدادات الإيميل',
-  brevoApiKeyLabel: 'مفتاح Brevo API',
+  brevoSmtpLoginLabel: 'بريد SMTP Login (من Brevo)',
+  brevoSmtpKeyLabel: 'مفتاح SMTP Key (من Brevo)',
   emailFromLabel: 'عنوان المرسل',
   testEmailRecipientLabel: 'بريد اختبار الإرسال',
   sendTestEmail: 'إرسال إيميل اختباري',
@@ -258,7 +259,8 @@ userCreated: 'تم إنشاء المستخدم بنجاح',
   en: {
 
   emailSettingsTitle: 'Email Settings',
-  brevoApiKeyLabel: 'Brevo API Key',
+  brevoSmtpLoginLabel: 'SMTP Login (from Brevo)',
+  brevoSmtpKeyLabel: 'SMTP Key (from Brevo)',
   emailFromLabel: 'From Address',
   testEmailRecipientLabel: 'Test Recipient Email',
   sendTestEmail: 'Send Test Email',

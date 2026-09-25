@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import nodemailer from 'nodemailer';
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -7,7 +8,8 @@ const supabaseAdmin = createClient(
 );
 
 interface EmailConfig {
-  apiKey: string;
+  smtpLogin: string;
+  smtpKey: string;
   from: string;
 }
 
@@ -25,21 +27,27 @@ export function parseSender(from: string): { name: string; email: string } {
 }
 
 async function getEmailConfig(): Promise<EmailConfig | null> {
-  // مفتاح Brevo مخزّن في app_secrets (جدول محمي، الأدمن بس) مش app_settings العام
+  // بيانات SMTP الخاصة بـ Brevo مخزّنة في app_secrets (جدول محمي، الأدمن بس)
   const [{ data: secretRows }, { data: settingRows }] = await Promise.all([
-    supabaseAdmin.from('app_secrets').select('key, value').eq('key', 'brevo_api_key'),
+    supabaseAdmin.from('app_secrets').select('key, value').in('key', ['brevo_smtp_login', 'brevo_smtp_key']),
     supabaseAdmin.from('app_settings').select('key, value').eq('key', 'email_from_address'),
   ]);
 
-  const apiKey = (secretRows?.[0]?.value as string | null) || '';
+  let smtpLogin = '';
+  let smtpKey = '';
+  (secretRows as { key: string; value: string | null }[] | null)?.forEach((row) => {
+    if (row.key === 'brevo_smtp_login' && row.value) smtpLogin = row.value;
+    if (row.key === 'brevo_smtp_key' && row.value) smtpKey = row.value;
+  });
   const from = (settingRows?.[0]?.value as string | null) || '';
 
-  if (!apiKey) return null;
-  return { apiKey, from: from || DEFAULT_FROM };
+  if (!smtpLogin || !smtpKey) return null;
+  return { smtpLogin, smtpKey, from: from || DEFAULT_FROM };
 }
 
 export async function sendEmailVia(
-  apiKey: string,
+  smtpLogin: string,
+  smtpKey: string,
   from: string,
   to: string,
   subject: string,
@@ -47,24 +55,20 @@ export async function sendEmailVia(
 ): Promise<{ ok: boolean; error?: string }> {
   const sender = parseSender(from || DEFAULT_FROM);
   try {
-    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
-      method: 'POST',
-      headers: {
-        'api-key': apiKey,
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
-      body: JSON.stringify({
-        sender,
-        to: [{ email: to }],
-        subject,
-        htmlContent: html,
-      }),
+    const transporter = nodemailer.createTransport({
+      host: 'smtp-relay.brevo.com',
+      port: 587,
+      secure: false,
+      auth: { user: smtpLogin, pass: smtpKey },
     });
-    const json = await res.json();
-    if (!res.ok) {
-      return { ok: false, error: json.message || 'فشل إرسال الإيميل' };
-    }
+
+    await transporter.sendMail({
+      from: `"${sender.name}" <${sender.email}>`,
+      to,
+      subject,
+      html,
+    });
+
     return { ok: true };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : String(err) };
@@ -79,7 +83,7 @@ export async function sendEmail(
   if (!to) return { ok: false, error: 'لا يوجد بريد إلكتروني للمستلم' };
 
   const config = await getEmailConfig();
-  if (!config) return { ok: false, error: 'لم يتم إعداد مفتاح خدمة الإيميل بعد' };
+  if (!config) return { ok: false, error: 'لم يتم إعداد بيانات SMTP الخاصة بالإيميل بعد' };
 
-  return sendEmailVia(config.apiKey, config.from, to, subject, html);
+  return sendEmailVia(config.smtpLogin, config.smtpKey, config.from, to, subject, html);
 }

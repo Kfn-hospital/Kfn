@@ -37,7 +37,8 @@ interface Settings {
   booking_color_rejected: string;
   booking_color_cancelled: string;
   sidebar_hover_color: string;
-  brevo_api_key: string;
+  brevo_smtp_login: string;
+  brevo_smtp_key: string;
   email_from_address: string;
 }
 
@@ -61,7 +62,8 @@ const DEFAULTS: Settings = {
   booking_color_rejected: DEFAULT_BOOKING_COLORS.rejected,
   booking_color_cancelled: DEFAULT_BOOKING_COLORS.cancelled,
   sidebar_hover_color: DEFAULT_SIDEBAR_HOVER,
-  brevo_api_key: '',
+  brevo_smtp_login: '',
+  brevo_smtp_key: '',
   email_from_address: '',
 };
 
@@ -225,7 +227,8 @@ export default function SettingsPage() {
         upsertSetting('booking_color_rejected', settings.booking_color_rejected),
         upsertSetting('booking_color_cancelled', settings.booking_color_cancelled),
         upsertSetting('sidebar_hover_color', settings.sidebar_hover_color),
-        upsertSecret('brevo_api_key', settings.brevo_api_key),
+        upsertSecret('brevo_smtp_login', settings.brevo_smtp_login),
+        upsertSecret('brevo_smtp_key', settings.brevo_smtp_key),
         upsertSetting('email_from_address', settings.email_from_address),
       ]);
 
@@ -291,7 +294,8 @@ export default function SettingsPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          apiKey: settings.brevo_api_key,
+          smtpLogin: settings.brevo_smtp_login,
+          smtpKey: settings.brevo_smtp_key,
           from: settings.email_from_address,
           to: testEmailRecipient,
         }),
@@ -607,12 +611,21 @@ export default function SettingsPage() {
       <Card>
         <h3 className="font-bold text-[var(--c-teal-900)] mb-3">📧 {t('emailSettingsTitle')}</h3>
         <FormField
-          label={t('brevoApiKeyLabel')}
-          type="password"
-          value={settings.brevo_api_key}
-          onChange={(v: string) => setSettings((s) => ({ ...s, brevo_api_key: v }))}
-          placeholder="xkeysib-..."
+          label={t('brevoSmtpLoginLabel')}
+          type="text"
+          value={settings.brevo_smtp_login}
+          onChange={(v: string) => setSettings((s) => ({ ...s, brevo_smtp_login: v }))}
+          placeholder="xxxxxx001@smtp-brevo.com"
         />
+        <div className="mt-3">
+          <FormField
+            label={t('brevoSmtpKeyLabel')}
+            type="password"
+            value={settings.brevo_smtp_key}
+            onChange={(v: string) => setSettings((s) => ({ ...s, brevo_smtp_key: v }))}
+            placeholder="xsmtpsib-..."
+          />
+        </div>
         <div className="mt-3">
           <FormField
             label={t('emailFromLabel')}
@@ -634,7 +647,7 @@ export default function SettingsPage() {
           </div>
           <button
             onClick={testEmail}
-            disabled={testingEmail || !settings.brevo_api_key || !testEmailRecipient}
+            disabled={testingEmail || !settings.brevo_smtp_login || !settings.brevo_smtp_key || !testEmailRecipient}
             className="bg-[var(--c-surface-muted)] text-[var(--c-text)] font-bold rounded-xl px-4 py-2 text-sm disabled:opacity-50"
             type="button"
           >
