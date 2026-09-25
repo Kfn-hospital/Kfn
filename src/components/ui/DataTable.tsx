@@ -15,11 +15,13 @@ export default function DataTable<T extends { id: string }>({
   rows,
   emptyMessage,
   pageSize = DEFAULT_PAGE_SIZE,
+  onRowClick,
 }: {
   columns: Column<T>[];
   rows: T[];
   emptyMessage: string;
   pageSize?: number;
+  onRowClick?: (row: T) => void;
 }) {
   const { t } = useLanguage();
   const [page, setPage] = useState(1);
@@ -52,7 +54,11 @@ export default function DataTable<T extends { id: string }>({
           </thead>
           <tbody>
             {pageRows.map((row) => (
-              <tr key={row.id} className="border-b last:border-0">
+              <tr
+                key={row.id}
+                onClick={onRowClick ? () => onRowClick(row) : undefined}
+                className={`border-b last:border-0 ${onRowClick ? 'cursor-pointer hover:bg-[var(--c-teal-50)] transition' : ''}`}
+              >
                 {columns.map((col, i) => (
                   <td key={i} className="p-2">
                     {col.render(row)}

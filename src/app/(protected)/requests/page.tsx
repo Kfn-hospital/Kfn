@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import Card from '@/components/ui/Card';
@@ -10,7 +11,6 @@ import Alert from '@/components/ui/Alert';
 import DataTable from '@/components/ui/DataTable';
 import type { CoordinationRequest, RequestCategory, Profile } from '@/types/database';
 
-const CAN_MANAGE_ROLES = ['admin', 'coordinator', 'coordination_admin'];
 const ASSIGNABLE_ROLES = ['admin', 'coordinator', 'coordination_admin'];
 const STATUS_KEYS = ['pending', 'in_progress', 'completed', 'rejected'] as const;
 
@@ -23,143 +23,6 @@ interface AssigneeRow {
 }
 
 type AssigneeItem = { user_id: string; status: string; note: string; profile: Profile };
-
-function NoteInput({
-  requestId,
-  userId,
-  defaultValue,
-  onCommit,
-  placeholder,
-}: {
-  requestId: string;
-  userId: string;
-  defaultValue: string;
-  onCommit: (requestId: string, userId: string, note: string) => void;
-  placeholder: string;
-}) {
-  return (
-    <input
-      key={`${requestId}-${userId}`}
-      type="text"
-      defaultValue={defaultValue}
-      onBlur={(e) => onCommit(requestId, userId, e.target.value)}
-      placeholder={placeholder}
-      className="w-full bg-transparent text-[10px] text-[var(--c-text-muted)] border-0 border-t border-[var(--c-teal-100)] focus:ring-0 px-0 pt-0.5 placeholder:text-[var(--c-teal-300)]"
-    />
-  );
-}
-
-function AssigneesEditor({
-  requestId,
-  assigned,
-  allUsers,
-  onAdd,
-  onRemove,
-  onStatusChange,
-  onNoteChange,
-}: {
-  requestId: string;
-  assigned: AssigneeItem[];
-  allUsers: Profile[];
-  onAdd: (requestId: string, userId: string) => void;
-  onRemove: (requestId: string, userId: string) => void;
-  onStatusChange: (requestId: string, userId: string, status: string) => void;
-  onNoteChange: (requestId: string, userId: string, note: string) => void;
-}) {
-  const { t } = useLanguage();
-  const [query, setQuery] = useState('');
-  const [open, setOpen] = useState(false);
-  const assignedIds = new Set(assigned.map((a) => a.user_id));
-  const q = query.trim().toLowerCase();
-  const results = allUsers.filter(
-    (u) => !assignedIds.has(u.id) && (!q || (u.name || '').toLowerCase().includes(q))
-  );
-
-  const statusLabel: Record<string, string> = {
-    pending: t('assigneeStatusPending'),
-    in_progress: t('assigneeStatusInProgress'),
-    completed: t('assigneeStatusCompleted'),
-  };
-  const statusColorClass: Record<string, string> = {
-    pending: 'text-amber-600',
-    in_progress: 'text-blue-600',
-    completed: 'text-green-600',
-  };
-
-  return (
-    <div className="min-w-[220px]">
-      <div className="flex flex-col gap-1 mb-1">
-        {assigned.map((a) => (
-          <div
-            key={a.user_id}
-            className="flex flex-col gap-0.5 bg-[var(--c-teal-50)] text-[var(--c-teal-700)] text-xs font-bold px-2 py-1 rounded-lg"
-          >
-            <div className="flex items-center justify-between gap-1">
-              <span className="truncate">{a.profile.name}</span>
-              <div className="flex items-center gap-1 shrink-0">
-                <select
-                  value={a.status}
-                  onChange={(e) => onStatusChange(requestId, a.user_id, e.target.value)}
-                  className={`bg-transparent text-[10px] font-bold border-0 focus:ring-0 p-0 ${statusColorClass[a.status] || ''}`}
-                >
-                  <option value="pending">{statusLabel.pending}</option>
-                  <option value="in_progress">{statusLabel.in_progress}</option>
-                  <option value="completed">{statusLabel.completed}</option>
-                </select>
-                <button
-                  type="button"
-                  onClick={() => onRemove(requestId, a.user_id)}
-                  className="text-[var(--c-teal-400)] hover:text-red-500"
-                >
-                  ×
-                </button>
-              </div>
-            </div>
-            <NoteInput
-              requestId={requestId}
-              userId={a.user_id}
-              defaultValue={a.note}
-              onCommit={onNoteChange}
-              placeholder={t('assigneeNotePlaceholder')}
-            />
-          </div>
-        ))}
-        {!assigned.length && <span className="text-xs text-[var(--c-text-muted)]">-</span>}
-      </div>
-      <div className="relative">
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onFocus={() => setOpen(true)}
-          onBlur={() => setTimeout(() => setOpen(false), 150)}
-          placeholder={t('searchToAssign')}
-          className="w-full border rounded-lg px-2 py-1 text-xs"
-        />
-        {open && (
-          <div className="absolute z-20 w-full border rounded-lg mt-1 bg-[var(--c-surface)] shadow-lg max-h-32 overflow-auto">
-            {results.map((u) => (
-              <button
-                key={u.id}
-                type="button"
-                onMouseDown={() => {
-                  onAdd(requestId, u.id);
-                  setQuery('');
-                  setOpen(false);
-                }}
-                className="block w-full text-right px-2 py-1 text-xs hover:bg-[var(--c-teal-50)]"
-              >
-                {u.name}
-              </button>
-            ))}
-            {!results.length && <div className="px-2 py-1 text-xs text-[var(--c-text-muted)]">-</div>}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
 
 function AssignedToCombobox({
   value,
@@ -227,8 +90,10 @@ function AssignedToCombobox({
     </div>
   );
 }
+
 export default function RequestsPage() {
   const supabase = createClient();
+  const router = useRouter();
   const { t, lang } = useLanguage();
 
   const [requests, setRequests] = useState<CoordinationRequest[]>([]);
@@ -236,11 +101,9 @@ export default function RequestsPage() {
   const [users, setUsers] = useState<Profile[]>([]);
   const [assigneesByRequest, setAssigneesByRequest] = useState<Record<string, AssigneeItem[]>>({});
   const [creatorsById, setCreatorsById] = useState<Record<string, Profile>>({});
-  const [myRole, setMyRole] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const [search, setSearch] = useState('');
   const [dateFrom, setDateFrom] = useState('');
@@ -300,21 +163,11 @@ export default function RequestsPage() {
       });
     });
     setAssigneesByRequest(grouped);
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (user) {
-      const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-      setMyRole(profile?.role ?? null);
-    }
   }
 
   useEffect(() => {
     loadData();
   }, []);
-
-  const canManageRequests = !!myRole && CAN_MANAGE_ROLES.includes(myRole);
 
   const preStatusFiltered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -351,6 +204,14 @@ export default function RequestsPage() {
     setDateTo('');
     setStatusFilter('');
     setCategoryFilter('');
+  }
+
+  function assigneeSummary(id: string): string {
+    const list = assigneesByRequest[id] || [];
+    if (!list.length) return '-';
+    const names = list.map((a) => a.profile.name);
+    if (names.length <= 2) return names.join('، ');
+    return `${names.slice(0, 2).join('، ')} +${names.length - 2}`;
   }
 
   async function handleAdd(e: React.FormEvent) {
@@ -395,79 +256,6 @@ export default function RequestsPage() {
 
     setModalOpen(false);
     setForm({ title: '', description: '', category_id: '', assigned_to: '' });
-    loadData();
-  }
-
-  async function addAssignee(requestId: string, userId: string) {
-    await supabase.from('request_assignees').insert({ request_id: requestId, user_id: userId });
-    loadData();
-  }
-
-  async function removeAssignee(requestId: string, userId: string) {
-    await supabase.from('request_assignees').delete().eq('request_id', requestId).eq('user_id', userId);
-    loadData();
-  }
-
-  async function updateAssigneeStatus(requestId: string, targetUserId: string, status: string) {
-    await supabase
-      .from('request_assignees')
-      .update({ status })
-      .eq('request_id', requestId)
-      .eq('user_id', targetUserId);
-    loadData();
-  }
-
-  async function updateAssigneeNote(requestId: string, targetUserId: string, note: string) {
-    setAssigneesByRequest((prev) => {
-      const list = prev[requestId];
-      if (!list) return prev;
-      return {
-        ...prev,
-        [requestId]: list.map((a) => (a.user_id === targetUserId ? { ...a, note } : a)),
-      };
-    });
-    await supabase
-      .from('request_assignees')
-      .update({ note: note || null })
-      .eq('request_id', requestId)
-      .eq('user_id', targetUserId);
-  }
-
-  async function updateStatus(id: string, status: string) {
-    if (!canManageRequests) return;
-    await supabase.from('requests').update({ status }).eq('id', id);
-    loadData();
-
-    if (status === 'completed') {
-      fetch('/api/requests/notify-completed', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ requestId: id }),
-      }).catch(() => {});
-    }
-  }
-
-  async function deleteRequest(id: string) {
-    if (myRole !== 'admin') return;
-    if (!window.confirm(t('confirmDeleteRequest'))) return;
-    setDeletingId(id);
-    const deletedTitle = requests.find((r) => r.id === id)?.title || id;
-    // نحذف صفوف المُعيَّنين المرتبطة بالطلب الأول احتياطًا لو مفيش cascade متظبط
-    await supabase.from('request_assignees').delete().eq('request_id', id);
-    const { error: delError } = await supabase.from('requests').delete().eq('id', id);
-    setDeletingId(null);
-    if (delError) {
-      setError(delError.message);
-      return;
-    }
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    await supabase.from('audit_log').insert({
-      action: 'request_deleted',
-      details: `تم حذف طلب: ${deletedTitle}`,
-      performed_by: user?.id ?? null,
-    });
     loadData();
   }
 
@@ -577,8 +365,9 @@ export default function RequestsPage() {
         <DataTable
           emptyMessage={hasActiveFilters ? t('noFilteredResults') : t('noData')}
           rows={filteredRequests}
+          onRowClick={(r) => router.push(`/requests/${r.id}`)}
           columns={[
-            { header: t('requestTitle'), render: (r) => r.title },
+            { header: t('requestTitle'), render: (r) => <span className="font-bold">{r.title}</span> },
             {
               header: t('requestDate'),
               render: (r) => new Date(r.created_at).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US'),
@@ -590,79 +379,20 @@ export default function RequestsPage() {
             { header: t('requestCategory'), render: (r) => r.request_categories?.name || '-' },
             {
               header: t('requestAssignedTo'),
-              render: (r) =>
-                canManageRequests ? (
-                  <AssigneesEditor
-                    requestId={r.id}
-                    assigned={assigneesByRequest[r.id] || []}
-                    allUsers={users}
-                    onAdd={addAssignee}
-                    onRemove={removeAssignee}
-                    onStatusChange={updateAssigneeStatus}
-                    onNoteChange={updateAssigneeNote}
-                  />
-                ) : (
-                  <div className="flex flex-col gap-1">
-                    {(assigneesByRequest[r.id] || []).map((a) => (
-                      <div key={a.user_id} className="text-xs text-[var(--c-text)]">
-                        <span className="font-bold">{a.profile.name}</span>
-                        {a.note && <span className="block text-[10px] text-[var(--c-text-muted)]">{a.note}</span>}
-                      </div>
-                    ))}
-                    {!(assigneesByRequest[r.id] || []).length && <span className="text-xs text-[var(--c-text-muted)]">-</span>}
-                  </div>
-                ),
+              render: (r) => <span className="text-sm">{assigneeSummary(r.id)}</span>,
             },
             {
               header: t('status'),
               render: (r) => (
-                <div className="flex items-center gap-2 flex-wrap">
-                  {canManageRequests ? (
-                    <select
-                      value={r.status}
-                      onChange={(e) => updateStatus(r.id, e.target.value)}
-                      className={`px-2 py-1 rounded-full text-xs font-bold border-0 ${statusColor[r.status]}`}
-                    >
-                      {Object.entries(statusLabel).map(([val, label]) => (
-                        <option key={val} value={val}>
-                          {label}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <span className={`px-2 py-1 rounded-full text-xs font-bold ${statusColor[r.status]}`}>
-                      {statusLabel[r.status]}
-                    </span>
-                  )}
-                  {canManageRequests && r.status !== 'completed' && (
-                    <button
-                      type="button"
-                      onClick={() => updateStatus(r.id, 'completed')}
-                      className="text-green-600 text-xs font-bold hover:underline whitespace-nowrap"
-                    >
-                      ✓ {t('markFullyCompleted')}
-                    </button>
-                  )}
-                </div>
+                <span className={`px-2 py-1 rounded-full text-xs font-bold ${statusColor[r.status]}`}>
+                  {statusLabel[r.status]}
+                </span>
               ),
             },
-            ...(myRole === 'admin'
-              ? [
-                  {
-                    header: t('actions'),
-                    render: (r: CoordinationRequest) => (
-                      <button
-                        type="button"
-                        onClick={() => deleteRequest(r.id)}
-                        disabled={deletingId === r.id}
-                        className="text-red-500 text-xs font-bold hover:underline disabled:opacity-50 whitespace-nowrap"
-                      >
-                        🗑️ {t('delete')}
-                      </button>
-                    ),
-                  },
-                ]
-              : []),
+            {
+              header: '',
+              render: () => <span className="text-[var(--c-teal-400)]">{lang === 'ar' ? '‹' : '›'}</span>,
+            },
           ]}
         />
       </Card>
