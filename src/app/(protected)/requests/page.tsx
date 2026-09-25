@@ -68,12 +68,12 @@ function AssigneesEditor({
 }) {
   const { t } = useLanguage();
   const [query, setQuery] = useState('');
+  const [open, setOpen] = useState(false);
   const assignedIds = new Set(assigned.map((a) => a.user_id));
-  const results = query.trim()
-    ? allUsers.filter(
-        (u) => !assignedIds.has(u.id) && (u.name || '').toLowerCase().includes(query.trim().toLowerCase())
-      )
-    : [];
+  const q = query.trim().toLowerCase();
+  const results = allUsers.filter(
+    (u) => !assignedIds.has(u.id) && (!q || (u.name || '').toLowerCase().includes(q))
+  );
 
   const statusLabel: Record<string, string> = {
     pending: t('assigneeStatusPending'),
@@ -126,30 +126,36 @@ function AssigneesEditor({
         ))}
         {!assigned.length && <span className="text-xs text-[var(--c-text-muted)]">-</span>}
       </div>
-      <input
-        type="text"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder={t('searchToAssign')}
-        className="w-full border rounded-lg px-2 py-1 text-xs"
-      />
-      {results.length > 0 && (
-        <div className="border rounded-lg mt-1 bg-[var(--c-surface)] shadow-sm max-h-32 overflow-auto z-10 relative">
-          {results.map((u) => (
-            <button
-              key={u.id}
-              type="button"
-              onClick={() => {
-                onAdd(requestId, u.id);
-                setQuery('');
-              }}
-              className="block w-full text-right px-2 py-1 text-xs hover:bg-[var(--c-teal-50)]"
-            >
-              {u.name}
-            </button>
-          ))}
-        </div>
-      )}
+      <div className="relative">
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onFocus={() => setOpen(true)}
+          onBlur={() => setTimeout(() => setOpen(false), 150)}
+          placeholder={t('searchToAssign')}
+          className="w-full border rounded-lg px-2 py-1 text-xs"
+        />
+        {open && (
+          <div className="absolute z-20 w-full border rounded-lg mt-1 bg-[var(--c-surface)] shadow-lg max-h-32 overflow-auto">
+            {results.map((u) => (
+              <button
+                key={u.id}
+                type="button"
+                onMouseDown={() => {
+                  onAdd(requestId, u.id);
+                  setQuery('');
+                  setOpen(false);
+                }}
+                className="block w-full text-right px-2 py-1 text-xs hover:bg-[var(--c-teal-50)]"
+              >
+                {u.name}
+              </button>
+            ))}
+            {!results.length && <div className="px-2 py-1 text-xs text-[var(--c-text-muted)]">-</div>}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
