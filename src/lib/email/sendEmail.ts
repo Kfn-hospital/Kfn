@@ -25,17 +25,14 @@ export function parseSender(from: string): { name: string; email: string } {
 }
 
 async function getEmailConfig(): Promise<EmailConfig | null> {
-  const { data } = await supabaseAdmin
-    .from('app_settings')
-    .select('key, value')
-    .in('key', ['brevo_api_key', 'email_from_address']);
+  // مفتاح Brevo مخزّن في app_secrets (جدول محمي، الأدمن بس) مش app_settings العام
+  const [{ data: secretRows }, { data: settingRows }] = await Promise.all([
+    supabaseAdmin.from('app_secrets').select('key, value').eq('key', 'brevo_api_key'),
+    supabaseAdmin.from('app_settings').select('key, value').eq('key', 'email_from_address'),
+  ]);
 
-  let apiKey = '';
-  let from = '';
-  (data as { key: string; value: string | null }[] | null)?.forEach((row) => {
-    if (row.key === 'brevo_api_key' && row.value) apiKey = row.value;
-    if (row.key === 'email_from_address' && row.value) from = row.value;
-  });
+  const apiKey = (secretRows?.[0]?.value as string | null) || '';
+  const from = (settingRows?.[0]?.value as string | null) || '';
 
   if (!apiKey) return null;
   return { apiKey, from: from || DEFAULT_FROM };

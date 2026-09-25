@@ -1,11 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import Card from '@/components/ui/Card';
 import FormField from '@/components/ui/FormField';
 import Alert from '@/components/ui/Alert';
+import type { RequestCategory } from '@/types/database';
 import {
   applyTheme,
   DEFAULT_THEME,
@@ -65,36 +67,112 @@ const DEFAULTS: Settings = {
 
 export default function SettingsPage() {
   const { t } = useLanguage();
+  const router = useRouter();
   const supabase = createClient();
 
   const [settings, setSettings] = useState<Settings>(DEFAULTS);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [assistantIconFile, setAssistantIconFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authorized, setAuthorized] = useState(false);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testEmailRecipient, setTestEmailRecipient] = useState('');
   const [testingEmail, setTestingEmail] = useState(false);
   const [lastEmailError, setLastEmailError] = useState('');
+  const [categories, setCategories] = useState<RequestCategory[]>([]);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCategoryDept, setNewCategoryDept] = useState('');
+  const [savingCategory, setSavingCategory] = useState(false);
+  const [categoryError, setCategoryError] = useState('');
   const [alert, setAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase.from('app_settings').select('key, value');
-      if (data) {
-        const merged = { ...DEFAULTS };
-        data.forEach((row: { key: string; value: unknown }) => {
-          if (row.key in merged && row.value) (merged as Record<string, unknown>)[row.key] = row.value;
-          if (row.key === 'last_email_error' && row.value) setLastEmailError(String(row.value));
-        });
-        setSettings(merged);
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        router.push('/login');
+        return;
       }
+      const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+      if (profile?.role !== 'admin') {
+        router.push('/dashboard');
+        return;
+      }
+      setAuthorized(true);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!authorized) return;
+    (async () => {
+      const [{ data }, { data: secrets }] = await Promise.all([
+        supabase.from('app_settings').select('key, value'),
+        supabase.from('app_secrets').select('key, value'),
+      ]);
+      const merged = { ...DEFAULTS };
+      data?.forEach((row: { key: string; value: unknown }) => {
+        if (row.key in merged && row.value) (merged as Record<string, unknown>)[row.key] = row.value;
+        if (row.key === 'last_email_error' && row.value) setLastEmailError(String(row.value));
+      });
+      // مفاتيح Gemini و Brevo السرية جاية من جدول app_secrets المحمي (أدمن بس)
+      secrets?.forEach((row: { key: string; value: unknown }) => {
+        if (row.key in merged && row.value) (merged as Record<string, unknown>)[row.key] = row.value;
+      });
+      setSettings(merged);
       setLoading(false);
     })();
-  }, [supabase]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authorized]);
+
+  async function loadCategories() {
+    const { data } = await supabase.from('request_categories').select('*').order('name');
+    setCategories((data as RequestCategory[]) || []);
+  }
+
+  useEffect(() => {
+    if (authorized) loadCategories();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authorized]);
+
+  async function addCategory() {
+    if (!newCategoryName.trim()) return;
+    setSavingCategory(true);
+    setCategoryError('');
+    const { error } = await supabase
+      .from('request_categories')
+      .insert({ name: newCategoryName.trim(), department: newCategoryDept.trim() || null });
+    setSavingCategory(false);
+    if (error) {
+      setCategoryError(error.message);
+      return;
+    }
+    setNewCategoryName('');
+    setNewCategoryDept('');
+    loadCategories();
+  }
+
+  async function deleteCategory(id: string) {
+    if (!window.confirm(t('categoryDeleteConfirm'))) return;
+    setCategoryError('');
+    const { error } = await supabase.from('request_categories').delete().eq('id', id);
+    if (error) {
+      setCategoryError(t('categoryInUseError'));
+      return;
+    }
+    loadCategories();
+  }
 
   const upsertSetting = async (key: string, value: unknown) => {
     const { error } = await supabase.from('app_settings').upsert({ key, value });
+    if (error) throw error;
+  };
+
+  const upsertSecret = async (key: string, value: unknown) => {
+    const { error } = await supabase.from('app_secrets').upsert({ key, value });
     if (error) throw error;
   };
 
@@ -131,7 +209,7 @@ export default function SettingsPage() {
         upsertSetting('logo_url', logoUrl),
         upsertSetting('ai_assistant_name', settings.ai_assistant_name),
         upsertSetting('ai_instructions', settings.ai_instructions),
-        upsertSetting('gemini_api_key', settings.gemini_api_key),
+        upsertSecret('gemini_api_key', settings.gemini_api_key),
         upsertSetting('voice_recording_link', settings.voice_recording_link),
         upsertSetting('theme_primary', settings.theme_primary),
         upsertSetting('theme_text', settings.theme_text),
@@ -147,7 +225,7 @@ export default function SettingsPage() {
         upsertSetting('booking_color_rejected', settings.booking_color_rejected),
         upsertSetting('booking_color_cancelled', settings.booking_color_cancelled),
         upsertSetting('sidebar_hover_color', settings.sidebar_hover_color),
-        upsertSetting('brevo_api_key', settings.brevo_api_key),
+        upsertSecret('brevo_api_key', settings.brevo_api_key),
         upsertSetting('email_from_address', settings.email_from_address),
       ]);
 
@@ -235,6 +313,7 @@ export default function SettingsPage() {
   const assistantUrl = `${portalUrl}/assistant`;
   const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(assistantUrl)}`;
 
+  if (!authorized) return null;
   if (loading) return <p className="text-[var(--c-text-muted)]">{t('loading')}</p>;
 
   return (
@@ -464,6 +543,65 @@ export default function SettingsPage() {
           onChange={(v: string) => setSettings((s) => ({ ...s, voice_recording_link: v }))}
           placeholder="https://..."
         />
+      </Card>
+
+      <Card>
+        <h3 className="font-bold text-[var(--c-teal-900)] mb-3">🏷️ {t('categoriesTitle')}</h3>
+        <div className="space-y-2 mb-4">
+          {categories.length === 0 ? (
+            <p className="text-sm text-[var(--c-text-muted)]">{t('noCategories')}</p>
+          ) : (
+            categories.map((c) => (
+              <div
+                key={c.id}
+                className="flex items-center justify-between bg-[var(--c-surface-muted)] rounded-lg px-3 py-2"
+              >
+                <div>
+                  <span className="text-sm font-bold text-[var(--c-text)]">{c.name}</span>
+                  {c.department && (
+                    <span className="text-xs text-[var(--c-text-muted)] mr-2">— {c.department}</span>
+                  )}
+                </div>
+                <button
+                  onClick={() => deleteCategory(c.id)}
+                  className="text-red-500 text-xs font-bold hover:underline"
+                  type="button"
+                >
+                  🗑️ {t('delete')}
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+        <Alert type="error" message={categoryError} />
+        <div className="flex items-end gap-3 flex-wrap mt-2">
+          <div className="flex-1 min-w-[160px]">
+            <FormField
+              label={t('categoryName')}
+              type="text"
+              value={newCategoryName}
+              onChange={setNewCategoryName}
+              placeholder={t('categoryName')}
+            />
+          </div>
+          <div className="flex-1 min-w-[160px]">
+            <FormField
+              label={t('userDepartment')}
+              type="text"
+              value={newCategoryDept}
+              onChange={setNewCategoryDept}
+              placeholder={t('userDepartment')}
+            />
+          </div>
+          <button
+            onClick={addCategory}
+            disabled={savingCategory || !newCategoryName.trim()}
+            className="bg-[var(--c-teal-700)] text-white font-bold rounded-xl px-4 py-2 text-sm disabled:opacity-50"
+            type="button"
+          >
+            {savingCategory ? t('loading') : t('addCategory')}
+          </button>
+        </div>
       </Card>
 
       <Card>

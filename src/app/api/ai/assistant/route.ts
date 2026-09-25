@@ -77,13 +77,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: 'بيانات ناقصة' }, { status: 400 });
   }
 
-  const [{ data: settingsRows }, { data: rooms }, { data: categories }] = await Promise.all([
-    supabaseAdmin.from('app_settings').select('key, value').eq('key', 'gemini_api_key'),
+  const [{ data: secretRows }, { data: rooms }, { data: categories }] = await Promise.all([
+    supabaseAdmin.from('app_secrets').select('key, value').eq('key', 'gemini_api_key'),
     supabaseAdmin.from('rooms').select('id, name, name_en').eq('status', 'active'),
     supabaseAdmin.from('request_categories').select('id, name'),
   ]);
 
-  const geminiKey = settingsRows?.[0]?.value as string | undefined;
+  const geminiKey = secretRows?.[0]?.value as string | undefined;
   if (!geminiKey) {
     return NextResponse.json({
       ok: false,

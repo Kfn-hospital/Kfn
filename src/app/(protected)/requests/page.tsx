@@ -155,7 +155,7 @@ function AssigneesEditor({
 
 export default function RequestsPage() {
   const supabase = createClient();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
 
   const [requests, setRequests] = useState<CoordinationRequest[]>([]);
   const [categories, setCategories] = useState<RequestCategory[]>([]);
@@ -360,6 +360,10 @@ export default function RequestsPage() {
           rows={requests}
           columns={[
             { header: t('requestTitle'), render: (r) => r.title },
+            {
+              header: t('requestDate'),
+              render: (r) => new Date(r.created_at).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US'),
+            },
             {
               header: t('requestCreatedBy'),
               render: (r) => creatorsById[r.created_by]?.name || creatorsById[r.created_by]?.email || '-',
