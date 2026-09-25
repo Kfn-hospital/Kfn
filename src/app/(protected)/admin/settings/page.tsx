@@ -35,7 +35,7 @@ interface Settings {
   booking_color_rejected: string;
   booking_color_cancelled: string;
   sidebar_hover_color: string;
-  resend_api_key: string;
+  brevo_api_key: string;
   email_from_address: string;
 }
 
@@ -59,7 +59,7 @@ const DEFAULTS: Settings = {
   booking_color_rejected: DEFAULT_BOOKING_COLORS.rejected,
   booking_color_cancelled: DEFAULT_BOOKING_COLORS.cancelled,
   sidebar_hover_color: DEFAULT_SIDEBAR_HOVER,
-  resend_api_key: '',
+  brevo_api_key: '',
   email_from_address: '',
 };
 
@@ -145,7 +145,7 @@ export default function SettingsPage() {
         upsertSetting('booking_color_rejected', settings.booking_color_rejected),
         upsertSetting('booking_color_cancelled', settings.booking_color_cancelled),
         upsertSetting('sidebar_hover_color', settings.sidebar_hover_color),
-        upsertSetting('resend_api_key', settings.resend_api_key),
+        upsertSetting('brevo_api_key', settings.brevo_api_key),
         upsertSetting('email_from_address', settings.email_from_address),
       ]);
 
@@ -211,7 +211,7 @@ export default function SettingsPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          apiKey: settings.resend_api_key,
+          apiKey: settings.brevo_api_key,
           from: settings.email_from_address,
           to: testEmailRecipient,
         }),
@@ -467,11 +467,11 @@ export default function SettingsPage() {
       <Card>
         <h3 className="font-bold text-[var(--c-teal-900)] mb-3">📧 {t('emailSettingsTitle')}</h3>
         <FormField
-          label={t('resendApiKeyLabel')}
+          label={t('brevoApiKeyLabel')}
           type="password"
-          value={settings.resend_api_key}
-          onChange={(v: string) => setSettings((s) => ({ ...s, resend_api_key: v }))}
-          placeholder="re_..."
+          value={settings.brevo_api_key}
+          onChange={(v: string) => setSettings((s) => ({ ...s, brevo_api_key: v }))}
+          placeholder="xkeysib-..."
         />
         <div className="mt-3">
           <FormField
@@ -479,7 +479,7 @@ export default function SettingsPage() {
             type="text"
             value={settings.email_from_address}
             onChange={(v: string) => setSettings((s) => ({ ...s, email_from_address: v }))}
-            placeholder="Khorfakkan Portal <onboarding@resend.dev>"
+            placeholder="بوابة خورفكان الإدارية <no-reply@yourdomain.com>"
           />
         </div>
         <div className="mt-3 flex items-end gap-3 flex-wrap">
@@ -494,7 +494,7 @@ export default function SettingsPage() {
           </div>
           <button
             onClick={testEmail}
-            disabled={testingEmail || !settings.resend_api_key || !testEmailRecipient}
+            disabled={testingEmail || !settings.brevo_api_key || !testEmailRecipient}
             className="bg-[var(--c-surface-muted)] text-[var(--c-text)] font-bold rounded-xl px-4 py-2 text-sm disabled:opacity-50"
             type="button"
           >

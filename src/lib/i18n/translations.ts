@@ -5,11 +5,11 @@ export const translations = {
   ar: {
 
   emailSettingsTitle: 'إعدادات الإيميل',
-  resendApiKeyLabel: 'مفتاح Resend API',
+  brevoApiKeyLabel: 'مفتاح Brevo API',
   emailFromLabel: 'عنوان المرسل',
   testEmailRecipientLabel: 'بريد اختبار الإرسال',
   sendTestEmail: 'إرسال إيميل اختباري',
-  emailDomainNote: 'ملحوظة: بدون توثيق نطاق في حساب Resend، هيقدر يرسل بس لبريدك المسجل في Resend نفسه.',
+  emailDomainNote: 'ملحوظة: لازم يكون بريد المرسل (أو النطاق) موثّق داخل حساب Brevo عشان الإرسال يشتغل لأي مستلم.',
   requestCreatedBy: 'أنشأه',
   analyzingVoice: 'جارِ تحليل الرسالة الصوتية...',
   voiceProcessError: 'تعذر تحليل الرسالة الصوتية، جرّب تسجّلها تاني بصوت أوضح',
@@ -246,11 +246,11 @@ userCreated: 'تم إنشاء المستخدم بنجاح',
   en: {
 
   emailSettingsTitle: 'Email Settings',
-  resendApiKeyLabel: 'Resend API Key',
+  brevoApiKeyLabel: 'Brevo API Key',
   emailFromLabel: 'From Address',
   testEmailRecipientLabel: 'Test Recipient Email',
   sendTestEmail: 'Send Test Email',
-  emailDomainNote: 'Note: without a verified domain in your Resend account, it can only send to your own Resend account email.',
+  emailDomainNote: 'Note: the sender email (or domain) must be verified in your Brevo account for sending to work for any recipient.',
   requestCreatedBy: 'Created By',
   analyzingVoice: 'Analyzing voice message...',
   voiceProcessError: 'Could not analyze the voice message, try recording again more clearly',
