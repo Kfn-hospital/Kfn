@@ -6,6 +6,7 @@ import { useLanguage } from '@/lib/i18n/LanguageContext';
 import Card from '@/components/ui/Card';
 import FormField from '@/components/ui/FormField';
 import Alert from '@/components/ui/Alert';
+import { applyTheme, DEFAULT_THEME } from '@/lib/theme/colorUtils';
 
 interface Settings {
   logo_url: string;
@@ -13,6 +14,9 @@ interface Settings {
   ai_instructions: string;
   gemini_api_key: string;
   voice_recording_link: string;
+  theme_primary: string;
+  theme_text: string;
+  theme_background: string;
 }
 
 const DEFAULTS: Settings = {
@@ -21,6 +25,9 @@ const DEFAULTS: Settings = {
   ai_instructions: '',
   gemini_api_key: '',
   voice_recording_link: '',
+  theme_primary: DEFAULT_THEME.primary,
+  theme_text: DEFAULT_THEME.text,
+  theme_background: DEFAULT_THEME.background,
 };
 
 export default function SettingsPage() {
@@ -40,7 +47,7 @@ export default function SettingsPage() {
       if (data) {
         const merged = { ...DEFAULTS };
         data.forEach((row: { key: string; value: unknown }) => {
-          if (row.key in merged) (merged as Record<string, unknown>)[row.key] = row.value;
+          if (row.key in merged && row.value) (merged as Record<string, unknown>)[row.key] = row.value;
         });
         setSettings(merged);
       }
@@ -52,6 +59,8 @@ export default function SettingsPage() {
     const { error } = await supabase.from('app_settings').upsert({ key, value });
     if (error) throw error;
   };
+
+  const previewTheme = (p: string, tC: string, b: string) => applyTheme(p, tC, b);
 
   const handleSave = async () => {
     setSaving(true);
@@ -75,15 +84,29 @@ export default function SettingsPage() {
         upsertSetting('ai_instructions', settings.ai_instructions),
         upsertSetting('gemini_api_key', settings.gemini_api_key),
         upsertSetting('voice_recording_link', settings.voice_recording_link),
+        upsertSetting('theme_primary', settings.theme_primary),
+        upsertSetting('theme_text', settings.theme_text),
+        upsertSetting('theme_background', settings.theme_background),
       ]);
 
       setSettings((s) => ({ ...s, logo_url: logoUrl }));
+      applyTheme(settings.theme_primary, settings.theme_text, settings.theme_background);
       setAlert({ type: 'success', message: t('saveSuccess') });
     } catch (err) {
       setAlert({ type: 'error', message: err instanceof Error ? err.message : String(err) });
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleResetColors = () => {
+    setSettings((s) => ({
+      ...s,
+      theme_primary: DEFAULT_THEME.primary,
+      theme_text: DEFAULT_THEME.text,
+      theme_background: DEFAULT_THEME.background,
+    }));
+    previewTheme(DEFAULT_THEME.primary, DEFAULT_THEME.text, DEFAULT_THEME.background);
   };
 
   const testGemini = async () => {
@@ -121,6 +144,64 @@ export default function SettingsPage() {
       </div>
 
       {alert && <Alert type={alert.type} message={alert.message} />}
+
+      <Card>
+        <h3 className="font-bold text-[var(--c-teal-900)] mb-3">🎨 {t('siteColors')}</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-bold text-slate-600 mb-1">{t('primaryColor')}</label>
+            <div className="flex items-center gap-3">
+              <input
+                type="color"
+                value={settings.theme_primary}
+                onChange={(e) => {
+                  setSettings((s) => ({ ...s, theme_primary: e.target.value }));
+                  previewTheme(e.target.value, settings.theme_text, settings.theme_background);
+                }}
+                className="w-12 h-10 rounded border cursor-pointer"
+              />
+              <span className="text-xs text-slate-500">{settings.theme_primary}</span>
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-slate-600 mb-1">{t('textColor')}</label>
+            <div className="flex items-center gap-3">
+              <input
+                type="color"
+                value={settings.theme_text}
+                onChange={(e) => {
+                  setSettings((s) => ({ ...s, theme_text: e.target.value }));
+                  previewTheme(settings.theme_primary, e.target.value, settings.theme_background);
+                }}
+                className="w-12 h-10 rounded border cursor-pointer"
+              />
+              <span className="text-xs text-slate-500">{settings.theme_text}</span>
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-slate-600 mb-1">{t('backgroundColor')}</label>
+            <div className="flex items-center gap-3">
+              <input
+                type="color"
+                value={settings.theme_background}
+                onChange={(e) => {
+                  setSettings((s) => ({ ...s, theme_background: e.target.value }));
+                  previewTheme(settings.theme_primary, settings.theme_text, e.target.value);
+                }}
+                className="w-12 h-10 rounded border cursor-pointer"
+              />
+              <span className="text-xs text-slate-500">{settings.theme_background}</span>
+            </div>
+          </div>
+        </div>
+        <button
+          onClick={handleResetColors}
+          className="mt-3 text-xs font-bold text-slate-500 hover:underline"
+          type="button"
+        >
+          {t('resetDefaultColors')}
+        </button>
+      </Card>
 
       <Card>
         <h3 className="font-bold text-[var(--c-teal-900)] mb-3">{t('logoUpload')}</h3>

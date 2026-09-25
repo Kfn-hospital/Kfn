@@ -3,6 +3,16 @@
 
 export const translations = {
   ar: {
+  siteColors: 'ألوان الموقع',
+  primaryColor: 'اللون الرئيسي',
+  textColor: 'لون العناوين',
+  backgroundColor: 'لون الخلفية',
+  resetDefaultColors: 'استعادة الألوان الافتراضية',
+  appearanceTitle: 'مظهر حسابي',
+  appearanceSubtitle: 'خصّص ألوان الموقع اللي تظهر لك بس، مستقلة عن باقي المستخدمين',
+  appearanceSaved: 'تم حفظ تفضيلات الألوان',
+  appearanceReset: 'تم الرجوع لألوان الموقع الافتراضية',
+  useSiteDefault: 'استخدام ألوان الموقع الافتراضية',
   assigneeStatusPending: 'قيد الانتظار',
   assigneeStatusInProgress: 'جاري العمل',
   assigneeStatusCompleted: 'مكتمل',
@@ -188,6 +198,16 @@ userCreated: 'تم إنشاء المستخدم بنجاح',
     
   },
   en: {
+  siteColors: 'Site Colors',
+  primaryColor: 'Primary Color',
+  textColor: 'Heading Text Color',
+  backgroundColor: 'Background Color',
+  resetDefaultColors: 'Reset to Default Colors',
+  appearanceTitle: 'My Appearance',
+  appearanceSubtitle: 'Customize the site colors just for you, independent of other users',
+  appearanceSaved: 'Color preferences saved',
+  appearanceReset: 'Reverted to the default site colors',
+  useSiteDefault: 'Use Site Default Colors',
   assigneeStatusPending: 'Pending',
   assigneeStatusInProgress: 'In Progress',
   assigneeStatusCompleted: 'Completed',
