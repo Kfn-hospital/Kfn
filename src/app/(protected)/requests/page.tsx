@@ -63,7 +63,7 @@ function AssigneesEditor({
         {assigned.map((a) => (
           <div
             key={a.user_id}
-            className="flex items-center justify-between gap-1 bg-teal-50 text-teal-700 text-xs font-bold px-2 py-1 rounded-lg"
+            className="flex items-center justify-between gap-1 bg-[var(--c-teal-50)] text-[var(--c-teal-700)] text-xs font-bold px-2 py-1 rounded-lg"
           >
             <span className="truncate">{a.profile.name}</span>
             <div className="flex items-center gap-1 shrink-0">
@@ -79,7 +79,7 @@ function AssigneesEditor({
               <button
                 type="button"
                 onClick={() => onRemove(requestId, a.user_id)}
-                className="text-teal-400 hover:text-red-500"
+                className="text-[var(--c-teal-400)] hover:text-red-500"
               >
                 ×
               </button>
@@ -105,7 +105,7 @@ function AssigneesEditor({
                 onAdd(requestId, u.id);
                 setQuery('');
               }}
-              className="block w-full text-right px-2 py-1 text-xs hover:bg-teal-50"
+              className="block w-full text-right px-2 py-1 text-xs hover:bg-[var(--c-teal-50)]"
             >
               {u.name}
             </button>
@@ -256,10 +256,10 @@ export default function RequestsPage() {
   return (
     <main className="p-6">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-extrabold text-teal-900">{t('requestsTitle')}</h1>
+        <h1 className="text-2xl font-extrabold text-[var(--c-teal-900)]">{t('requestsTitle')}</h1>
         <button
           onClick={() => setModalOpen(true)}
-          className="bg-teal-700 text-white rounded-xl px-5 py-2.5 font-bold"
+          className="bg-[var(--c-teal-700)] text-white rounded-xl px-5 py-2.5 font-bold"
         >
           {t('newRequest')}
         </button>
@@ -379,7 +379,7 @@ export default function RequestsPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-teal-700 text-white rounded-xl py-3 font-bold disabled:opacity-50"
+            className="w-full bg-[var(--c-teal-700)] text-white rounded-xl py-3 font-bold disabled:opacity-50"
           >
             {loading ? t('saving') : t('save')}
           </button>

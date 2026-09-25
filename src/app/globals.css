@@ -9,3 +9,16 @@ html {
 body {
   font-family: 'Tajawal', system-ui, sans-serif;
 }
+
+:root {
+  --c-teal-50: #f0fdfa;
+  --c-teal-100: #ccfbf1;
+  --c-teal-300: #5eead4;
+  --c-teal-400: #2dd4bf;
+  --c-teal-500: #14b8a6;
+  --c-teal-600: #0d9488;
+  --c-teal-700: #0f766e;
+  --c-teal-800: #115e59;
+  --c-teal-900: #134e4a;
+  --c-bg: #f8fafc;
+}

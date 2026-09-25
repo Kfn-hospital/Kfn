@@ -112,12 +112,12 @@ export default function ReportsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-extrabold text-teal-900">📊 {t('reportsTitle')}</h1>
+          <h1 className="text-2xl font-extrabold text-[var(--c-teal-900)]">📊 {t('reportsTitle')}</h1>
           <p className="text-slate-500">{t('reportsSubtitle')}</p>
         </div>
         <button
           onClick={exportCsv}
-          className="bg-teal-700 text-white font-bold rounded-xl px-4 py-2"
+          className="bg-[var(--c-teal-700)] text-white font-bold rounded-xl px-4 py-2"
         >
           ⬇ {t('exportCsv')}
         </button>
@@ -134,7 +134,7 @@ export default function ReportsPage() {
 
       <div className="grid md:grid-cols-2 gap-4">
         <Card>
-          <h3 className="font-bold text-teal-900 mb-3">{t('bookingsByMonth')}</h3>
+          <h3 className="font-bold text-[var(--c-teal-900)] mb-3">{t('bookingsByMonth')}</h3>
           <ResponsiveContainer width="100%" height={260}>
             <LineChart data={monthlyTrend}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -147,7 +147,7 @@ export default function ReportsPage() {
         </Card>
 
         <Card>
-          <h3 className="font-bold text-teal-900 mb-3">{t('topRooms')}</h3>
+          <h3 className="font-bold text-[var(--c-teal-900)] mb-3">{t('topRooms')}</h3>
           <ResponsiveContainer width="100%" height={260}>
             <BarChart data={topRooms} layout="vertical">
               <CartesianGrid strokeDasharray="3 3" />
@@ -160,7 +160,7 @@ export default function ReportsPage() {
         </Card>
 
         <Card>
-          <h3 className="font-bold text-teal-900 mb-3">{t('requestsByCategory')}</h3>
+          <h3 className="font-bold text-[var(--c-teal-900)] mb-3">{t('requestsByCategory')}</h3>
           <ResponsiveContainer width="100%" height={260}>
             <PieChart>
               <Pie data={requestsByCategory} dataKey="value" nameKey="name" outerRadius={90} label>
@@ -173,7 +173,7 @@ export default function ReportsPage() {
         </Card>
 
         <Card>
-          <h3 className="font-bold text-teal-900 mb-3">{t('bookingStatusBreakdown')}</h3>
+          <h3 className="font-bold text-[var(--c-teal-900)] mb-3">{t('bookingStatusBreakdown')}</h3>
           <ResponsiveContainer width="100%" height={260}>
             <PieChart>
               <Pie data={statusCounts} dataKey="value" nameKey="name" outerRadius={90} label>

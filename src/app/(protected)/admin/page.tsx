@@ -203,7 +203,7 @@ export default function AdminControlPanelPage() {
   return (
     <main className="p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-extrabold text-teal-900">⚙️ {t('adminPanelTitle')}</h1>
+        <h1 className="text-2xl font-extrabold text-[var(--c-teal-900)]">⚙️ {t('adminPanelTitle')}</h1>
         <p className="text-slate-500">{t('adminPanelSubtitle')}</p>
       </div>
 
@@ -213,7 +213,7 @@ export default function AdminControlPanelPage() {
         <button
           onClick={() => setTab('pending')}
           className={`px-4 py-2 rounded-xl text-sm font-bold ${
-            tab === 'pending' ? 'bg-teal-700 text-white' : 'bg-white text-slate-600'
+            tab === 'pending' ? 'bg-[var(--c-teal-700)] text-white' : 'bg-white text-slate-600'
           }`}
         >
           {t('tabPendingBookings')} {pendingBookings.length > 0 && `(${pendingBookings.length})`}
@@ -221,7 +221,7 @@ export default function AdminControlPanelPage() {
         <button
           onClick={() => setTab('calendar')}
           className={`px-4 py-2 rounded-xl text-sm font-bold ${
-            tab === 'calendar' ? 'bg-teal-700 text-white' : 'bg-white text-slate-600'
+            tab === 'calendar' ? 'bg-[var(--c-teal-700)] text-white' : 'bg-white text-slate-600'
           }`}
         >
           📅 {t('tabCalendar')}
@@ -229,7 +229,7 @@ export default function AdminControlPanelPage() {
         <button
           onClick={() => setTab('log')}
           className={`px-4 py-2 rounded-xl text-sm font-bold ${
-            tab === 'log' ? 'bg-teal-700 text-white' : 'bg-white text-slate-600'
+            tab === 'log' ? 'bg-[var(--c-teal-700)] text-white' : 'bg-white text-slate-600'
           }`}
         >
           {t('tabFullBookingLog')}
@@ -237,7 +237,7 @@ export default function AdminControlPanelPage() {
         <button
           onClick={() => setTab('audit')}
           className={`px-4 py-2 rounded-xl text-sm font-bold ${
-            tab === 'audit' ? 'bg-teal-700 text-white' : 'bg-white text-slate-600'
+            tab === 'audit' ? 'bg-[var(--c-teal-700)] text-white' : 'bg-white text-slate-600'
           }`}
         >
           {t('tabAuditLog')}
@@ -271,7 +271,7 @@ export default function AdminControlPanelPage() {
                 <span className={`inline-block text-xs font-bold px-2 py-1 rounded-lg mb-2 ${statusBadgeClass(b.status)}`}>
                   {statusLabel(b.status)}
                 </span>
-                <h3 className="font-extrabold text-teal-900 mb-1">{roomName(b)}</h3>
+                <h3 className="font-extrabold text-[var(--c-teal-900)] mb-1">{roomName(b)}</h3>
                 <p className="text-sm text-slate-500 mb-1">👤 {b.profiles?.name ?? '—'}</p>
                 <p className="text-sm text-slate-500 mb-1">
                   📅 {b.booking_date} · {b.start_time} - {b.end_time}
@@ -288,7 +288,7 @@ export default function AdminControlPanelPage() {
                   <button
                     disabled={actingId === b.id}
                     onClick={() => handleDecision(b, 'approved')}
-                    className="flex-1 bg-teal-700 text-white font-bold rounded-xl py-2 disabled:opacity-50"
+                    className="flex-1 bg-[var(--c-teal-700)] text-white font-bold rounded-xl py-2 disabled:opacity-50"
                   >
                     ✓ {t('approve')}
                   </button>
@@ -306,7 +306,7 @@ export default function AdminControlPanelPage() {
             >
               {lang === 'ar' ? '▶' : '◀'}
             </button>
-            <h3 className="font-extrabold text-teal-900">{monthLabel}</h3>
+            <h3 className="font-extrabold text-[var(--c-teal-900)]">{monthLabel}</h3>
             <button
               onClick={() => setCalendarMonth((m) => new Date(m.getFullYear(), m.getMonth() + 1, 1))}
               className="px-3 py-1 rounded-lg bg-slate-100 text-slate-600 font-bold"
@@ -335,8 +335,8 @@ export default function AdminControlPanelPage() {
                   key={key}
                   onClick={() => setSelectedDay(key)}
                   className={`aspect-square rounded-xl border p-1 flex flex-col items-center justify-start text-xs ${
-                    selectedDay === key ? 'border-teal-600 bg-teal-50' : 'border-slate-200'
-                  } ${isToday ? 'ring-2 ring-teal-400' : ''}`}
+                    selectedDay === key ? 'border-[var(--c-teal-600)] bg-[var(--c-teal-50)]' : 'border-slate-200'
+                  } ${isToday ? 'ring-2 ring-[var(--c-teal-400)]' : ''}`}
                 >
                   <span className="font-bold text-slate-600">{date.getDate()}</span>
                   <div className="flex gap-0.5 mt-1 flex-wrap justify-center">
@@ -351,7 +351,7 @@ export default function AdminControlPanelPage() {
 
           {selectedDay && (
             <div className="mt-5 border-t pt-4">
-              <h4 className="font-bold text-teal-900 mb-2">{selectedDay}</h4>
+              <h4 className="font-bold text-[var(--c-teal-900)] mb-2">{selectedDay}</h4>
               {selectedDayBookings.length === 0 ? (
                 <p className="text-slate-400 text-sm">{t('noData')}</p>
               ) : (

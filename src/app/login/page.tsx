@@ -60,13 +60,13 @@ export default function LoginPage() {
     <main className="min-h-screen flex items-center justify-center p-4 relative">
       <button
         onClick={toggleLang}
-        className="absolute top-4 left-4 text-sm font-bold text-teal-700 border border-teal-700 rounded-xl px-3 py-1.5"
+        className="absolute top-4 left-4 text-sm font-bold text-[var(--c-teal-700)] border border-[var(--c-teal-700)] rounded-xl px-3 py-1.5"
       >
         🌐 {t('langToggle')}
       </button>
 
       <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-sm">
-        <h1 className="text-xl font-extrabold text-teal-900 mb-1 text-center">
+        <h1 className="text-xl font-extrabold text-[var(--c-teal-900)] mb-1 text-center">
           {t('loginTitle')}
         </h1>
         <p className="text-sm text-slate-500 mb-4 text-center">
@@ -99,7 +99,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-teal-700 text-white rounded-xl py-3 font-bold disabled:opacity-50"
+            className="w-full bg-[var(--c-teal-700)] text-white rounded-xl py-3 font-bold disabled:opacity-50"
           >
             {loading ? t('loggingIn') : t('loginBtn')}
           </button>
@@ -107,7 +107,7 @@ export default function LoginPage() {
 
         <p className="text-center text-sm text-slate-500 mt-5">
           {t('noAccountPrompt')}{' '}
-          <Link href="/signup" className="text-teal-700 font-bold">
+          <Link href="/signup" className="text-[var(--c-teal-700)] font-bold">
             {t('signupSubmit')}
           </Link>
         </p>

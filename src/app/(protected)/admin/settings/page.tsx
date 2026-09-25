@@ -116,14 +116,14 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6 max-w-3xl">
       <div>
-        <h1 className="text-2xl font-extrabold text-teal-900">⚙️ {t('settingsTitle')}</h1>
+        <h1 className="text-2xl font-extrabold text-[var(--c-teal-900)]">⚙️ {t('settingsTitle')}</h1>
         <p className="text-slate-500">{t('settingsSubtitle')}</p>
       </div>
 
       {alert && <Alert type={alert.type} message={alert.message} />}
 
       <Card>
-        <h3 className="font-bold text-teal-900 mb-3">{t('logoUpload')}</h3>
+        <h3 className="font-bold text-[var(--c-teal-900)] mb-3">{t('logoUpload')}</h3>
         <div className="flex items-center gap-4">
           {settings.logo_url && (
             // eslint-disable-next-line @next/next/no-img-element
@@ -139,7 +139,7 @@ export default function SettingsPage() {
       </Card>
 
       <Card>
-        <h3 className="font-bold text-teal-900 mb-3">{t('aiAssistantName')}</h3>
+        <h3 className="font-bold text-[var(--c-teal-900)] mb-3">{t('aiAssistantName')}</h3>
         <FormField
           label={t('aiAssistantName')}
           type="text"
@@ -159,7 +159,7 @@ export default function SettingsPage() {
       </Card>
 
       <Card>
-        <h3 className="font-bold text-teal-900 mb-3">{t('geminiApiKey')}</h3>
+        <h3 className="font-bold text-[var(--c-teal-900)] mb-3">{t('geminiApiKey')}</h3>
         <FormField
           label={t('geminiApiKey')}
           type="password"
@@ -177,7 +177,7 @@ export default function SettingsPage() {
       </Card>
 
       <Card>
-        <h3 className="font-bold text-teal-900 mb-3">{t('voiceLink')}</h3>
+        <h3 className="font-bold text-[var(--c-teal-900)] mb-3">{t('voiceLink')}</h3>
         <FormField
           label={t('voiceLink')}
           type="text"
@@ -188,7 +188,7 @@ export default function SettingsPage() {
       </Card>
 
       <Card>
-        <h3 className="font-bold text-teal-900 mb-3">{t('qrCodeTitle')}</h3>
+        <h3 className="font-bold text-[var(--c-teal-900)] mb-3">{t('qrCodeTitle')}</h3>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={qrSrc} alt="QR code" className="rounded-lg border" />
         <p className="text-xs text-slate-400 mt-2">{portalUrl}</p>
@@ -197,7 +197,7 @@ export default function SettingsPage() {
       <button
         onClick={handleSave}
         disabled={saving}
-        className="bg-teal-700 text-white font-bold rounded-xl px-6 py-3 disabled:opacity-50"
+        className="bg-[var(--c-teal-700)] text-white font-bold rounded-xl px-6 py-3 disabled:opacity-50"
       >
         {saving ? t('loading') : t('saveSettings')}
       </button>

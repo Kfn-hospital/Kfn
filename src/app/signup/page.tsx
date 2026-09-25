@@ -45,7 +45,7 @@ export default function SignupPage() {
   return (
     <main className="min-h-screen flex items-center justify-center p-6 bg-slate-50">
       <div className="w-full max-w-md space-y-4">
-        <h1 className="text-2xl font-extrabold text-teal-900 text-center">{t('signupTitle')}</h1>
+        <h1 className="text-2xl font-extrabold text-[var(--c-teal-900)] text-center">{t('signupTitle')}</h1>
         <p className="text-slate-500 text-center text-sm">{t('signupSubtitle')}</p>
 
         {alert && <Alert type={alert.type} message={alert.message} />}
@@ -90,7 +90,7 @@ export default function SignupPage() {
             <button
               type="submit"
               disabled={saving}
-              className="w-full bg-teal-700 text-white rounded-xl py-3 font-bold disabled:opacity-50"
+              className="w-full bg-[var(--c-teal-700)] text-white rounded-xl py-3 font-bold disabled:opacity-50"
             >
               {saving ? t('loading') : t('signupSubmit')}
             </button>
@@ -99,7 +99,7 @@ export default function SignupPage() {
 
         <p className="text-center text-sm text-slate-500">
           {t('signupHasAccount')}{' '}
-          <Link href="/login" className="text-teal-700 font-bold">
+          <Link href="/login" className="text-[var(--c-teal-700)] font-bold">
             {t('signupLoginLink')}
           </Link>
         </p>

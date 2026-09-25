@@ -46,7 +46,7 @@ export default function NewUserPage() {
 
   return (
     <div className="max-w-lg space-y-4">
-      <h1 className="text-2xl font-extrabold text-teal-900">➕ {t('addUser')}</h1>
+      <h1 className="text-2xl font-extrabold text-[var(--c-teal-900)]">➕ {t('addUser')}</h1>
 
       {alert && <Alert type={alert.type} message={alert.message} />}
 
@@ -92,7 +92,7 @@ export default function NewUserPage() {
       <button
         onClick={submit}
         disabled={saving}
-        className="bg-teal-700 text-white font-bold rounded-xl px-6 py-3 disabled:opacity-50"
+        className="bg-[var(--c-teal-700)] text-white font-bold rounded-xl px-6 py-3 disabled:opacity-50"
       >
         {saving ? t('loading') : t('save')}
       </button>

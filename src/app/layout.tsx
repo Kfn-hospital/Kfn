@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { LanguageProvider } from '@/lib/i18n/LanguageContext';
+import ThemeProvider from '@/lib/theme/ThemeProvider';
 
 export const metadata: Metadata = {
   title: 'بوابة خورفكان الإدارية',
@@ -16,8 +17,10 @@ export default function RootLayout({
   // بيحدّثها فورًا لو المستخدم كان مختار إنجليزي قبل كده (محفوظة في المتصفح)
   return (
     <html lang="ar" dir="rtl">
-      <body className="bg-slate-50 min-h-screen">
-        <LanguageProvider>{children}</LanguageProvider>
+      <body className="bg-[var(--c-bg)] min-h-screen">
+        <LanguageProvider>
+          <ThemeProvider>{children}</ThemeProvider>
+        </LanguageProvider>
       </body>
     </html>
   );

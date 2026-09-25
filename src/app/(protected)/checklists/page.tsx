@@ -110,10 +110,10 @@ export default function ChecklistsPage() {
   return (
     <main className="p-6">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-extrabold text-teal-900">{t('checklistsTitle')}</h1>
+        <h1 className="text-2xl font-extrabold text-[var(--c-teal-900)]">{t('checklistsTitle')}</h1>
         <button
           onClick={() => setCreateModalOpen(true)}
-          className="bg-teal-700 text-white rounded-xl px-5 py-2.5 font-bold"
+          className="bg-[var(--c-teal-700)] text-white rounded-xl px-5 py-2.5 font-bold"
         >
           {t('newChecklist')}
         </button>
@@ -125,10 +125,10 @@ export default function ChecklistsPage() {
           return (
             <Card key={c.id} className="cursor-pointer hover:shadow-lg" >
               <div onClick={() => setDetailId(c.id)}>
-                <h3 className="font-extrabold text-teal-900">{c.title}</h3>
+                <h3 className="font-extrabold text-[var(--c-teal-900)]">{c.title}</h3>
                 <p className="text-slate-500 text-xs mb-3">{c.description}</p>
                 <div className="w-full bg-slate-100 rounded-full h-2 mb-1.5">
-                  <div className="bg-teal-600 h-2 rounded-full" style={{ width: `${pct}%` }} />
+                  <div className="bg-[var(--c-teal-600)] h-2 rounded-full" style={{ width: `${pct}%` }} />
                 </div>
                 <div className="text-xs text-slate-500">
                   {c.doneCount} / {c.totalCount} · {c.itemsCount} {t('checklistItems')}
@@ -151,7 +151,7 @@ export default function ChecklistsPage() {
             value={newDesc}
             onChange={setNewDesc}
           />
-          <div className="text-sm font-bold text-teal-800">{t('checklistItems')}</div>
+          <div className="text-sm font-bold text-[var(--c-teal-800)]">{t('checklistItems')}</div>
           {newItems.map((item, i) => (
             <input
               key={i}
@@ -164,7 +164,7 @@ export default function ChecklistsPage() {
           <button
             type="button"
             onClick={addItemField}
-            className="text-teal-700 text-sm font-bold hover:underline"
+            className="text-[var(--c-teal-700)] text-sm font-bold hover:underline"
           >
             {t('addItem')}
           </button>
@@ -172,7 +172,7 @@ export default function ChecklistsPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-teal-700 text-white rounded-xl py-3 font-bold disabled:opacity-50"
+            className="w-full bg-[var(--c-teal-700)] text-white rounded-xl py-3 font-bold disabled:opacity-50"
           >
             {loading ? t('saving') : t('save')}
           </button>
@@ -368,7 +368,7 @@ function ChecklistDetailModal({
                       checked={a.is_done}
                       disabled={a.assigned_to !== userId}
                       onChange={() => toggleAssignment(a.id, a.is_done)}
-                      className="w-4 h-4 accent-teal-600"
+                      className="w-4 h-4 accent-[var(--c-teal-600)]"
                     />
                     <span className={a.is_done ? 'line-through text-slate-400' : ''}>
                       {a.profiles?.name}
@@ -398,7 +398,7 @@ function ChecklistDetailModal({
       </div>
 
       <div className="mb-5 pt-4 border-t">
-        <div className="text-sm font-bold text-teal-800 mb-2">{t('attachments')}</div>
+        <div className="text-sm font-bold text-[var(--c-teal-800)] mb-2">{t('attachments')}</div>
         {attachments.map((f) => (
           <div key={f.id} className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-2 text-sm mb-1.5">
             <span>📄 {f.file_name}</span>
@@ -412,7 +412,7 @@ function ChecklistDetailModal({
             )}
           </div>
         ))}
-        <label className="text-teal-700 text-sm font-bold hover:underline cursor-pointer">
+        <label className="text-[var(--c-teal-700)] text-sm font-bold hover:underline cursor-pointer">
           {t('uploadFile')}
           <input type="file" className="hidden" onChange={handleUpload} />
         </label>
@@ -421,21 +421,21 @@ function ChecklistDetailModal({
       {canEdit && (
         <>
           <div className="mb-5 pt-4 border-t">
-            <div className="text-sm font-bold text-teal-800 mb-2">{t('addItem')}</div>
+            <div className="text-sm font-bold text-[var(--c-teal-800)] mb-2">{t('addItem')}</div>
             <div className="flex gap-2">
               <input
                 value={newItemText}
                 onChange={(e) => setNewItemText(e.target.value)}
                 className="flex-1 border rounded-xl px-3 py-2 text-sm"
               />
-              <button onClick={addItem} className="bg-teal-700 text-white rounded-xl px-4 text-sm font-bold">
+              <button onClick={addItem} className="bg-[var(--c-teal-700)] text-white rounded-xl px-4 text-sm font-bold">
                 {t('add')}
               </button>
             </div>
           </div>
 
           <div className="mb-5 pt-4 border-t">
-            <div className="text-sm font-bold text-teal-800 mb-2">{t('checklistAccess')}</div>
+            <div className="text-sm font-bold text-[var(--c-teal-800)] mb-2">{t('checklistAccess')}</div>
             {access.map((a) => (
               <div key={a.user_id} className="flex items-center justify-between bg-slate-50 rounded-lg px-3 py-2 text-sm mb-1.5">
                 <span className="font-bold">{a.profiles?.name}</span>
@@ -443,7 +443,7 @@ function ChecklistDetailModal({
                   <button
                     onClick={() => toggleAccessEdit(a.user_id, a.can_edit)}
                     className={`px-2 py-1 rounded-full text-[10px] font-bold ${
-                      a.can_edit ? 'bg-teal-600 text-white' : 'bg-slate-200 text-slate-600'
+                      a.can_edit ? 'bg-[var(--c-teal-600)] text-white' : 'bg-slate-200 text-slate-600'
                     }`}
                   >
                     {a.can_edit ? t('canEdit') : t('viewOnly')}
@@ -466,7 +466,7 @@ function ChecklistDetailModal({
                 </option>
               ))}
             </select>
-            <button onClick={addAccess} className="text-teal-700 text-sm font-bold hover:underline">
+            <button onClick={addAccess} className="text-[var(--c-teal-700)] text-sm font-bold hover:underline">
               {t('add')}
             </button>
           </div>

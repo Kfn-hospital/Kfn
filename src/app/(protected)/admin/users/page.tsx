@@ -66,7 +66,7 @@ export default function UsersPage() {
           </span>
           <button
             onClick={() => activateUser(u.id)}
-            className="px-2 py-1 rounded-full text-xs font-bold bg-teal-700 text-white"
+            className="px-2 py-1 rounded-full text-xs font-bold bg-[var(--c-teal-700)] text-white"
           >
             {t('activate')}
           </button>
@@ -112,10 +112,10 @@ export default function UsersPage() {
   return (
     <main className="p-6">
       <div className="flex items-center justify-between flex-wrap gap-3 mb-6">
-        <h1 className="text-2xl font-extrabold text-teal-900">{t('usersTitle')}</h1>
+        <h1 className="text-2xl font-extrabold text-[var(--c-teal-900)]">{t('usersTitle')}</h1>
         <Link
           href="/admin/users/new"
-          className="bg-teal-700 text-white rounded-xl px-5 py-2.5 font-bold text-sm"
+          className="bg-[var(--c-teal-700)] text-white rounded-xl px-5 py-2.5 font-bold text-sm"
         >
           ➕ {t('addUser')}
         </Link>
@@ -125,7 +125,7 @@ export default function UsersPage() {
         <button
           onClick={() => setTab('regular')}
           className={`px-4 py-2 rounded-xl text-sm font-bold ${
-            tab === 'regular' ? 'bg-teal-700 text-white' : 'bg-white text-slate-600'
+            tab === 'regular' ? 'bg-[var(--c-teal-700)] text-white' : 'bg-white text-slate-600'
           }`}
         >
           {t('usersTabRegular')} {pendingCount > 0 && `(${pendingCount} ${t('pendingApproval')})`}
@@ -133,7 +133,7 @@ export default function UsersPage() {
         <button
           onClick={() => setTab('admins')}
           className={`px-4 py-2 rounded-xl text-sm font-bold ${
-            tab === 'admins' ? 'bg-teal-700 text-white' : 'bg-white text-slate-600'
+            tab === 'admins' ? 'bg-[var(--c-teal-700)] text-white' : 'bg-white text-slate-600'
           }`}
         >
           {t('usersTabAdmins')}

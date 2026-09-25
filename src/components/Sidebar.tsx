@@ -46,7 +46,7 @@ export default function Sidebar() {
   }
 
   return (
-    <aside className="w-64 bg-teal-900 text-white min-h-screen p-4 flex flex-col">
+    <aside className="w-64 bg-[var(--c-teal-900)] text-white min-h-screen p-4 flex flex-col">
       <div className="mb-8 text-center">
         <h2 className="font-extrabold">{t('appName')}</h2>
       </div>
@@ -58,8 +58,8 @@ export default function Sidebar() {
             href={link.href}
             className={`block px-3 py-2.5 rounded-xl text-sm font-bold transition ${
               pathname === link.href
-                ? 'bg-white text-teal-900'
-                : 'text-teal-100 hover:bg-teal-800'
+                ? 'bg-white text-[var(--c-teal-900)]'
+                : 'text-[var(--c-teal-100)] hover:bg-[var(--c-teal-800)]'
             }`}
           >
             {link.label}
@@ -69,14 +69,14 @@ export default function Sidebar() {
 
       <button
         onClick={toggleLang}
-        className="mb-2 border border-teal-600 rounded-xl px-3 py-2 text-sm font-bold text-teal-100 hover:bg-teal-800"
+        className="mb-2 border border-[var(--c-teal-600)] rounded-xl px-3 py-2 text-sm font-bold text-[var(--c-teal-100)] hover:bg-[var(--c-teal-800)]"
       >
         🌐 {t('langToggle')}
       </button>
 
       <button
         onClick={handleLogout}
-        className="text-sm font-bold text-teal-300 hover:text-white text-start px-3 py-2"
+        className="text-sm font-bold text-[var(--c-teal-300)] hover:text-white text-start px-3 py-2"
       >
         {t('logout')}
       </button>

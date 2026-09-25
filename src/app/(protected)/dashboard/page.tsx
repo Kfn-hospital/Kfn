@@ -247,12 +247,12 @@ export default function DashboardPage() {
   return (
     <main className="p-6">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-extrabold text-teal-900">
+        <h1 className="text-2xl font-extrabold text-[var(--c-teal-900)]">
           {t('roomsAndBookings')}
         </h1>
         <button
           onClick={() => openNewBooking()}
-          className="bg-teal-700 text-white rounded-xl px-5 py-2.5 font-bold"
+          className="bg-[var(--c-teal-700)] text-white rounded-xl px-5 py-2.5 font-bold"
         >
           {t('newBooking')}
         </button>
@@ -277,7 +277,7 @@ export default function DashboardPage() {
 
       {/* ---- AI Assistant ---- */}
       <Card className="mb-6">
-        <h3 className="font-extrabold text-teal-900 mb-2">🤖 {t('aiAssistantTitle')}</h3>
+        <h3 className="font-extrabold text-[var(--c-teal-900)] mb-2">🤖 {t('aiAssistantTitle')}</h3>
         <div className="flex flex-col sm:flex-row gap-2">
           <input
             type="text"
@@ -290,7 +290,7 @@ export default function DashboardPage() {
           <button
             onClick={handleAiSubmit}
             disabled={aiLoading || !aiMessage.trim()}
-            className="bg-teal-700 text-white rounded-xl px-5 py-2.5 font-bold disabled:opacity-50"
+            className="bg-[var(--c-teal-700)] text-white rounded-xl px-5 py-2.5 font-bold disabled:opacity-50"
           >
             {aiLoading ? t('loading') : t('aiAssistantSend')}
           </button>
@@ -309,7 +309,7 @@ export default function DashboardPage() {
           >
             {lang === 'ar' ? '▶' : '◀'}
           </button>
-          <h3 className="font-extrabold text-teal-900">📅 {t('tabCalendar')} — {monthLabel}</h3>
+          <h3 className="font-extrabold text-[var(--c-teal-900)]">📅 {t('tabCalendar')} — {monthLabel}</h3>
           <button
             onClick={() => setCalendarMonth((m) => new Date(m.getFullYear(), m.getMonth() + 1, 1))}
             className="px-3 py-1 rounded-lg bg-slate-100 text-slate-600 font-bold"
@@ -339,8 +339,8 @@ export default function DashboardPage() {
                   onClick={() => setSelectedDay(key)}
                   onDoubleClick={() => openNewBooking(key)}
                   className={`min-h-[92px] rounded-xl border p-1.5 flex flex-col items-stretch text-xs overflow-hidden ${
-                    selectedDay === key ? 'border-teal-600 bg-teal-50' : 'border-slate-200'
-                  } ${isToday ? 'ring-2 ring-teal-400' : ''}`}
+                    selectedDay === key ? 'border-[var(--c-teal-600)] bg-[var(--c-teal-50)]' : 'border-slate-200'
+                  } ${isToday ? 'ring-2 ring-[var(--c-teal-400)]' : ''}`}
                 >
                   <span className="font-bold text-slate-600 text-center mb-1">{date.getDate()}</span>
                   <div className="flex flex-col gap-0.5 w-full">
@@ -368,10 +368,10 @@ export default function DashboardPage() {
         {selectedDay && (
           <div className="mt-5 border-t pt-4">
             <div className="flex items-center justify-between mb-2">
-              <h4 className="font-bold text-teal-900">{selectedDay}</h4>
+              <h4 className="font-bold text-[var(--c-teal-900)]">{selectedDay}</h4>
               <button
                 onClick={() => openNewBooking(selectedDay)}
-                className="text-sm font-bold text-teal-700 hover:underline"
+                className="text-sm font-bold text-[var(--c-teal-700)] hover:underline"
               >
                 + {t('newBooking')}
               </button>
@@ -446,7 +446,7 @@ export default function DashboardPage() {
                       <>
                         <button
                           onClick={() => openEditBooking(b)}
-                          className="text-teal-600 text-xs font-bold hover:underline"
+                          className="text-[var(--c-teal-600)] text-xs font-bold hover:underline"
                         >
                           {t('edit')}
                         </button>
@@ -525,7 +525,7 @@ export default function DashboardPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-teal-700 text-white rounded-xl py-3 font-bold disabled:opacity-50"
+            className="w-full bg-[var(--c-teal-700)] text-white rounded-xl py-3 font-bold disabled:opacity-50"
           >
             {loading ? t('saving') : t('save')}
           </button>

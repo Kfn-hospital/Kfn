@@ -41,10 +41,10 @@ function RoomManagersEditor({
           assigned.map((u) => (
             <span
               key={u.id}
-              className="inline-flex items-center gap-1 bg-teal-50 text-teal-700 text-xs font-bold px-2 py-1 rounded-full"
+              className="inline-flex items-center gap-1 bg-[var(--c-teal-50)] text-[var(--c-teal-700)] text-xs font-bold px-2 py-1 rounded-full"
             >
               {u.name}
-              <button onClick={() => onRemove(roomId, u.id)} className="text-teal-500 hover:text-red-500">
+              <button onClick={() => onRemove(roomId, u.id)} className="text-[var(--c-teal-500)] hover:text-red-500">
                 ×
               </button>
             </span>
@@ -72,7 +72,7 @@ function RoomManagersEditor({
                     onAdd(roomId, u.id);
                     setSearch('');
                   }}
-                  className="block w-full text-right text-xs px-2 py-1 rounded hover:bg-teal-50"
+                  className="block w-full text-right text-xs px-2 py-1 rounded hover:bg-[var(--c-teal-50)]"
                 >
                   {u.name}
                 </button>
@@ -84,7 +84,7 @@ function RoomManagersEditor({
           </button>
         </div>
       ) : (
-        <button onClick={() => setOpen(true)} className="text-xs font-bold text-teal-700 hover:underline">
+        <button onClick={() => setOpen(true)} className="text-xs font-bold text-[var(--c-teal-700)] hover:underline">
           + {t('addManager')}
         </button>
       )}
@@ -176,10 +176,10 @@ export default function AdminRoomsPage() {
   return (
     <main className="p-6 max-w-5xl">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-extrabold text-teal-900">{t('roomsManagement')}</h1>
+        <h1 className="text-2xl font-extrabold text-[var(--c-teal-900)]">{t('roomsManagement')}</h1>
         <button
           onClick={() => setModalOpen(true)}
-          className="bg-teal-700 text-white rounded-xl px-5 py-2.5 font-bold"
+          className="bg-[var(--c-teal-700)] text-white rounded-xl px-5 py-2.5 font-bold"
         >
           {t('addRoom')}
         </button>
@@ -259,7 +259,7 @@ export default function AdminRoomsPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-teal-700 text-white rounded-xl py-3 font-bold disabled:opacity-50"
+            className="w-full bg-[var(--c-teal-700)] text-white rounded-xl py-3 font-bold disabled:opacity-50"
           >
             {loading ? t('saving') : t('save')}
           </button>

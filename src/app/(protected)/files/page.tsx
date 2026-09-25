@@ -126,9 +126,9 @@ export default function FilesPage() {
   return (
     <main className="p-6">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-extrabold text-teal-900">{t('filesTitle')}</h1>
+        <h1 className="text-2xl font-extrabold text-[var(--c-teal-900)]">{t('filesTitle')}</h1>
         {canUpload && (
-          <label className="bg-teal-700 text-white rounded-xl px-5 py-2.5 font-bold cursor-pointer">
+          <label className="bg-[var(--c-teal-700)] text-white rounded-xl px-5 py-2.5 font-bold cursor-pointer">
             {t('uploadNewFile')}
             <input type="file" className="hidden" onChange={openPicker} disabled={uploading} />
           </label>
@@ -148,7 +148,7 @@ export default function FilesPage() {
                 <div className="flex gap-3">
                   <button
                     onClick={() => handleDownload(f.file_path, displayName(f))}
-                    className="text-teal-700 text-xs font-bold hover:underline"
+                    className="text-[var(--c-teal-700)] text-xs font-bold hover:underline"
                   >
                     {t('download')}
                   </button>
@@ -176,7 +176,7 @@ export default function FilesPage() {
           <button
             onClick={confirmUpload}
             disabled={uploading}
-            className="w-full bg-teal-700 text-white rounded-xl py-3 font-bold disabled:opacity-50"
+            className="w-full bg-[var(--c-teal-700)] text-white rounded-xl py-3 font-bold disabled:opacity-50"
           >
             {uploading ? t('saving') : t('save')}
           </button>
