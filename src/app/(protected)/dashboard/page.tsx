@@ -338,19 +338,26 @@ export default function DashboardPage() {
                 <button
                   onClick={() => setSelectedDay(key)}
                   onDoubleClick={() => openNewBooking(key)}
-                  className={`aspect-square rounded-xl border p-1 flex flex-col items-center justify-start text-xs ${
+                  className={`min-h-[92px] rounded-xl border p-1.5 flex flex-col items-stretch text-xs overflow-hidden ${
                     selectedDay === key ? 'border-teal-600 bg-teal-50' : 'border-slate-200'
                   } ${isToday ? 'ring-2 ring-teal-400' : ''}`}
                 >
-                  <span className="font-bold text-slate-600">{date.getDate()}</span>
-                  <div className="flex gap-0.5 mt-1 flex-wrap justify-center">
-                    {dayBookings.slice(0, 4).map((b) => (
+                  <span className="font-bold text-slate-600 text-center mb-1">{date.getDate()}</span>
+                  <div className="flex flex-col gap-0.5 w-full">
+                    {dayBookings.slice(0, 3).map((b) => (
                       <span
                         key={b.id}
                         title={`${b.title} — ${b.profiles?.name || b.profiles?.email || ''} — ${b.start_time}-${b.end_time}`}
-                        className={`w-1.5 h-1.5 rounded-full ${STATUS_DOT[b.status]}`}
-                      />
+                        className={`block w-full truncate text-[10px] leading-4 font-bold text-white rounded px-1 ${STATUS_DOT[b.status]}`}
+                      >
+                        {b.title}
+                      </span>
                     ))}
+                    {dayBookings.length > 3 && (
+                      <span className="text-[10px] text-slate-400 text-center">
+                        +{dayBookings.length - 3}
+                      </span>
+                    )}
                   </div>
                 </button>
               </div>
