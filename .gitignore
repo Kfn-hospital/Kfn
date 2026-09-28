@@ -18,3 +18,6 @@
 *.pem
 npm-debug.log*
 next-env.d.ts
+
+# ملفات كاش الـ TypeScript build — بتتغير في كل مرة تعمل فيها build/tsc، مفيش داعي نتابعها في git
+*.tsbuildinfo
