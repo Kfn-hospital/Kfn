@@ -112,11 +112,13 @@ export default function SettingsPage() {
         return;
       }
       const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-      if (profile?.role !== 'admin' && profile?.role !== 'room_manager') {
+      const { data: rm } = await supabase.from('room_managers').select('room_id').eq('user_id', user.id).limit(1);
+      const isRoomManager = profile?.role === 'room_manager' || (rm ?? []).length > 0;
+      if (profile?.role !== 'admin' && !isRoomManager) {
         router.push('/dashboard');
         return;
       }
-      setMyRole(profile?.role ?? null);
+      setMyRole(profile?.role ?? (isRoomManager ? 'room_manager' : null));
       setAuthorized(true);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
