@@ -45,6 +45,7 @@ export interface Booking {
 export interface RequestCategory {
   id: string;
   name: string;
+  name_en: string | null;
   department: string | null;
 }
 

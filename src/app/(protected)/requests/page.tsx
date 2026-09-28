@@ -104,6 +104,7 @@ export default function RequestsPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [myRole, setMyRole] = useState<string | null>(null);
 
   const [search, setSearch] = useState('');
   const [dateFrom, setDateFrom] = useState('');
@@ -119,6 +120,14 @@ export default function RequestsPage() {
   });
 
   async function loadData() {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (user) {
+      const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+      setMyRole(profile?.role ?? null);
+    }
+
     const { data } = await supabase
       .from('requests')
       .select('*, request_categories(*), assignee:profiles!requests_assigned_to_fkey(*)')
@@ -168,6 +177,8 @@ export default function RequestsPage() {
   useEffect(() => {
     loadData();
   }, []);
+
+  const canManageRequests = !!myRole && ASSIGNABLE_ROLES.includes(myRole);
 
   const preStatusFiltered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -377,10 +388,14 @@ export default function RequestsPage() {
               render: (r) => creatorsById[r.created_by]?.name || creatorsById[r.created_by]?.email || '-',
             },
             { header: t('requestCategory'), render: (r) => r.request_categories?.name || '-' },
-            {
-              header: t('requestAssignedTo'),
-              render: (r) => <span className="text-sm">{assigneeSummary(r.id)}</span>,
-            },
+            ...(canManageRequests
+              ? [
+                  {
+                    header: t('requestAssignedTo'),
+                    render: (r: CoordinationRequest) => <span className="text-sm">{assigneeSummary(r.id)}</span>,
+                  },
+                ]
+              : []),
             {
               header: t('status'),
               render: (r) => (
@@ -428,18 +443,20 @@ export default function RequestsPage() {
               ))}
             </select>
           </div>
-          <div>
-            <label className="text-sm font-bold text-[var(--c-text)] mb-1 block">
-              {t('requestAssignedTo')}
-            </label>
-            <AssignedToCombobox
-              value={form.assigned_to}
-              onChange={(id) => setForm({ ...form, assigned_to: id })}
-              users={users}
-              placeholder={t('searchToAssign')}
-              noneLabel={t('unassignedOption')}
-            />
-          </div>
+          {canManageRequests && (
+            <div>
+              <label className="text-sm font-bold text-[var(--c-text)] mb-1 block">
+                {t('requestAssignedTo')}
+              </label>
+              <AssignedToCombobox
+                value={form.assigned_to}
+                onChange={(id) => setForm({ ...form, assigned_to: id })}
+                users={users}
+                placeholder={t('searchToAssign')}
+                noneLabel={t('unassignedOption')}
+              />
+            </div>
+          )}
           <Alert type="error" message={error} />
           <button
             type="submit"

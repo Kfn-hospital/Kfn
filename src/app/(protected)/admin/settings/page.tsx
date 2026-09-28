@@ -97,9 +97,15 @@ export default function SettingsPage() {
   const [lastEmailError, setLastEmailError] = useState('');
   const [categories, setCategories] = useState<RequestCategory[]>([]);
   const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCategoryNameEn, setNewCategoryNameEn] = useState('');
   const [newCategoryDept, setNewCategoryDept] = useState('');
   const [savingCategory, setSavingCategory] = useState(false);
   const [categoryError, setCategoryError] = useState('');
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
+  const [editCategoryName, setEditCategoryName] = useState('');
+  const [editCategoryNameEn, setEditCategoryNameEn] = useState('');
+  const [editCategoryDept, setEditCategoryDept] = useState('');
+  const [savingCategoryEdit, setSavingCategoryEdit] = useState(false);
   const [alert, setAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   useEffect(() => {
@@ -160,16 +166,52 @@ export default function SettingsPage() {
     if (!newCategoryName.trim()) return;
     setSavingCategory(true);
     setCategoryError('');
-    const { error } = await supabase
-      .from('request_categories')
-      .insert({ name: newCategoryName.trim(), department: newCategoryDept.trim() || null });
+    const { error } = await supabase.from('request_categories').insert({
+      name: newCategoryName.trim(),
+      name_en: newCategoryNameEn.trim() || null,
+      department: newCategoryDept.trim() || null,
+    });
     setSavingCategory(false);
     if (error) {
       setCategoryError(error.message);
       return;
     }
     setNewCategoryName('');
+    setNewCategoryNameEn('');
     setNewCategoryDept('');
+    loadCategories();
+  }
+
+  function startEditCategory(c: RequestCategory) {
+    setCategoryError('');
+    setEditingCategoryId(c.id);
+    setEditCategoryName(c.name);
+    setEditCategoryNameEn(c.name_en || '');
+    setEditCategoryDept(c.department || '');
+  }
+
+  function cancelEditCategory() {
+    setEditingCategoryId(null);
+  }
+
+  async function saveEditCategory() {
+    if (!editingCategoryId || !editCategoryName.trim()) return;
+    setSavingCategoryEdit(true);
+    setCategoryError('');
+    const { error } = await supabase
+      .from('request_categories')
+      .update({
+        name: editCategoryName.trim(),
+        name_en: editCategoryNameEn.trim() || null,
+        department: editCategoryDept.trim() || null,
+      })
+      .eq('id', editingCategoryId);
+    setSavingCategoryEdit(false);
+    if (error) {
+      setCategoryError(error.message);
+      return;
+    }
+    setEditingCategoryId(null);
     loadCategories();
   }
 
@@ -681,37 +723,112 @@ export default function SettingsPage() {
           {categories.length === 0 ? (
             <p className="text-sm text-[var(--c-text-muted)]">{t('noCategories')}</p>
           ) : (
-            categories.map((c) => (
-              <div
-                key={c.id}
-                className="flex items-center justify-between bg-[var(--c-surface-muted)] rounded-lg px-3 py-2"
-              >
-                <div>
-                  <span className="text-sm font-bold text-[var(--c-text)]">{c.name}</span>
-                  {c.department && (
-                    <span className="text-xs text-[var(--c-text-muted)] mr-2">— {c.department}</span>
-                  )}
-                </div>
-                <button
-                  onClick={() => deleteCategory(c.id)}
-                  className="text-red-500 text-xs font-bold hover:underline"
-                  type="button"
+            categories.map((c) =>
+              editingCategoryId === c.id ? (
+                <div
+                  key={c.id}
+                  className="bg-[var(--c-surface-muted)] rounded-lg px-3 py-2 space-y-2"
                 >
-                  🗑️ {t('delete')}
-                </button>
-              </div>
-            ))
+                  <div className="flex items-end gap-3 flex-wrap">
+                    <div className="flex-1 min-w-[140px]">
+                      <FormField
+                        label={`${t('categoryName')} (عربي)`}
+                        type="text"
+                        value={editCategoryName}
+                        onChange={setEditCategoryName}
+                        placeholder={t('categoryName')}
+                      />
+                    </div>
+                    <div className="flex-1 min-w-[140px]">
+                      <FormField
+                        label={`${t('categoryName')} (English)`}
+                        type="text"
+                        value={editCategoryNameEn}
+                        onChange={setEditCategoryNameEn}
+                        placeholder="Category name"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-[140px]">
+                      <FormField
+                        label={t('userDepartment')}
+                        type="text"
+                        value={editCategoryDept}
+                        onChange={setEditCategoryDept}
+                        placeholder={t('userDepartment')}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={saveEditCategory}
+                      disabled={savingCategoryEdit || !editCategoryName.trim()}
+                      className="bg-[var(--c-teal-700)] text-white font-bold rounded-xl px-4 py-2 text-xs disabled:opacity-50"
+                      type="button"
+                    >
+                      {savingCategoryEdit ? t('loading') : t('save')}
+                    </button>
+                    <button
+                      onClick={cancelEditCategory}
+                      className="text-[var(--c-text-muted)] text-xs font-bold hover:underline"
+                      type="button"
+                    >
+                      {t('cancel')}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  key={c.id}
+                  className="flex items-center justify-between bg-[var(--c-surface-muted)] rounded-lg px-3 py-2"
+                >
+                  <div>
+                    <span className="text-sm font-bold text-[var(--c-text)]">{c.name}</span>
+                    {c.name_en && (
+                      <span className="text-xs text-[var(--c-text-muted)] mr-2">({c.name_en})</span>
+                    )}
+                    {c.department && (
+                      <span className="text-xs text-[var(--c-text-muted)] mr-2">— {c.department}</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => startEditCategory(c)}
+                      className="text-[var(--c-teal-700)] text-xs font-bold hover:underline"
+                      type="button"
+                    >
+                      ✏️ {t('edit')}
+                    </button>
+                    <button
+                      onClick={() => deleteCategory(c.id)}
+                      className="text-red-500 text-xs font-bold hover:underline"
+                      type="button"
+                    >
+                      🗑️ {t('delete')}
+                    </button>
+                  </div>
+                </div>
+              )
+            )
           )}
         </div>
         <Alert type="error" message={categoryError} />
         <div className="flex items-end gap-3 flex-wrap mt-2">
           <div className="flex-1 min-w-[160px]">
             <FormField
-              label={t('categoryName')}
+              label={`${t('categoryName')} (عربي)`}
               type="text"
               value={newCategoryName}
               onChange={setNewCategoryName}
               placeholder={t('categoryName')}
+            />
+          </div>
+          <div className="flex-1 min-w-[160px]">
+            <FormField
+              label={`${t('categoryName')} (English)`}
+              type="text"
+              value={newCategoryNameEn}
+              onChange={setNewCategoryNameEn}
+              placeholder="Category name"
             />
           </div>
           <div className="flex-1 min-w-[160px]">
