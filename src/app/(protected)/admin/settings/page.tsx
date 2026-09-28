@@ -19,6 +19,8 @@ import {
 
 interface Settings {
   logo_url: string;
+  site_name_ar: string;
+  site_name_en: string;
   ai_assistant_name: string;
   ai_instructions: string;
   gemini_api_key: string;
@@ -44,6 +46,8 @@ interface Settings {
 
 const DEFAULTS: Settings = {
   logo_url: '',
+  site_name_ar: '',
+  site_name_en: '',
   ai_assistant_name: '',
   ai_instructions: '',
   gemini_api_key: '',
@@ -218,6 +222,8 @@ export default function SettingsPage() {
 
       await Promise.all([
         upsertSetting('logo_url', logoUrl),
+        upsertSetting('site_name_ar', settings.site_name_ar),
+        upsertSetting('site_name_en', settings.site_name_en),
         upsertSetting('ai_assistant_name', settings.ai_assistant_name),
         upsertSetting('ai_instructions', settings.ai_instructions),
         upsertSecret('gemini_api_key', settings.gemini_api_key),
@@ -494,18 +500,41 @@ export default function SettingsPage() {
       </Card>
 
       <Card>
-        <h3 className="font-bold text-[var(--c-teal-900)] mb-3">{t('logoUpload')}</h3>
-        <div className="flex items-center gap-4">
-          {settings.logo_url && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={settings.logo_url} alt="logo" className="h-16 w-16 object-contain rounded-lg border" />
-          )}
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => setLogoFile(e.target.files?.[0] ?? null)}
-            className="text-sm"
-          />
+        <h3 className="font-bold text-[var(--c-teal-900)] mb-3">🏷️ {t('portalIdentityTitle')}</h3>
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <FormField
+              label={t('siteNameArLabel')}
+              type="text"
+              value={settings.site_name_ar}
+              onChange={(v: string) => setSettings((s) => ({ ...s, site_name_ar: v }))}
+              placeholder={t('appName')}
+            />
+            <FormField
+              label={t('siteNameEnLabel')}
+              type="text"
+              value={settings.site_name_en}
+              onChange={(v: string) => setSettings((s) => ({ ...s, site_name_en: v }))}
+              placeholder="Khorfakkan Admin Portal"
+            />
+          </div>
+          <p className="text-xs text-[var(--c-text-muted)]">{t('siteNameHint')}</p>
+
+          <div>
+            <label className="block text-sm font-bold text-[var(--c-text)] mb-1">{t('logoUpload')}</label>
+            <div className="flex items-center gap-4">
+              {settings.logo_url && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={settings.logo_url} alt="logo" className="h-16 w-16 object-contain rounded-lg border" />
+              )}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setLogoFile(e.target.files?.[0] ?? null)}
+                className="text-sm"
+              />
+            </div>
+          </div>
         </div>
       </Card>
 

@@ -10,9 +10,10 @@ export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const [isAdmin, setIsAdmin] = useState(false);
   const [logoUrl, setLogoUrl] = useState('');
+  const [siteName, setSiteName] = useState('');
 
   useEffect(() => {
     async function checkRole() {
@@ -27,14 +28,21 @@ export default function Sidebar() {
         .single();
       if (profile?.role === 'admin') setIsAdmin(true);
     }
-    async function loadLogo() {
-      const { data } = await supabase.from('app_settings').select('value').eq('key', 'logo_url').maybeSingle();
-      if (data?.value) setLogoUrl(data.value as string);
+    async function loadBranding() {
+      const { data } = await supabase
+        .from('app_settings')
+        .select('key, value')
+        .in('key', ['logo_url', 'site_name_ar', 'site_name_en']);
+      (data as { key: string; value: string | null }[] | null)?.forEach((row) => {
+        if (row.key === 'logo_url' && row.value) setLogoUrl(row.value);
+        if (row.key === 'site_name_ar' && row.value && lang === 'ar') setSiteName(row.value);
+        if (row.key === 'site_name_en' && row.value && lang === 'en') setSiteName(row.value);
+      });
     }
     checkRole();
-    loadLogo();
+    loadBranding();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [lang]);
 
   const links = [
     { href: '/dashboard', label: t('navDashboard') },
@@ -70,7 +78,7 @@ export default function Sidebar() {
           // eslint-disable-next-line @next/next/no-img-element
           <img src={logoUrl} alt="logo" className="h-10 w-10 object-contain rounded-lg bg-[var(--c-surface)]/10 p-1" />
         ) : null}
-        <h2 className="font-extrabold">{t('appName')}</h2>
+        <h2 className="font-extrabold">{siteName || t('appName')}</h2>
       </div>
 
       <nav className="flex-1 space-y-1">

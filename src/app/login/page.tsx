@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
@@ -10,12 +10,29 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
-  const { t, toggleLang } = useLanguage();
+  const { t, lang, toggleLang } = useLanguage();
 
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [logoUrl, setLogoUrl] = useState('');
+  const [siteName, setSiteName] = useState('');
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from('app_settings')
+        .select('key, value')
+        .in('key', ['logo_url', 'site_name_ar', 'site_name_en']);
+      (data as { key: string; value: string | null }[] | null)?.forEach((row) => {
+        if (row.key === 'logo_url' && row.value) setLogoUrl(row.value);
+        if (row.key === 'site_name_ar' && row.value && lang === 'ar') setSiteName(row.value);
+        if (row.key === 'site_name_en' && row.value && lang === 'en') setSiteName(row.value);
+      });
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang]);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -68,11 +85,15 @@ function LoginForm() {
       </button>
 
       <div className="bg-[var(--c-surface)] rounded-2xl shadow-lg p-8 w-full max-w-sm">
+        {logoUrl && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={logoUrl} alt="logo" className="h-16 w-16 object-contain rounded-xl mx-auto mb-3" />
+        )}
         <h1 className="text-xl font-extrabold text-[var(--c-teal-900)] mb-1 text-center">
           {t('loginTitle')}
         </h1>
         <p className="text-sm text-[var(--c-text-muted)] mb-4 text-center">
-          {t('loginSubtitle')}
+          {siteName || t('loginSubtitle')}
         </p>
 
         <form onSubmit={handleLogin} className="space-y-3">

@@ -12,6 +12,7 @@ export default function Header() {
   const { t, lang, setLang } = useLanguage();
   const supabase = createClient();
   const [logoUrl, setLogoUrl] = useState('');
+  const [siteName, setSiteName] = useState('');
   const [iconVisibility, setIconVisibility] = useState({
     colors: true,
     language: true,
@@ -35,18 +36,20 @@ export default function Header() {
       const { data } = await supabase
         .from('app_settings')
         .select('key, value')
-        .in('key', ['logo_url', 'icon_show_colors', 'icon_show_language', 'icon_show_darkmode', 'icon_show_logout']);
+        .in('key', ['logo_url', 'site_name_ar', 'site_name_en', 'icon_show_colors', 'icon_show_language', 'icon_show_darkmode', 'icon_show_logout']);
       (data as { key: string; value: string | null }[] | null)?.forEach((row) => {
         if (row.key === 'logo_url' && row.value) setLogoUrl(row.value);
         if (row.key === 'icon_show_colors') setIconVisibility((v) => ({ ...v, colors: row.value !== 'false' }));
         if (row.key === 'icon_show_language') setIconVisibility((v) => ({ ...v, language: row.value !== 'false' }));
         if (row.key === 'icon_show_darkmode') setIconVisibility((v) => ({ ...v, darkmode: row.value !== 'false' }));
         if (row.key === 'icon_show_logout') setIconVisibility((v) => ({ ...v, logout: row.value !== 'false' }));
+        if (row.key === 'site_name_ar' && row.value && lang === 'ar') setSiteName(row.value);
+        if (row.key === 'site_name_en' && row.value && lang === 'en') setSiteName(row.value);
       });
     })();
     setMode(getStoredMode());
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [lang]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -138,7 +141,7 @@ export default function Header() {
     applyMode(next);
   }
 
-  let pageTitle = t('appName');
+  let pageTitle = siteName || t('appName');
   if (pathname.startsWith('/admin/settings')) pageTitle = t('settingsTitle');
   else if (pathname.startsWith('/admin/users')) pageTitle = t('navUsers');
   else if (pathname.startsWith('/admin/rooms')) pageTitle = t('navRoomsAdmin');
@@ -159,7 +162,7 @@ export default function Header() {
           <img src={logoUrl} alt="logo" className="h-9 w-9 object-contain rounded-lg" />
         ) : (
           <span className="h-9 w-9 flex items-center justify-center rounded-lg bg-[var(--c-teal-700)] text-white font-extrabold text-sm shrink-0">
-            {(t('appName') || 'K').charAt(0)}
+            {(siteName || t('appName') || 'K').charAt(0)}
           </span>
         )}
         <h1 className="font-extrabold text-[var(--c-text)] truncate">{pageTitle}</h1>
