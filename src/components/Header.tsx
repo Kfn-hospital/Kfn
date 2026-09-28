@@ -19,6 +19,13 @@ export default function Header() {
     darkmode: true,
     logout: true,
   });
+  const [iconEmojis, setIconEmojis] = useState({
+    colors: '🎨',
+    language: '🌐',
+    logout: '🚪',
+    darkmode: '🌙',
+    lightmode: '☀️',
+  });
   const [mode, setMode] = useState<ThemeMode>('light');
 
   const [colorMenuOpen, setColorMenuOpen] = useState(false);
@@ -36,13 +43,31 @@ export default function Header() {
       const { data } = await supabase
         .from('app_settings')
         .select('key, value')
-        .in('key', ['logo_url', 'site_name_ar', 'site_name_en', 'icon_show_colors', 'icon_show_language', 'icon_show_darkmode', 'icon_show_logout']);
+        .in('key', [
+          'logo_url',
+          'site_name_ar',
+          'site_name_en',
+          'icon_show_colors',
+          'icon_show_language',
+          'icon_show_darkmode',
+          'icon_show_logout',
+          'icon_emoji_colors',
+          'icon_emoji_language',
+          'icon_emoji_logout',
+          'icon_emoji_darkmode',
+          'icon_emoji_lightmode',
+        ]);
       (data as { key: string; value: string | null }[] | null)?.forEach((row) => {
         if (row.key === 'logo_url' && row.value) setLogoUrl(row.value);
         if (row.key === 'icon_show_colors') setIconVisibility((v) => ({ ...v, colors: row.value !== 'false' }));
         if (row.key === 'icon_show_language') setIconVisibility((v) => ({ ...v, language: row.value !== 'false' }));
         if (row.key === 'icon_show_darkmode') setIconVisibility((v) => ({ ...v, darkmode: row.value !== 'false' }));
         if (row.key === 'icon_show_logout') setIconVisibility((v) => ({ ...v, logout: row.value !== 'false' }));
+        if (row.key === 'icon_emoji_colors' && row.value) setIconEmojis((v) => ({ ...v, colors: row.value as string }));
+        if (row.key === 'icon_emoji_language' && row.value) setIconEmojis((v) => ({ ...v, language: row.value as string }));
+        if (row.key === 'icon_emoji_logout' && row.value) setIconEmojis((v) => ({ ...v, logout: row.value as string }));
+        if (row.key === 'icon_emoji_darkmode' && row.value) setIconEmojis((v) => ({ ...v, darkmode: row.value as string }));
+        if (row.key === 'icon_emoji_lightmode' && row.value) setIconEmojis((v) => ({ ...v, lightmode: row.value as string }));
         if (row.key === 'site_name_ar' && row.value && lang === 'ar') setSiteName(row.value);
         if (row.key === 'site_name_en' && row.value && lang === 'en') setSiteName(row.value);
       });
@@ -176,7 +201,7 @@ export default function Header() {
             type="button"
             className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-[var(--c-surface-muted)] text-lg"
           >
-            🚪
+            {iconEmojis.logout}
           </button>
         )}
 
@@ -188,7 +213,7 @@ export default function Header() {
             type="button"
             className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-[var(--c-surface-muted)] text-lg"
           >
-            🎨
+            {iconEmojis.colors}
           </button>
           {colorMenuOpen && (
             <div className="absolute end-0 top-11 w-64 bg-[var(--c-surface)] border border-[var(--c-border)] rounded-xl shadow-2xl p-4 z-30">
@@ -260,7 +285,7 @@ export default function Header() {
             type="button"
             className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-[var(--c-surface-muted)] text-lg"
           >
-            🌐
+            {iconEmojis.language}
           </button>
           {langMenuOpen && (
             <div className="absolute end-0 top-11 w-36 bg-[var(--c-surface)] border border-[var(--c-border)] rounded-xl shadow-2xl py-1 z-30 overflow-hidden">
@@ -300,7 +325,7 @@ export default function Header() {
             type="button"
             className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-[var(--c-surface-muted)] text-lg"
           >
-            {mode === 'light' ? '🌙' : '☀️'}
+            {mode === 'light' ? iconEmojis.darkmode : iconEmojis.lightmode}
           </button>
         )}
       </div>

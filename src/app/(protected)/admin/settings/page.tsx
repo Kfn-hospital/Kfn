@@ -36,6 +36,11 @@ interface Settings {
   icon_show_darkmode: string;
   icon_show_logout: string;
   icon_show_assistant: string;
+  icon_emoji_colors: string;
+  icon_emoji_language: string;
+  icon_emoji_logout: string;
+  icon_emoji_darkmode: string;
+  icon_emoji_lightmode: string;
   assistant_icon_emoji: string;
   assistant_icon_url: string;
   booking_color_pending: string;
@@ -67,6 +72,11 @@ const DEFAULTS: Settings = {
   icon_show_darkmode: 'true',
   icon_show_logout: 'true',
   icon_show_assistant: 'true',
+  icon_emoji_colors: '🎨',
+  icon_emoji_language: '🌐',
+  icon_emoji_logout: '🚪',
+  icon_emoji_darkmode: '🌙',
+  icon_emoji_lightmode: '☀️',
   assistant_icon_emoji: '🤖',
   assistant_icon_url: '',
   booking_color_pending: DEFAULT_BOOKING_COLORS.pending,
@@ -352,6 +362,11 @@ export default function SettingsPage() {
         upsertSetting('icon_show_darkmode', settings.icon_show_darkmode),
         upsertSetting('icon_show_logout', settings.icon_show_logout),
         upsertSetting('icon_show_assistant', settings.icon_show_assistant),
+        upsertSetting('icon_emoji_colors', settings.icon_emoji_colors),
+        upsertSetting('icon_emoji_language', settings.icon_emoji_language),
+        upsertSetting('icon_emoji_logout', settings.icon_emoji_logout),
+        upsertSetting('icon_emoji_darkmode', settings.icon_emoji_darkmode),
+        upsertSetting('icon_emoji_lightmode', settings.icon_emoji_lightmode),
         upsertSetting('assistant_icon_emoji', settings.assistant_icon_emoji),
         upsertSetting('assistant_icon_url', assistantIconUrl),
         upsertSetting('booking_color_pending', settings.booking_color_pending),
@@ -1008,44 +1023,116 @@ export default function SettingsPage() {
       </Card>
 
       <Card>
-        <h3 className="font-bold text-[var(--c-teal-900)] mb-3">🎛️ {t('iconControlTitle')}</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <label className="flex items-center gap-2 text-sm text-[var(--c-text)]">
+        <h3 className="font-bold text-[var(--c-teal-900)] mb-1">🎛️ {t('iconControlTitle')}</h3>
+        <p className="text-xs text-[var(--c-text-muted)] mb-3">{t('iconControlHint')}</p>
+        <div className="space-y-2">
+          <div className="flex items-center gap-3 bg-[var(--c-surface-muted)] rounded-xl p-3 flex-wrap">
+            <div className="w-10 h-10 shrink-0 rounded-lg bg-[var(--c-surface)] border border-[var(--c-border)] flex items-center justify-center text-lg">
+              {settings.icon_emoji_colors || '🎨'}
+            </div>
+            <p className="text-sm font-bold text-[var(--c-text)] flex-1 min-w-[120px]">{t('showColorIcon')}</p>
             <input
-              type="checkbox"
-              checked={settings.icon_show_colors !== 'false'}
-              onChange={(e) => setSettings((s) => ({ ...s, icon_show_colors: e.target.checked ? 'true' : 'false' }))}
-              className="w-4 h-4"
+              type="text"
+              value={settings.icon_emoji_colors}
+              onChange={(e) => setSettings((s) => ({ ...s, icon_emoji_colors: e.target.value }))}
+              maxLength={4}
+              className="w-14 border rounded-lg px-2 py-1.5 text-center text-lg shrink-0"
             />
-            🎨 {t('showColorIcon')}
-          </label>
-          <label className="flex items-center gap-2 text-sm text-[var(--c-text)]">
+            <label className="flex items-center gap-1.5 text-xs font-bold text-[var(--c-text-muted)] shrink-0">
+              <input
+                type="checkbox"
+                checked={settings.icon_show_colors !== 'false'}
+                onChange={(e) => setSettings((s) => ({ ...s, icon_show_colors: e.target.checked ? 'true' : 'false' }))}
+                className="w-4 h-4"
+              />
+              {t('showColorIcon')}
+            </label>
+          </div>
+
+          <div className="flex items-center gap-3 bg-[var(--c-surface-muted)] rounded-xl p-3 flex-wrap">
+            <div className="w-10 h-10 shrink-0 rounded-lg bg-[var(--c-surface)] border border-[var(--c-border)] flex items-center justify-center text-lg">
+              {settings.icon_emoji_language || '🌐'}
+            </div>
+            <p className="text-sm font-bold text-[var(--c-text)] flex-1 min-w-[120px]">{t('showLanguageIcon')}</p>
             <input
-              type="checkbox"
-              checked={settings.icon_show_language !== 'false'}
-              onChange={(e) => setSettings((s) => ({ ...s, icon_show_language: e.target.checked ? 'true' : 'false' }))}
-              className="w-4 h-4"
+              type="text"
+              value={settings.icon_emoji_language}
+              onChange={(e) => setSettings((s) => ({ ...s, icon_emoji_language: e.target.value }))}
+              maxLength={4}
+              className="w-14 border rounded-lg px-2 py-1.5 text-center text-lg shrink-0"
             />
-            🌐 {t('showLanguageIcon')}
-          </label>
-          <label className="flex items-center gap-2 text-sm text-[var(--c-text)]">
+            <label className="flex items-center gap-1.5 text-xs font-bold text-[var(--c-text-muted)] shrink-0">
+              <input
+                type="checkbox"
+                checked={settings.icon_show_language !== 'false'}
+                onChange={(e) => setSettings((s) => ({ ...s, icon_show_language: e.target.checked ? 'true' : 'false' }))}
+                className="w-4 h-4"
+              />
+              {t('showLanguageIcon')}
+            </label>
+          </div>
+
+          <div className="flex items-center gap-3 bg-[var(--c-surface-muted)] rounded-xl p-3 flex-wrap">
+            <div className="flex items-center gap-2 shrink-0">
+              <div className="w-10 h-10 rounded-lg bg-[var(--c-surface)] border border-[var(--c-border)] flex items-center justify-center text-lg" title={t('darkMode')}>
+                {settings.icon_emoji_darkmode || '🌙'}
+              </div>
+              <input
+                type="text"
+                value={settings.icon_emoji_darkmode}
+                onChange={(e) => setSettings((s) => ({ ...s, icon_emoji_darkmode: e.target.value }))}
+                maxLength={4}
+                title={t('darkMode')}
+                className="w-14 border rounded-lg px-2 py-1.5 text-center text-lg"
+              />
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <div className="w-10 h-10 rounded-lg bg-[var(--c-surface)] border border-[var(--c-border)] flex items-center justify-center text-lg" title={t('lightMode')}>
+                {settings.icon_emoji_lightmode || '☀️'}
+              </div>
+              <input
+                type="text"
+                value={settings.icon_emoji_lightmode}
+                onChange={(e) => setSettings((s) => ({ ...s, icon_emoji_lightmode: e.target.value }))}
+                maxLength={4}
+                title={t('lightMode')}
+                className="w-14 border rounded-lg px-2 py-1.5 text-center text-lg"
+              />
+            </div>
+            <p className="text-sm font-bold text-[var(--c-text)] flex-1 min-w-[120px]">{t('showDarkModeIcon')}</p>
+            <label className="flex items-center gap-1.5 text-xs font-bold text-[var(--c-text-muted)] shrink-0">
+              <input
+                type="checkbox"
+                checked={settings.icon_show_darkmode !== 'false'}
+                onChange={(e) => setSettings((s) => ({ ...s, icon_show_darkmode: e.target.checked ? 'true' : 'false' }))}
+                className="w-4 h-4"
+              />
+              {t('showDarkModeIcon')}
+            </label>
+          </div>
+
+          <div className="flex items-center gap-3 bg-[var(--c-surface-muted)] rounded-xl p-3 flex-wrap">
+            <div className="w-10 h-10 shrink-0 rounded-lg bg-[var(--c-surface)] border border-[var(--c-border)] flex items-center justify-center text-lg">
+              {settings.icon_emoji_logout || '🚪'}
+            </div>
+            <p className="text-sm font-bold text-[var(--c-text)] flex-1 min-w-[120px]">{t('showLogoutIcon')}</p>
             <input
-              type="checkbox"
-              checked={settings.icon_show_darkmode !== 'false'}
-              onChange={(e) => setSettings((s) => ({ ...s, icon_show_darkmode: e.target.checked ? 'true' : 'false' }))}
-              className="w-4 h-4"
+              type="text"
+              value={settings.icon_emoji_logout}
+              onChange={(e) => setSettings((s) => ({ ...s, icon_emoji_logout: e.target.value }))}
+              maxLength={4}
+              className="w-14 border rounded-lg px-2 py-1.5 text-center text-lg shrink-0"
             />
-            🌙 {t('showDarkModeIcon')}
-          </label>
-          <label className="flex items-center gap-2 text-sm text-[var(--c-text)]">
-            <input
-              type="checkbox"
-              checked={settings.icon_show_logout !== 'false'}
-              onChange={(e) => setSettings((s) => ({ ...s, icon_show_logout: e.target.checked ? 'true' : 'false' }))}
-              className="w-4 h-4"
-            />
-            🚪 {t('showLogoutIcon')}
-          </label>
+            <label className="flex items-center gap-1.5 text-xs font-bold text-[var(--c-text-muted)] shrink-0">
+              <input
+                type="checkbox"
+                checked={settings.icon_show_logout !== 'false'}
+                onChange={(e) => setSettings((s) => ({ ...s, icon_show_logout: e.target.checked ? 'true' : 'false' }))}
+                className="w-4 h-4"
+              />
+              {t('showLogoutIcon')}
+            </label>
+          </div>
         </div>
       </Card>
 

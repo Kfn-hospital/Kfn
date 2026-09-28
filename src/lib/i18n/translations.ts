@@ -45,6 +45,7 @@ export const translations = {
   sidebarHoverColorLabel: 'لون تظليل القائمة الجانبية عند المرور',
 
   iconControlTitle: 'التحكم في أيقونات الهيدر',
+  iconControlHint: 'تقدر تغيّر شكل كل أيقونة بكتابة إيموجي مختلف بدل ما هو موجود.',
   showColorIcon: 'إظهار أيقونة الألوان',
   showLanguageIcon: 'إظهار أيقونة اللغة',
   showDarkModeIcon: 'إظهار أيقونة الوضع الداكن',
@@ -340,6 +341,7 @@ userCreated: 'تم إنشاء المستخدم بنجاح',
   sidebarHoverColorLabel: 'Sidebar Hover Highlight Color',
 
   iconControlTitle: 'Header Icon Control',
+  iconControlHint: 'You can change each icon\'s shape by typing a different emoji.',
   showColorIcon: 'Show Color Icon',
   showLanguageIcon: 'Show Language Icon',
   showDarkModeIcon: 'Show Dark Mode Icon',

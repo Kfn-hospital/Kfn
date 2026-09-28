@@ -11,7 +11,23 @@ body {
   color: var(--c-text);
 }
 
+/* نضبط لون نص وخلفية عناصر الإدخال صراحة، لأنها بترث خط اللون بس مش الخلفية،
+   وده كان بيخلي النص يظهر رمادي فاتح جدًا وغير مقروء فوق خلفية فاتحة في الوضع الداكن */
+input,
+textarea,
+select {
+  background-color: var(--c-surface);
+  color: var(--c-text);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--c-text-muted);
+  opacity: 1;
+}
+
 :root {
+  color-scheme: light;
   --c-teal-50: #f0fdfa;
   --c-teal-100: #ccfbf1;
   --c-teal-300: #5eead4;
@@ -37,6 +53,7 @@ body {
 }
 
 [data-theme='dark'] {
+  color-scheme: dark;
   --c-bg: #0f172a;
   --c-surface: #1e293b;
   --c-surface-muted: #334155;
