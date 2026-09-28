@@ -7,6 +7,7 @@ import { useLanguage } from '@/lib/i18n/LanguageContext';
 import Card from '@/components/ui/Card';
 import FormField from '@/components/ui/FormField';
 import Alert from '@/components/ui/Alert';
+import EmojiPicker from '@/components/ui/EmojiPicker';
 import type { RequestCategory, Room } from '@/types/database';
 import {
   DEFAULT_BOOKING_POLICY_MESSAGE_AR,
@@ -92,6 +93,13 @@ const DEFAULTS: Settings = {
   booking_rejected_message: '',
   booking_cancelled_message: '',
 };
+
+const COLOR_ICON_OPTIONS = ['🎨', '🖌️', '🖍️', '🌈', '🎭', '✨'];
+const LANGUAGE_ICON_OPTIONS = ['🌐', '🌍', '🌎', '🗣️', '🔤', '📝'];
+const DARKMODE_ICON_OPTIONS = ['🌙', '🌚', '🌑', '🌘', '⭐', '🌃'];
+const LIGHTMODE_ICON_OPTIONS = ['☀️', '🌞', '💡', '🔆', '🌤️', '⚡'];
+const LOGOUT_ICON_OPTIONS = ['🚪', '🔓', '👋', '🚶', '⏏️', '➡️'];
+const ASSISTANT_ICON_OPTIONS = ['🤖', '🧠', '💬', '🗨️', '🎧', '⚡', '👨‍💼', '👩‍💼', '🔷', '💡'];
 
 export default function SettingsPage() {
   const { t } = useLanguage();
@@ -1027,17 +1035,12 @@ export default function SettingsPage() {
         <p className="text-xs text-[var(--c-text-muted)] mb-3">{t('iconControlHint')}</p>
         <div className="space-y-2">
           <div className="flex items-center gap-3 bg-[var(--c-surface-muted)] rounded-xl p-3 flex-wrap">
-            <div className="w-10 h-10 shrink-0 rounded-lg bg-[var(--c-surface)] border border-[var(--c-border)] flex items-center justify-center text-lg">
-              {settings.icon_emoji_colors || '🎨'}
-            </div>
-            <p className="text-sm font-bold text-[var(--c-text)] flex-1 min-w-[120px]">{t('showColorIcon')}</p>
-            <input
-              type="text"
+            <EmojiPicker
               value={settings.icon_emoji_colors}
-              onChange={(e) => setSettings((s) => ({ ...s, icon_emoji_colors: e.target.value }))}
-              maxLength={4}
-              className="w-14 border rounded-lg px-2 py-1.5 text-center text-lg shrink-0"
+              onChange={(v) => setSettings((s) => ({ ...s, icon_emoji_colors: v }))}
+              options={COLOR_ICON_OPTIONS}
             />
+            <p className="text-sm font-bold text-[var(--c-text)] flex-1 min-w-[120px]">{t('showColorIcon')}</p>
             <label className="flex items-center gap-1.5 text-xs font-bold text-[var(--c-text-muted)] shrink-0">
               <input
                 type="checkbox"
@@ -1050,17 +1053,12 @@ export default function SettingsPage() {
           </div>
 
           <div className="flex items-center gap-3 bg-[var(--c-surface-muted)] rounded-xl p-3 flex-wrap">
-            <div className="w-10 h-10 shrink-0 rounded-lg bg-[var(--c-surface)] border border-[var(--c-border)] flex items-center justify-center text-lg">
-              {settings.icon_emoji_language || '🌐'}
-            </div>
-            <p className="text-sm font-bold text-[var(--c-text)] flex-1 min-w-[120px]">{t('showLanguageIcon')}</p>
-            <input
-              type="text"
+            <EmojiPicker
               value={settings.icon_emoji_language}
-              onChange={(e) => setSettings((s) => ({ ...s, icon_emoji_language: e.target.value }))}
-              maxLength={4}
-              className="w-14 border rounded-lg px-2 py-1.5 text-center text-lg shrink-0"
+              onChange={(v) => setSettings((s) => ({ ...s, icon_emoji_language: v }))}
+              options={LANGUAGE_ICON_OPTIONS}
             />
+            <p className="text-sm font-bold text-[var(--c-text)] flex-1 min-w-[120px]">{t('showLanguageIcon')}</p>
             <label className="flex items-center gap-1.5 text-xs font-bold text-[var(--c-text-muted)] shrink-0">
               <input
                 type="checkbox"
@@ -1073,32 +1071,18 @@ export default function SettingsPage() {
           </div>
 
           <div className="flex items-center gap-3 bg-[var(--c-surface-muted)] rounded-xl p-3 flex-wrap">
-            <div className="flex items-center gap-2 shrink-0">
-              <div className="w-10 h-10 rounded-lg bg-[var(--c-surface)] border border-[var(--c-border)] flex items-center justify-center text-lg" title={t('darkMode')}>
-                {settings.icon_emoji_darkmode || '🌙'}
-              </div>
-              <input
-                type="text"
-                value={settings.icon_emoji_darkmode}
-                onChange={(e) => setSettings((s) => ({ ...s, icon_emoji_darkmode: e.target.value }))}
-                maxLength={4}
-                title={t('darkMode')}
-                className="w-14 border rounded-lg px-2 py-1.5 text-center text-lg"
-              />
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <div className="w-10 h-10 rounded-lg bg-[var(--c-surface)] border border-[var(--c-border)] flex items-center justify-center text-lg" title={t('lightMode')}>
-                {settings.icon_emoji_lightmode || '☀️'}
-              </div>
-              <input
-                type="text"
-                value={settings.icon_emoji_lightmode}
-                onChange={(e) => setSettings((s) => ({ ...s, icon_emoji_lightmode: e.target.value }))}
-                maxLength={4}
-                title={t('lightMode')}
-                className="w-14 border rounded-lg px-2 py-1.5 text-center text-lg"
-              />
-            </div>
+            <EmojiPicker
+              value={settings.icon_emoji_darkmode}
+              onChange={(v) => setSettings((s) => ({ ...s, icon_emoji_darkmode: v }))}
+              options={DARKMODE_ICON_OPTIONS}
+              title={t('darkMode')}
+            />
+            <EmojiPicker
+              value={settings.icon_emoji_lightmode}
+              onChange={(v) => setSettings((s) => ({ ...s, icon_emoji_lightmode: v }))}
+              options={LIGHTMODE_ICON_OPTIONS}
+              title={t('lightMode')}
+            />
             <p className="text-sm font-bold text-[var(--c-text)] flex-1 min-w-[120px]">{t('showDarkModeIcon')}</p>
             <label className="flex items-center gap-1.5 text-xs font-bold text-[var(--c-text-muted)] shrink-0">
               <input
@@ -1112,17 +1096,12 @@ export default function SettingsPage() {
           </div>
 
           <div className="flex items-center gap-3 bg-[var(--c-surface-muted)] rounded-xl p-3 flex-wrap">
-            <div className="w-10 h-10 shrink-0 rounded-lg bg-[var(--c-surface)] border border-[var(--c-border)] flex items-center justify-center text-lg">
-              {settings.icon_emoji_logout || '🚪'}
-            </div>
-            <p className="text-sm font-bold text-[var(--c-text)] flex-1 min-w-[120px]">{t('showLogoutIcon')}</p>
-            <input
-              type="text"
+            <EmojiPicker
               value={settings.icon_emoji_logout}
-              onChange={(e) => setSettings((s) => ({ ...s, icon_emoji_logout: e.target.value }))}
-              maxLength={4}
-              className="w-14 border rounded-lg px-2 py-1.5 text-center text-lg shrink-0"
+              onChange={(v) => setSettings((s) => ({ ...s, icon_emoji_logout: v }))}
+              options={LOGOUT_ICON_OPTIONS}
             />
+            <p className="text-sm font-bold text-[var(--c-text)] flex-1 min-w-[120px]">{t('showLogoutIcon')}</p>
             <label className="flex items-center gap-1.5 text-xs font-bold text-[var(--c-text-muted)] shrink-0">
               <input
                 type="checkbox"
@@ -1158,12 +1137,11 @@ export default function SettingsPage() {
           </div>
           <div>
             <label className="block text-sm font-bold text-[var(--c-text)] mb-1">{t('assistantIconEmojiLabel')}</label>
-            <input
-              type="text"
+            <EmojiPicker
               value={settings.assistant_icon_emoji}
-              onChange={(e) => setSettings((s) => ({ ...s, assistant_icon_emoji: e.target.value, assistant_icon_url: '' }))}
-              maxLength={4}
-              className="w-20 border rounded-xl px-3 py-2 text-center text-lg"
+              onChange={(v) => setSettings((s) => ({ ...s, assistant_icon_emoji: v, assistant_icon_url: '' }))}
+              options={ASSISTANT_ICON_OPTIONS}
+              className="w-14 h-10 border rounded-xl flex items-center justify-center text-lg hover:bg-[var(--c-surface-muted)]"
             />
           </div>
         </div>
