@@ -117,6 +117,7 @@ export default function FloatingAssistant() {
   const [recording, setRecording] = useState(false);
   const [recordSeconds, setRecordSeconds] = useState(0);
   const [analyzingVoice, setAnalyzingVoice] = useState(false);
+  const [pendingBooking, setPendingBooking] = useState<Record<string, unknown> | null>(null);
 
   const listRef = useRef<HTMLDivElement | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -194,9 +195,10 @@ export default function FloatingAssistant() {
       const res = await fetch('/api/ai/assistant', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: outgoing, userId }),
+        body: JSON.stringify({ message: outgoing, userId, pendingBooking }),
       });
       const json = await res.json();
+      setPendingBooking(json.pendingBooking ?? null);
       await insertMessage({
         sender: 'assistant',
         type: 'text',
@@ -253,9 +255,10 @@ export default function FloatingAssistant() {
           const res = await fetch('/api/ai/assistant', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ audioBase64, mimeType: 'audio/webm', userId }),
+            body: JSON.stringify({ audioBase64, mimeType: 'audio/webm', userId, pendingBooking }),
           });
           const json = await res.json();
+          setPendingBooking(json.pendingBooking ?? null);
 
           if (voiceMessage?.id && json.transcript) {
             await updateMessageContent(voiceMessage.id, json.transcript);

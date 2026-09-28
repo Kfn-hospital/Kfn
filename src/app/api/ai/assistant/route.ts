@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { notifyRequestCreated } from '@/lib/email/notifications';
 import { requireUser } from '@/lib/auth/apiGuards';
+import { DEFAULT_BOOKING_POLICY_MESSAGE_AR } from '@/lib/bookingPolicy';
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -76,7 +77,7 @@ export async function POST(request: Request) {
   if ('error' in guard) return guard.error;
   const userId = guard.user.id; // مصدر الهوية الوحيد هو الجلسة نفسها، مش أي قيمة جاية من العميل
 
-  const { message, audioBase64, mimeType } = await request.json();
+  const { message, audioBase64, mimeType, pendingBooking } = await request.json();
 
   if (!message && !audioBase64) {
     return NextResponse.json({ ok: false, error: 'بيانات ناقصة' }, { status: 400 });
@@ -84,7 +85,7 @@ export async function POST(request: Request) {
 
   const [{ data: secretRows }, { data: rooms }, { data: categories }, { data: assistantSettings }] = await Promise.all([
     supabaseAdmin.from('app_secrets').select('key, value').eq('key', 'gemini_api_key'),
-    supabaseAdmin.from('rooms').select('id, name, name_en').eq('status', 'active'),
+    supabaseAdmin.from('rooms').select('id, name, name_en, booking_policy_message').eq('status', 'active'),
     supabaseAdmin.from('request_categories').select('id, name'),
     supabaseAdmin.from('app_settings').select('key, value').in('key', ['ai_assistant_name', 'ai_instructions']),
   ]);
@@ -98,6 +99,76 @@ export async function POST(request: Request) {
     return NextResponse.json({
       ok: false,
       error: 'مفتاح Gemini غير مضاف بعد. أضِفه من صفحة إعدادات البرنامج (/admin/settings) أولًا.',
+    });
+  }
+
+  // ---- تأكيد حجز معلّق: المستخدم فعلاً شاف رسالة سياسة القاعة وبنستنى منه رد نعم/لا ----
+  if (pendingBooking && typeof pendingBooking === 'object') {
+    let replyText = (message || '').toString();
+    let confirmTranscript = '';
+    if (!replyText.trim() && audioBase64) {
+      try {
+        replyText = await callGeminiAudio(
+          geminiKey,
+          'اكتب فقط، بدون أي إضافة أو تعليق، النص الذي قاله المستخدم في هذه الرسالة الصوتية بنفس لغته.',
+          audioBase64,
+          mimeType || 'audio/webm'
+        );
+        confirmTranscript = replyText;
+      } catch {
+        replyText = '';
+      }
+    }
+
+    const normalized = replyText.trim().toLowerCase();
+    const yesWords = ['نعم', 'ايوه', 'ايوة', 'اه', 'آه', 'موافق', 'أوافق', 'اوافق', 'تمام', 'اكيد', 'أكيد', 'yes', 'y', 'ok', 'okay', 'confirm'];
+    const noWords = ['لا', 'لأ', 'الغاء', 'إلغاء', 'cancel', 'no', 'n'];
+    const isYes = yesWords.some((w) => normalized === w || normalized.includes(w));
+    const isNo = noWords.some((w) => normalized === w || normalized.includes(w));
+
+    const pb = pendingBooking as {
+      room_id?: string;
+      title?: string;
+      date?: string;
+      start_time?: string;
+      end_time?: string;
+    };
+
+    if (isYes && !isNo && pb.room_id && pb.date && pb.start_time && pb.end_time) {
+      const { error } = await supabaseAdmin.from('bookings').insert({
+        room_id: pb.room_id,
+        title: pb.title || 'حجز عبر المساعد الذكي',
+        booking_date: pb.date,
+        start_time: pb.start_time,
+        end_time: pb.end_time,
+        booked_by: userId,
+        status: 'pending',
+      });
+
+      if (error) {
+        return NextResponse.json({ ok: false, error: error.message, transcript: confirmTranscript });
+      }
+
+      return NextResponse.json({
+        ok: true,
+        transcript: confirmTranscript,
+        message: `✅ تم تأكيد وإرسال طلب حجز "${pb.title || ''}" بتاريخ ${pb.date} من ${pb.start_time} إلى ${pb.end_time}، وهو الآن قيد مراجعة الأدمن.`,
+      });
+    }
+
+    if (isNo) {
+      return NextResponse.json({
+        ok: true,
+        transcript: confirmTranscript,
+        message: 'تم إلغاء طلب الحجز. تقدر تطلب حجز جديد في أي وقت.',
+      });
+    }
+
+    return NextResponse.json({
+      ok: false,
+      transcript: confirmTranscript,
+      pendingBooking,
+      message: 'من فضلك أجب بـ "نعم" للتأكيد أو "لا" للإلغاء.',
     });
   }
 
@@ -176,24 +247,22 @@ ${message ? `طلب المستخدم: "${message}"` : ''}`;
       return NextResponse.json({ ok: false, message: 'محتاج تحدد القاعة والتاريخ والوقت بوضوح أكتر.', transcript });
     }
 
-    const { error } = await supabaseAdmin.from('bookings').insert({
-      room_id: parsed.room_id,
-      title: parsed.title || 'حجز عبر المساعد الذكي',
-      booking_date: parsed.date,
-      start_time: parsed.start_time,
-      end_time: parsed.end_time,
-      booked_by: userId,
-      status: 'pending',
-    });
-
-    if (error) {
-      return NextResponse.json({ ok: false, error: error.message, transcript });
-    }
+    const room = (rooms as { id: string; booking_policy_message?: string | null }[] | null)?.find(
+      (r) => r.id === parsed.room_id
+    );
+    const policyMessage = room?.booking_policy_message?.trim() || DEFAULT_BOOKING_POLICY_MESSAGE_AR;
 
     return NextResponse.json({
-      ok: true,
+      ok: false,
       transcript,
-      message: `✅ تم إرسال طلب حجز "${parsed.title || ''}" بتاريخ ${parsed.date} من ${parsed.start_time} إلى ${parsed.end_time}، وهو الآن قيد مراجعة الأدمن.`,
+      pendingBooking: {
+        room_id: parsed.room_id,
+        title: parsed.title || 'حجز عبر المساعد الذكي',
+        date: parsed.date,
+        start_time: parsed.start_time,
+        end_time: parsed.end_time,
+      },
+      message: `📋 ${policyMessage}\n\nهل توافق على الحجز بهذا الشرط؟ اكتب "نعم" للتأكيد أو "لا" للإلغاء.`,
     });
   }
 

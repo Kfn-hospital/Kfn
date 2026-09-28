@@ -10,6 +10,10 @@ import Alert from '@/components/ui/Alert';
 import DataTable from '@/components/ui/DataTable';
 import type { Room, Booking } from '@/types/database';
 import { statusDotStyle, statusBadgeStyle } from '@/lib/theme/colorUtils';
+import {
+  DEFAULT_BOOKING_POLICY_MESSAGE_AR,
+  DEFAULT_BOOKING_POLICY_MESSAGE_EN,
+} from '@/lib/bookingPolicy';
 
 function toDateKey(d: Date) {
   const y = d.getFullYear();
@@ -26,6 +30,14 @@ function bookerLabel(p?: { name?: string | null; email?: string | null } | null)
   if (!p) return '-';
   if (p.name && p.email) return `${p.name} — ${p.email}`;
   return p.name || p.email || '-';
+}
+
+function policyMessageForRoom(room: Room | undefined, lang: string): string {
+  if (!room) return lang === 'en' ? DEFAULT_BOOKING_POLICY_MESSAGE_EN : DEFAULT_BOOKING_POLICY_MESSAGE_AR;
+  if (lang === 'en') {
+    return room.booking_policy_message_en?.trim() || room.booking_policy_message?.trim() || DEFAULT_BOOKING_POLICY_MESSAGE_EN;
+  }
+  return room.booking_policy_message?.trim() || DEFAULT_BOOKING_POLICY_MESSAGE_AR;
 }
 
 function formatTime12(time: string, amLabel: string, pmLabel: string) {
@@ -64,6 +76,7 @@ export default function DashboardPage() {
   const [error, setError] = useState('');
 
   const [form, setForm] = useState({ ...EMPTY_FORM });
+  const [agreedPolicy, setAgreedPolicy] = useState(false);
 
   // ---- سبب الرفض/الإلغاء ----
   const [reasonModal, setReasonModal] = useState<{ booking: Booking; status: 'rejected' | 'cancelled' } | null>(null);
@@ -142,6 +155,7 @@ export default function DashboardPage() {
   function openNewBooking(dateKey?: string) {
     setEditingId(null);
     setForm({ ...EMPTY_FORM, booking_date: dateKey || '' });
+    setAgreedPolicy(false);
     setError('');
     setModalOpen(true);
   }
@@ -156,6 +170,7 @@ export default function DashboardPage() {
       end_time: b.end_time,
       notes: b.notes || '',
     });
+    setAgreedPolicy(false);
     setError('');
     setModalOpen(true);
   }
@@ -163,6 +178,7 @@ export default function DashboardPage() {
   function closeModal() {
     setModalOpen(false);
     setEditingId(null);
+    setAgreedPolicy(false);
   }
 
   async function handleSubmitBooking(e: React.FormEvent) {
@@ -509,7 +525,10 @@ export default function DashboardPage() {
             <select
               required
               value={form.room_id}
-              onChange={(e) => setForm({ ...form, room_id: e.target.value })}
+              onChange={(e) => {
+                setForm({ ...form, room_id: e.target.value });
+                setAgreedPolicy(false);
+              }}
               className="w-full border rounded-xl px-3 py-2.5"
             >
               <option value="">—</option>
@@ -555,6 +574,18 @@ export default function DashboardPage() {
             value={form.notes}
             onChange={(v) => setForm({ ...form, notes: v })}
           />
+          {!editingId && (
+            <label className="flex items-start gap-2 text-sm text-[var(--c-text)] bg-[var(--c-surface-muted)] rounded-xl p-3">
+              <input
+                type="checkbox"
+                checked={agreedPolicy}
+                onChange={(e) => setAgreedPolicy(e.target.checked)}
+                required
+                className="mt-1"
+              />
+              <span>{policyMessageForRoom(rooms.find((r) => r.id === form.room_id), lang)}</span>
+            </label>
+          )}
           <Alert type="error" message={error} />
           <button
             type="submit"

@@ -24,6 +24,8 @@ export interface Room {
   location_en: string | null;
   capacity: number;
   status: string;
+  booking_policy_message: string | null;
+  booking_policy_message_en: string | null;
 }
 
 export interface Booking {

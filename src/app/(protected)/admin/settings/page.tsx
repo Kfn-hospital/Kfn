@@ -7,7 +7,11 @@ import { useLanguage } from '@/lib/i18n/LanguageContext';
 import Card from '@/components/ui/Card';
 import FormField from '@/components/ui/FormField';
 import Alert from '@/components/ui/Alert';
-import type { RequestCategory } from '@/types/database';
+import type { RequestCategory, Room } from '@/types/database';
+import {
+  DEFAULT_BOOKING_POLICY_MESSAGE_AR,
+  DEFAULT_BOOKING_POLICY_MESSAGE_EN,
+} from '@/lib/bookingPolicy';
 import {
   applyTheme,
   DEFAULT_THEME,
@@ -106,6 +110,10 @@ export default function SettingsPage() {
   const [editCategoryNameEn, setEditCategoryNameEn] = useState('');
   const [editCategoryDept, setEditCategoryDept] = useState('');
   const [savingCategoryEdit, setSavingCategoryEdit] = useState(false);
+  const [roomPolicies, setRoomPolicies] = useState<
+    { id: string; name: string; name_en: string | null; message: string; message_en: string; saving: boolean }[]
+  >([]);
+  const [roomPolicyError, setRoomPolicyError] = useState('');
   const [alert, setAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   useEffect(() => {
@@ -161,6 +169,61 @@ export default function SettingsPage() {
     if (authorized) loadCategories();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authorized]);
+
+  async function loadRoomPolicies() {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    let query = supabase
+      .from('rooms')
+      .select('id, name, name_en, booking_policy_message, booking_policy_message_en')
+      .order('name');
+    if (myRole !== 'admin' && user) {
+      const { data: rm } = await supabase.from('room_managers').select('room_id').eq('user_id', user.id);
+      const roomIds = (rm ?? []).map((r) => r.room_id);
+      if (!roomIds.length) {
+        setRoomPolicies([]);
+        return;
+      }
+      query = query.in('id', roomIds);
+    }
+    const { data } = await query;
+    setRoomPolicies(
+      ((data as Partial<Room>[]) ?? []).map((r) => ({
+        id: r.id as string,
+        name: r.name as string,
+        name_en: r.name_en ?? null,
+        message: r.booking_policy_message || '',
+        message_en: r.booking_policy_message_en || '',
+        saving: false,
+      }))
+    );
+  }
+
+  useEffect(() => {
+    if (authorized) loadRoomPolicies();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authorized]);
+
+  function updateRoomPolicyField(id: string, field: 'message' | 'message_en', value: string) {
+    setRoomPolicies((prev) => prev.map((r) => (r.id === id ? { ...r, [field]: value } : r)));
+  }
+
+  async function saveRoomPolicy(id: string) {
+    const row = roomPolicies.find((r) => r.id === id);
+    if (!row) return;
+    setRoomPolicyError('');
+    setRoomPolicies((prev) => prev.map((r) => (r.id === id ? { ...r, saving: true } : r)));
+    const { error } = await supabase
+      .from('rooms')
+      .update({
+        booking_policy_message: row.message.trim() || null,
+        booking_policy_message_en: row.message_en.trim() || null,
+      })
+      .eq('id', id);
+    setRoomPolicies((prev) => prev.map((r) => (r.id === id ? { ...r, saving: false } : r)));
+    if (error) setRoomPolicyError(error.message);
+  }
 
   async function addCategory() {
     if (!newCategoryName.trim()) return;
@@ -470,6 +533,45 @@ export default function SettingsPage() {
         >
           {saving ? t('loading') : t('saveSettings')}
         </button>
+      </Card>
+
+      <Card>
+        <h3 className="font-bold text-[var(--c-teal-900)] mb-1">🔒 {t('roomPolicyTitle')}</h3>
+        <p className="text-xs text-[var(--c-text-muted)] mb-3">{t('roomPolicyHint')}</p>
+        <Alert type="error" message={roomPolicyError} />
+        {roomPolicies.length === 0 ? (
+          <p className="text-sm text-[var(--c-text-muted)]">{t('noRoomsToManage')}</p>
+        ) : (
+          <div className="space-y-4">
+            {roomPolicies.map((r) => (
+              <div key={r.id} className="bg-[var(--c-surface-muted)] rounded-lg p-3 space-y-2">
+                <p className="text-sm font-bold text-[var(--c-text)]">{r.name}{r.name_en ? ` (${r.name_en})` : ''}</p>
+                <FormField
+                  label={`${t('roomPolicyMessageLabel')} (عربي)`}
+                  type="textarea"
+                  value={r.message}
+                  onChange={(v: string) => updateRoomPolicyField(r.id, 'message', v)}
+                  placeholder={DEFAULT_BOOKING_POLICY_MESSAGE_AR}
+                />
+                <FormField
+                  label={`${t('roomPolicyMessageLabel')} (English)`}
+                  type="textarea"
+                  value={r.message_en}
+                  onChange={(v: string) => updateRoomPolicyField(r.id, 'message_en', v)}
+                  placeholder={DEFAULT_BOOKING_POLICY_MESSAGE_EN}
+                />
+                <button
+                  onClick={() => saveRoomPolicy(r.id)}
+                  disabled={r.saving}
+                  className="bg-[var(--c-teal-700)] text-white font-bold rounded-xl px-4 py-2 text-xs disabled:opacity-50"
+                  type="button"
+                >
+                  {r.saving ? t('loading') : t('save')}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </Card>
 
       {myRole === 'admin' && (
