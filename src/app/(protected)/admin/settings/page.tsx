@@ -43,6 +43,12 @@ interface Settings {
   icon_emoji_logout: string;
   icon_emoji_darkmode: string;
   icon_emoji_lightmode: string;
+  icon_url_colors: string;
+  icon_url_language: string;
+  icon_url_logout: string;
+  icon_url_darkmode: string;
+  icon_url_lightmode: string;
+  header_icon_order: string;
   assistant_icon_emoji: string;
   assistant_icon_url: string;
   booking_color_pending: string;
@@ -79,6 +85,12 @@ const DEFAULTS: Settings = {
   icon_emoji_logout: '🚪',
   icon_emoji_darkmode: '🌙',
   icon_emoji_lightmode: '☀️',
+  icon_url_colors: '',
+  icon_url_language: '',
+  icon_url_logout: '',
+  icon_url_darkmode: '',
+  icon_url_lightmode: '',
+  header_icon_order: 'logout,colors,language,darkmode',
   assistant_icon_emoji: '🤖',
   assistant_icon_url: '',
   booking_color_pending: DEFAULT_BOOKING_COLORS.pending,
@@ -110,6 +122,11 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState<Settings>(DEFAULTS);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [assistantIconFile, setAssistantIconFile] = useState<File | null>(null);
+  const [colorsIconFile, setColorsIconFile] = useState<File | null>(null);
+  const [languageIconFile, setLanguageIconFile] = useState<File | null>(null);
+  const [logoutIconFile, setLogoutIconFile] = useState<File | null>(null);
+  const [darkmodeIconFile, setDarkmodeIconFile] = useState<File | null>(null);
+  const [lightmodeIconFile, setLightmodeIconFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(true);
   const [authorized, setAuthorized] = useState(false);
   const [myRole, setMyRole] = useState<string | null>(null);
@@ -338,6 +355,11 @@ export default function SettingsPage() {
     try {
       let logoUrl = settings.logo_url;
       let assistantIconUrl = settings.assistant_icon_url;
+      let colorsIconUrl = settings.icon_url_colors;
+      let languageIconUrl = settings.icon_url_language;
+      let logoutIconUrl = settings.icon_url_logout;
+      let darkmodeIconUrl = settings.icon_url_darkmode;
+      let lightmodeIconUrl = settings.icon_url_lightmode;
 
       if (logoFile) {
         const path = `logo-${Date.now()}-${logoFile.name}`;
@@ -357,6 +379,22 @@ export default function SettingsPage() {
         if (uploadError) throw uploadError;
         const { data: pub } = supabase.storage.from('branding').getPublicUrl(path);
         assistantIconUrl = pub.publicUrl;
+      }
+
+      const headerIconUploads: [File | null, string, (url: string) => void][] = [
+        [colorsIconFile, 'colors-icon', (url) => { colorsIconUrl = url; }],
+        [languageIconFile, 'language-icon', (url) => { languageIconUrl = url; }],
+        [logoutIconFile, 'logout-icon', (url) => { logoutIconUrl = url; }],
+        [darkmodeIconFile, 'darkmode-icon', (url) => { darkmodeIconUrl = url; }],
+        [lightmodeIconFile, 'lightmode-icon', (url) => { lightmodeIconUrl = url; }],
+      ];
+      for (const [file, prefix, applyUrl] of headerIconUploads) {
+        if (!file) continue;
+        const path = `${prefix}-${Date.now()}-${file.name}`;
+        const { error: uploadError } = await supabase.storage.from('branding').upload(path, file, { upsert: true });
+        if (uploadError) throw uploadError;
+        const { data: pub } = supabase.storage.from('branding').getPublicUrl(path);
+        applyUrl(pub.publicUrl);
       }
 
       await Promise.all([
@@ -379,6 +417,12 @@ export default function SettingsPage() {
         upsertSetting('icon_emoji_logout', settings.icon_emoji_logout),
         upsertSetting('icon_emoji_darkmode', settings.icon_emoji_darkmode),
         upsertSetting('icon_emoji_lightmode', settings.icon_emoji_lightmode),
+        upsertSetting('icon_url_colors', colorsIconUrl),
+        upsertSetting('icon_url_language', languageIconUrl),
+        upsertSetting('icon_url_logout', logoutIconUrl),
+        upsertSetting('icon_url_darkmode', darkmodeIconUrl),
+        upsertSetting('icon_url_lightmode', lightmodeIconUrl),
+        upsertSetting('header_icon_order', settings.header_icon_order),
         upsertSetting('assistant_icon_emoji', settings.assistant_icon_emoji),
         upsertSetting('assistant_icon_url', assistantIconUrl),
         upsertSetting('booking_color_pending', settings.booking_color_pending),
@@ -391,7 +435,21 @@ export default function SettingsPage() {
         upsertSetting('email_from_address', settings.email_from_address),
       ]);
 
-      setSettings((s) => ({ ...s, logo_url: logoUrl, assistant_icon_url: assistantIconUrl }));
+      setSettings((s) => ({
+        ...s,
+        logo_url: logoUrl,
+        assistant_icon_url: assistantIconUrl,
+        icon_url_colors: colorsIconUrl,
+        icon_url_language: languageIconUrl,
+        icon_url_logout: logoutIconUrl,
+        icon_url_darkmode: darkmodeIconUrl,
+        icon_url_lightmode: lightmodeIconUrl,
+      }));
+      setColorsIconFile(null);
+      setLanguageIconFile(null);
+      setLogoutIconFile(null);
+      setDarkmodeIconFile(null);
+      setLightmodeIconFile(null);
       applyTheme(settings.theme_primary, settings.theme_text);
       setAlert({ type: 'success', message: t('saveSuccess') });
     } catch (err) {
@@ -1068,84 +1126,243 @@ export default function SettingsPage() {
         <h3 className="font-bold text-[var(--c-teal-900)] mb-1">🎛️ {t('iconControlTitle')}</h3>
         <p className="text-xs text-[var(--c-text-muted)] mb-3">{t('iconControlHint')}</p>
         <div className="space-y-2">
-          <div className="flex items-center gap-3 bg-[var(--c-surface-muted)] rounded-xl p-3 flex-wrap">
-            <EmojiPicker
-              value={settings.icon_emoji_colors}
-              onChange={(v) => setSettings((s) => ({ ...s, icon_emoji_colors: v }))}
-              options={COLOR_ICON_OPTIONS}
-            />
-            <p className="text-sm font-bold text-[var(--c-text)] flex-1 min-w-[120px]">{t('showColorIcon')}</p>
-            <label className="flex items-center gap-1.5 text-xs font-bold text-[var(--c-text-muted)] shrink-0">
-              <input
-                type="checkbox"
-                checked={settings.icon_show_colors !== 'false'}
-                onChange={(e) => setSettings((s) => ({ ...s, icon_show_colors: e.target.checked ? 'true' : 'false' }))}
-                className="w-4 h-4"
-              />
-              {t('showColorIcon')}
-            </label>
-          </div>
+          {(() => {
+            const HEADER_ICON_KEYS = ['logout', 'colors', 'language', 'darkmode'] as const;
+            type HeaderIconKey = (typeof HEADER_ICON_KEYS)[number];
+            const parsedOrder = settings.header_icon_order
+              .split(',')
+              .map((k) => k.trim())
+              .filter((k): k is HeaderIconKey => (HEADER_ICON_KEYS as readonly string[]).includes(k));
+            const missing = HEADER_ICON_KEYS.filter((k) => !parsedOrder.includes(k));
+            const orderedKeys: HeaderIconKey[] = [...parsedOrder, ...missing];
 
-          <div className="flex items-center gap-3 bg-[var(--c-surface-muted)] rounded-xl p-3 flex-wrap">
-            <EmojiPicker
-              value={settings.icon_emoji_language}
-              onChange={(v) => setSettings((s) => ({ ...s, icon_emoji_language: v }))}
-              options={LANGUAGE_ICON_OPTIONS}
-            />
-            <p className="text-sm font-bold text-[var(--c-text)] flex-1 min-w-[120px]">{t('showLanguageIcon')}</p>
-            <label className="flex items-center gap-1.5 text-xs font-bold text-[var(--c-text-muted)] shrink-0">
-              <input
-                type="checkbox"
-                checked={settings.icon_show_language !== 'false'}
-                onChange={(e) => setSettings((s) => ({ ...s, icon_show_language: e.target.checked ? 'true' : 'false' }))}
-                className="w-4 h-4"
-              />
-              {t('showLanguageIcon')}
-            </label>
-          </div>
+            function moveIcon(key: HeaderIconKey, direction: -1 | 1) {
+              const idx = orderedKeys.indexOf(key);
+              const newIdx = idx + direction;
+              if (newIdx < 0 || newIdx >= orderedKeys.length) return;
+              const next = [...orderedKeys];
+              [next[idx], next[newIdx]] = [next[newIdx], next[idx]];
+              setSettings((s) => ({ ...s, header_icon_order: next.join(',') }));
+            }
 
-          <div className="flex items-center gap-3 bg-[var(--c-surface-muted)] rounded-xl p-3 flex-wrap">
-            <EmojiPicker
-              value={settings.icon_emoji_darkmode}
-              onChange={(v) => setSettings((s) => ({ ...s, icon_emoji_darkmode: v }))}
-              options={DARKMODE_ICON_OPTIONS}
-              title={t('darkMode')}
-            />
-            <EmojiPicker
-              value={settings.icon_emoji_lightmode}
-              onChange={(v) => setSettings((s) => ({ ...s, icon_emoji_lightmode: v }))}
-              options={LIGHTMODE_ICON_OPTIONS}
-              title={t('lightMode')}
-            />
-            <p className="text-sm font-bold text-[var(--c-text)] flex-1 min-w-[120px]">{t('showDarkModeIcon')}</p>
-            <label className="flex items-center gap-1.5 text-xs font-bold text-[var(--c-text-muted)] shrink-0">
-              <input
-                type="checkbox"
-                checked={settings.icon_show_darkmode !== 'false'}
-                onChange={(e) => setSettings((s) => ({ ...s, icon_show_darkmode: e.target.checked ? 'true' : 'false' }))}
-                className="w-4 h-4"
-              />
-              {t('showDarkModeIcon')}
-            </label>
-          </div>
+            function ReorderControls({ iconKey }: { iconKey: HeaderIconKey }) {
+              const idx = orderedKeys.indexOf(iconKey);
+              return (
+                <div className="flex flex-col gap-0.5 shrink-0">
+                  <button
+                    type="button"
+                    disabled={idx === 0}
+                    onClick={() => moveIcon(iconKey, -1)}
+                    title={t('moveIconUp')}
+                    className="w-6 h-5 flex items-center justify-center rounded bg-[var(--c-surface)] text-xs leading-none disabled:opacity-30"
+                  >
+                    ▲
+                  </button>
+                  <button
+                    type="button"
+                    disabled={idx === orderedKeys.length - 1}
+                    onClick={() => moveIcon(iconKey, 1)}
+                    title={t('moveIconDown')}
+                    className="w-6 h-5 flex items-center justify-center rounded bg-[var(--c-surface)] text-xs leading-none disabled:opacity-30"
+                  >
+                    ▼
+                  </button>
+                </div>
+              );
+            }
 
-          <div className="flex items-center gap-3 bg-[var(--c-surface-muted)] rounded-xl p-3 flex-wrap">
-            <EmojiPicker
-              value={settings.icon_emoji_logout}
-              onChange={(v) => setSettings((s) => ({ ...s, icon_emoji_logout: v }))}
-              options={LOGOUT_ICON_OPTIONS}
-            />
-            <p className="text-sm font-bold text-[var(--c-text)] flex-1 min-w-[120px]">{t('showLogoutIcon')}</p>
-            <label className="flex items-center gap-1.5 text-xs font-bold text-[var(--c-text-muted)] shrink-0">
-              <input
-                type="checkbox"
-                checked={settings.icon_show_logout !== 'false'}
-                onChange={(e) => setSettings((s) => ({ ...s, icon_show_logout: e.target.checked ? 'true' : 'false' }))}
-                className="w-4 h-4"
-              />
-              {t('showLogoutIcon')}
-            </label>
-          </div>
+            function IconPreview({ url, emoji }: { url: string; emoji: string }) {
+              return (
+                <div className="w-9 h-9 rounded-lg bg-[var(--c-surface)] flex items-center justify-center text-lg overflow-hidden shrink-0">
+                  {url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={url} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    emoji
+                  )}
+                </div>
+              );
+            }
+
+            function UploadControls({
+              url,
+              onFile,
+              onClear,
+            }: {
+              url: string;
+              onFile: (file: File | null) => void;
+              onClear: () => void;
+            }) {
+              return (
+                <div className="flex items-center gap-2 shrink-0">
+                  <label className="text-xs font-bold text-[var(--c-teal-700)] hover:underline cursor-pointer">
+                    {t('uploadIconLabel')}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => onFile(e.target.files?.[0] ?? null)}
+                    />
+                  </label>
+                  {url && (
+                    <button type="button" onClick={onClear} className="text-xs font-bold text-red-500 hover:underline">
+                      {t('removeIconLabel')}
+                    </button>
+                  )}
+                </div>
+              );
+            }
+
+            return orderedKeys.map((key) => {
+              if (key === 'colors') {
+                return (
+                  <div key="colors" className="flex items-center gap-3 bg-[var(--c-surface-muted)] rounded-xl p-3 flex-wrap">
+                    <ReorderControls iconKey="colors" />
+                    <IconPreview url={settings.icon_url_colors} emoji={settings.icon_emoji_colors} />
+                    <EmojiPicker
+                      value={settings.icon_emoji_colors}
+                      onChange={(v) => setSettings((s) => ({ ...s, icon_emoji_colors: v }))}
+                      options={COLOR_ICON_OPTIONS}
+                    />
+                    <UploadControls
+                      url={settings.icon_url_colors}
+                      onFile={setColorsIconFile}
+                      onClear={() => {
+                        setColorsIconFile(null);
+                        setSettings((s) => ({ ...s, icon_url_colors: '' }));
+                      }}
+                    />
+                    <p className="text-sm font-bold text-[var(--c-text)] flex-1 min-w-[100px]">{t('showColorIcon')}</p>
+                    <label className="flex items-center gap-1.5 text-xs font-bold text-[var(--c-text-muted)] shrink-0">
+                      <input
+                        type="checkbox"
+                        checked={settings.icon_show_colors !== 'false'}
+                        onChange={(e) => setSettings((s) => ({ ...s, icon_show_colors: e.target.checked ? 'true' : 'false' }))}
+                        className="w-4 h-4"
+                      />
+                      {t('showColorIcon')}
+                    </label>
+                  </div>
+                );
+              }
+
+              if (key === 'language') {
+                return (
+                  <div key="language" className="flex items-center gap-3 bg-[var(--c-surface-muted)] rounded-xl p-3 flex-wrap">
+                    <ReorderControls iconKey="language" />
+                    <IconPreview url={settings.icon_url_language} emoji={settings.icon_emoji_language} />
+                    <EmojiPicker
+                      value={settings.icon_emoji_language}
+                      onChange={(v) => setSettings((s) => ({ ...s, icon_emoji_language: v }))}
+                      options={LANGUAGE_ICON_OPTIONS}
+                    />
+                    <UploadControls
+                      url={settings.icon_url_language}
+                      onFile={setLanguageIconFile}
+                      onClear={() => {
+                        setLanguageIconFile(null);
+                        setSettings((s) => ({ ...s, icon_url_language: '' }));
+                      }}
+                    />
+                    <p className="text-sm font-bold text-[var(--c-text)] flex-1 min-w-[100px]">{t('showLanguageIcon')}</p>
+                    <label className="flex items-center gap-1.5 text-xs font-bold text-[var(--c-text-muted)] shrink-0">
+                      <input
+                        type="checkbox"
+                        checked={settings.icon_show_language !== 'false'}
+                        onChange={(e) => setSettings((s) => ({ ...s, icon_show_language: e.target.checked ? 'true' : 'false' }))}
+                        className="w-4 h-4"
+                      />
+                      {t('showLanguageIcon')}
+                    </label>
+                  </div>
+                );
+              }
+
+              if (key === 'darkmode') {
+                return (
+                  <div key="darkmode" className="flex items-center gap-3 bg-[var(--c-surface-muted)] rounded-xl p-3 flex-wrap">
+                    <ReorderControls iconKey="darkmode" />
+                    <div className="flex items-center gap-2">
+                      <div className="flex flex-col items-center gap-1">
+                        <IconPreview url={settings.icon_url_darkmode} emoji={settings.icon_emoji_darkmode} />
+                        <EmojiPicker
+                          value={settings.icon_emoji_darkmode}
+                          onChange={(v) => setSettings((s) => ({ ...s, icon_emoji_darkmode: v }))}
+                          options={DARKMODE_ICON_OPTIONS}
+                          title={t('darkMode')}
+                        />
+                        <UploadControls
+                          url={settings.icon_url_darkmode}
+                          onFile={setDarkmodeIconFile}
+                          onClear={() => {
+                            setDarkmodeIconFile(null);
+                            setSettings((s) => ({ ...s, icon_url_darkmode: '' }));
+                          }}
+                        />
+                      </div>
+                      <div className="flex flex-col items-center gap-1">
+                        <IconPreview url={settings.icon_url_lightmode} emoji={settings.icon_emoji_lightmode} />
+                        <EmojiPicker
+                          value={settings.icon_emoji_lightmode}
+                          onChange={(v) => setSettings((s) => ({ ...s, icon_emoji_lightmode: v }))}
+                          options={LIGHTMODE_ICON_OPTIONS}
+                          title={t('lightMode')}
+                        />
+                        <UploadControls
+                          url={settings.icon_url_lightmode}
+                          onFile={setLightmodeIconFile}
+                          onClear={() => {
+                            setLightmodeIconFile(null);
+                            setSettings((s) => ({ ...s, icon_url_lightmode: '' }));
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <p className="text-sm font-bold text-[var(--c-text)] flex-1 min-w-[100px]">{t('showDarkModeIcon')}</p>
+                    <label className="flex items-center gap-1.5 text-xs font-bold text-[var(--c-text-muted)] shrink-0">
+                      <input
+                        type="checkbox"
+                        checked={settings.icon_show_darkmode !== 'false'}
+                        onChange={(e) => setSettings((s) => ({ ...s, icon_show_darkmode: e.target.checked ? 'true' : 'false' }))}
+                        className="w-4 h-4"
+                      />
+                      {t('showDarkModeIcon')}
+                    </label>
+                  </div>
+                );
+              }
+
+              return (
+                <div key="logout" className="flex items-center gap-3 bg-[var(--c-surface-muted)] rounded-xl p-3 flex-wrap">
+                  <ReorderControls iconKey="logout" />
+                  <IconPreview url={settings.icon_url_logout} emoji={settings.icon_emoji_logout} />
+                  <EmojiPicker
+                    value={settings.icon_emoji_logout}
+                    onChange={(v) => setSettings((s) => ({ ...s, icon_emoji_logout: v }))}
+                    options={LOGOUT_ICON_OPTIONS}
+                  />
+                  <UploadControls
+                    url={settings.icon_url_logout}
+                    onFile={setLogoutIconFile}
+                    onClear={() => {
+                      setLogoutIconFile(null);
+                      setSettings((s) => ({ ...s, icon_url_logout: '' }));
+                    }}
+                  />
+                  <p className="text-sm font-bold text-[var(--c-text)] flex-1 min-w-[100px]">{t('showLogoutIcon')}</p>
+                  <label className="flex items-center gap-1.5 text-xs font-bold text-[var(--c-text-muted)] shrink-0">
+                    <input
+                      type="checkbox"
+                      checked={settings.icon_show_logout !== 'false'}
+                      onChange={(e) => setSettings((s) => ({ ...s, icon_show_logout: e.target.checked ? 'true' : 'false' }))}
+                      className="w-4 h-4"
+                    />
+                    {t('showLogoutIcon')}
+                  </label>
+                </div>
+              );
+            });
+          })()}
         </div>
       </Card>
       )}

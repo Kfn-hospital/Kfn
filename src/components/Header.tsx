@@ -26,6 +26,15 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void } = {
     darkmode: '🌙',
     lightmode: '☀️',
   });
+  const [iconUrls, setIconUrls] = useState({
+    colors: '',
+    language: '',
+    logout: '',
+    darkmode: '',
+    lightmode: '',
+  });
+  const DEFAULT_ICON_ORDER = ['logout', 'colors', 'language', 'darkmode'];
+  const [iconOrder, setIconOrder] = useState<string[]>(DEFAULT_ICON_ORDER);
   const [mode, setMode] = useState<ThemeMode>('light');
 
   const [colorMenuOpen, setColorMenuOpen] = useState(false);
@@ -56,6 +65,12 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void } = {
           'icon_emoji_logout',
           'icon_emoji_darkmode',
           'icon_emoji_lightmode',
+          'icon_url_colors',
+          'icon_url_language',
+          'icon_url_logout',
+          'icon_url_darkmode',
+          'icon_url_lightmode',
+          'header_icon_order',
         ]);
       (data as { key: string; value: string | null }[] | null)?.forEach((row) => {
         if (row.key === 'logo_url' && row.value) setLogoUrl(row.value);
@@ -68,6 +83,16 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void } = {
         if (row.key === 'icon_emoji_logout' && row.value) setIconEmojis((v) => ({ ...v, logout: row.value as string }));
         if (row.key === 'icon_emoji_darkmode' && row.value) setIconEmojis((v) => ({ ...v, darkmode: row.value as string }));
         if (row.key === 'icon_emoji_lightmode' && row.value) setIconEmojis((v) => ({ ...v, lightmode: row.value as string }));
+        if (row.key === 'icon_url_colors') setIconUrls((v) => ({ ...v, colors: row.value || '' }));
+        if (row.key === 'icon_url_language') setIconUrls((v) => ({ ...v, language: row.value || '' }));
+        if (row.key === 'icon_url_logout') setIconUrls((v) => ({ ...v, logout: row.value || '' }));
+        if (row.key === 'icon_url_darkmode') setIconUrls((v) => ({ ...v, darkmode: row.value || '' }));
+        if (row.key === 'icon_url_lightmode') setIconUrls((v) => ({ ...v, lightmode: row.value || '' }));
+        if (row.key === 'header_icon_order' && row.value) {
+          const parsed = row.value.split(',').map((k) => k.trim()).filter((k) => DEFAULT_ICON_ORDER.includes(k));
+          const missing = DEFAULT_ICON_ORDER.filter((k) => !parsed.includes(k));
+          setIconOrder([...parsed, ...missing]);
+        }
         if (row.key === 'site_name_ar' && row.value && lang === 'ar') setSiteName(row.value);
         if (row.key === 'site_name_en' && row.value && lang === 'en') setSiteName(row.value);
       });
@@ -202,140 +227,189 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void } = {
       </div>
 
       <div className="flex items-center gap-1 shrink-0">
-        {iconVisibility.logout && (
-          <button
-            onClick={handleLogout}
-            title={t('logout')}
-            type="button"
-            className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-[var(--c-surface-muted)] text-lg"
-          >
-            {iconEmojis.logout}
-          </button>
-        )}
-
-        {iconVisibility.colors && (
-        <div className="relative" ref={colorMenuRef}>
-          <button
-            onClick={openColorMenu}
-            title={t('appearanceTitle')}
-            type="button"
-            className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-[var(--c-surface-muted)] text-lg"
-          >
-            {iconEmojis.colors}
-          </button>
-          {colorMenuOpen && (
-            <div className="absolute end-0 top-11 w-64 bg-[var(--c-surface)] border border-[var(--c-border)] rounded-xl shadow-2xl p-4 z-30">
-              <p className="font-extrabold text-sm text-[var(--c-teal-900)] mb-3">🎨 {t('appearanceTitle')}</p>
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-xs font-bold text-[var(--c-text)] mb-1">{t('primaryColor')}</label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="color"
-                      value={primary}
-                      onChange={(e) => {
-                        setPrimary(e.target.value);
-                        previewColors(e.target.value, text);
-                      }}
-                      className="w-10 h-8 rounded border cursor-pointer"
-                    />
-                    <span className="text-xs text-[var(--c-text-muted)]">{primary}</span>
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-[var(--c-text)] mb-1">{t('textColor')}</label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="color"
-                      value={text}
-                      onChange={(e) => {
-                        setText(e.target.value);
-                        previewColors(primary, e.target.value);
-                      }}
-                      className="w-10 h-8 rounded border cursor-pointer"
-                    />
-                    <span className="text-xs text-[var(--c-text-muted)]">{text}</span>
-                  </div>
-                </div>
-              </div>
-              {colorSavedMsg && <p className="text-xs text-green-600 font-bold mt-2">{colorSavedMsg}</p>}
-              <div className="flex items-center gap-2 mt-3">
+        {iconOrder.map((key) => {
+          if (key === 'logout') {
+            return (
+              iconVisibility.logout && (
                 <button
+                  key="logout"
+                  onClick={handleLogout}
+                  title={t('logout')}
                   type="button"
-                  onClick={saveColors}
-                  disabled={colorSaving}
-                  className="flex-1 bg-[var(--c-teal-700)] text-white font-bold rounded-lg px-3 py-2 text-xs disabled:opacity-50"
+                  className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-[var(--c-surface-muted)] text-lg"
                 >
-                  {colorSaving ? t('loading') : t('save')}
+                  {iconUrls.logout ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={iconUrls.logout} alt="" className="w-5 h-5 object-contain" />
+                  ) : (
+                    iconEmojis.logout
+                  )}
                 </button>
+              )
+            );
+          }
+
+          if (key === 'colors') {
+            return (
+              iconVisibility.colors && (
+                <div key="colors" className="relative" ref={colorMenuRef}>
+                  <button
+                    onClick={openColorMenu}
+                    title={t('appearanceTitle')}
+                    type="button"
+                    className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-[var(--c-surface-muted)] text-lg"
+                  >
+                    {iconUrls.colors ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={iconUrls.colors} alt="" className="w-5 h-5 object-contain" />
+                    ) : (
+                      iconEmojis.colors
+                    )}
+                  </button>
+                  {colorMenuOpen && (
+                    <div className="absolute end-0 top-11 w-64 bg-[var(--c-surface)] border border-[var(--c-border)] rounded-xl shadow-2xl p-4 z-30">
+                      <p className="font-extrabold text-sm text-[var(--c-teal-900)] mb-3">🎨 {t('appearanceTitle')}</p>
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-xs font-bold text-[var(--c-text)] mb-1">{t('primaryColor')}</label>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="color"
+                              value={primary}
+                              onChange={(e) => {
+                                setPrimary(e.target.value);
+                                previewColors(e.target.value, text);
+                              }}
+                              className="w-10 h-8 rounded border cursor-pointer"
+                            />
+                            <span className="text-xs text-[var(--c-text-muted)]">{primary}</span>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-[var(--c-text)] mb-1">{t('textColor')}</label>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="color"
+                              value={text}
+                              onChange={(e) => {
+                                setText(e.target.value);
+                                previewColors(primary, e.target.value);
+                              }}
+                              className="w-10 h-8 rounded border cursor-pointer"
+                            />
+                            <span className="text-xs text-[var(--c-text-muted)]">{text}</span>
+                          </div>
+                        </div>
+                      </div>
+                      {colorSavedMsg && <p className="text-xs text-green-600 font-bold mt-2">{colorSavedMsg}</p>}
+                      <div className="flex items-center gap-2 mt-3">
+                        <button
+                          type="button"
+                          onClick={saveColors}
+                          disabled={colorSaving}
+                          className="flex-1 bg-[var(--c-teal-700)] text-white font-bold rounded-lg px-3 py-2 text-xs disabled:opacity-50"
+                        >
+                          {colorSaving ? t('loading') : t('save')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={resetColors}
+                          disabled={colorSaving}
+                          className="text-xs font-bold text-[var(--c-text-muted)] hover:underline whitespace-nowrap"
+                        >
+                          {t('useSiteDefault')}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            );
+          }
+
+          if (key === 'language') {
+            return (
+              iconVisibility.language && (
+                <div key="language" className="relative" ref={langMenuRef}>
+                  <button
+                    onClick={() => {
+                      setColorMenuOpen(false);
+                      setLangMenuOpen((v) => !v);
+                    }}
+                    title={t('langToggle')}
+                    type="button"
+                    className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-[var(--c-surface-muted)] text-lg"
+                  >
+                    {iconUrls.language ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={iconUrls.language} alt="" className="w-5 h-5 object-contain" />
+                    ) : (
+                      iconEmojis.language
+                    )}
+                  </button>
+                  {langMenuOpen && (
+                    <div className="absolute end-0 top-11 w-36 bg-[var(--c-surface)] border border-[var(--c-border)] rounded-xl shadow-2xl py-1 z-30 overflow-hidden">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setLang('ar');
+                          setLangMenuOpen(false);
+                        }}
+                        className={`w-full text-right px-3 py-2 text-sm font-bold hover:bg-[var(--c-surface-muted)] ${
+                          lang === 'ar' ? 'text-[var(--c-teal-700)]' : 'text-[var(--c-text)]'
+                        }`}
+                      >
+                        {lang === 'ar' ? '✓ ' : ''}العربية
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setLang('en');
+                          setLangMenuOpen(false);
+                        }}
+                        className={`w-full text-right px-3 py-2 text-sm font-bold hover:bg-[var(--c-surface-muted)] ${
+                          lang === 'en' ? 'text-[var(--c-teal-700)]' : 'text-[var(--c-text)]'
+                        }`}
+                      >
+                        {lang === 'en' ? '✓ ' : ''}English
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )
+            );
+          }
+
+          if (key === 'darkmode') {
+            return (
+              iconVisibility.darkmode && (
                 <button
+                  key="darkmode"
+                  onClick={handleToggleMode}
+                  title={mode === 'light' ? t('darkMode') : t('lightMode')}
                   type="button"
-                  onClick={resetColors}
-                  disabled={colorSaving}
-                  className="text-xs font-bold text-[var(--c-text-muted)] hover:underline whitespace-nowrap"
+                  className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-[var(--c-surface-muted)] text-lg"
                 >
-                  {t('useSiteDefault')}
+                  {mode === 'light' ? (
+                    iconUrls.darkmode ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={iconUrls.darkmode} alt="" className="w-5 h-5 object-contain" />
+                    ) : (
+                      iconEmojis.darkmode
+                    )
+                  ) : iconUrls.lightmode ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={iconUrls.lightmode} alt="" className="w-5 h-5 object-contain" />
+                  ) : (
+                    iconEmojis.lightmode
+                  )}
                 </button>
-              </div>
-            </div>
-          )}
-        </div>
-        )}
+              )
+            );
+          }
 
-        {iconVisibility.language && (
-        <div className="relative" ref={langMenuRef}>
-          <button
-            onClick={() => {
-              setColorMenuOpen(false);
-              setLangMenuOpen((v) => !v);
-            }}
-            title={t('langToggle')}
-            type="button"
-            className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-[var(--c-surface-muted)] text-lg"
-          >
-            {iconEmojis.language}
-          </button>
-          {langMenuOpen && (
-            <div className="absolute end-0 top-11 w-36 bg-[var(--c-surface)] border border-[var(--c-border)] rounded-xl shadow-2xl py-1 z-30 overflow-hidden">
-              <button
-                type="button"
-                onClick={() => {
-                  setLang('ar');
-                  setLangMenuOpen(false);
-                }}
-                className={`w-full text-right px-3 py-2 text-sm font-bold hover:bg-[var(--c-surface-muted)] ${
-                  lang === 'ar' ? 'text-[var(--c-teal-700)]' : 'text-[var(--c-text)]'
-                }`}
-              >
-                {lang === 'ar' ? '✓ ' : ''}العربية
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setLang('en');
-                  setLangMenuOpen(false);
-                }}
-                className={`w-full text-right px-3 py-2 text-sm font-bold hover:bg-[var(--c-surface-muted)] ${
-                  lang === 'en' ? 'text-[var(--c-teal-700)]' : 'text-[var(--c-text)]'
-                }`}
-              >
-                {lang === 'en' ? '✓ ' : ''}English
-              </button>
-            </div>
-          )}
-        </div>
-        )}
-
-        {iconVisibility.darkmode && (
-          <button
-            onClick={handleToggleMode}
-            title={mode === 'light' ? t('darkMode') : t('lightMode')}
-            type="button"
-            className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-[var(--c-surface-muted)] text-lg"
-          >
-            {mode === 'light' ? iconEmojis.darkmode : iconEmojis.lightmode}
-          </button>
-        )}
+          return null;
+        })}
       </div>
     </header>
   );
