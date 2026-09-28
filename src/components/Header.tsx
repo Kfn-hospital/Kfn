@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { applyMode, applyTheme, DEFAULT_THEME, getStoredMode, type ThemeMode } from '@/lib/theme/colorUtils';
+import { APP_SETTINGS_UPDATED_EVENT } from '@/lib/settingsSync';
 
 export default function Header({ onMenuClick }: { onMenuClick?: () => void } = {}) {
   const pathname = usePathname();
@@ -35,6 +36,7 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void } = {
   });
   const DEFAULT_ICON_ORDER = ['logout', 'colors', 'language', 'darkmode'];
   const [iconOrder, setIconOrder] = useState<string[]>(DEFAULT_ICON_ORDER);
+  const [iconsReady, setIconsReady] = useState(false);
   const [mode, setMode] = useState<ThemeMode>('light');
 
   const [colorMenuOpen, setColorMenuOpen] = useState(false);
@@ -47,57 +49,71 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void } = {
   const colorMenuRef = useRef<HTMLDivElement | null>(null);
   const langMenuRef = useRef<HTMLDivElement | null>(null);
 
+  async function loadHeaderSettings() {
+    const { data } = await supabase
+      .from('app_settings')
+      .select('key, value')
+      .in('key', [
+        'logo_url',
+        'site_name_ar',
+        'site_name_en',
+        'icon_show_colors',
+        'icon_show_language',
+        'icon_show_darkmode',
+        'icon_show_logout',
+        'icon_emoji_colors',
+        'icon_emoji_language',
+        'icon_emoji_logout',
+        'icon_emoji_darkmode',
+        'icon_emoji_lightmode',
+        'icon_url_colors',
+        'icon_url_language',
+        'icon_url_logout',
+        'icon_url_darkmode',
+        'icon_url_lightmode',
+        'header_icon_order',
+      ]);
+    (data as { key: string; value: string | null }[] | null)?.forEach((row) => {
+      if (row.key === 'logo_url' && row.value) setLogoUrl(row.value);
+      if (row.key === 'icon_show_colors') setIconVisibility((v) => ({ ...v, colors: row.value !== 'false' }));
+      if (row.key === 'icon_show_language') setIconVisibility((v) => ({ ...v, language: row.value !== 'false' }));
+      if (row.key === 'icon_show_darkmode') setIconVisibility((v) => ({ ...v, darkmode: row.value !== 'false' }));
+      if (row.key === 'icon_show_logout') setIconVisibility((v) => ({ ...v, logout: row.value !== 'false' }));
+      if (row.key === 'icon_emoji_colors' && row.value) setIconEmojis((v) => ({ ...v, colors: row.value as string }));
+      if (row.key === 'icon_emoji_language' && row.value) setIconEmojis((v) => ({ ...v, language: row.value as string }));
+      if (row.key === 'icon_emoji_logout' && row.value) setIconEmojis((v) => ({ ...v, logout: row.value as string }));
+      if (row.key === 'icon_emoji_darkmode' && row.value) setIconEmojis((v) => ({ ...v, darkmode: row.value as string }));
+      if (row.key === 'icon_emoji_lightmode' && row.value) setIconEmojis((v) => ({ ...v, lightmode: row.value as string }));
+      if (row.key === 'icon_url_colors') setIconUrls((v) => ({ ...v, colors: row.value || '' }));
+      if (row.key === 'icon_url_language') setIconUrls((v) => ({ ...v, language: row.value || '' }));
+      if (row.key === 'icon_url_logout') setIconUrls((v) => ({ ...v, logout: row.value || '' }));
+      if (row.key === 'icon_url_darkmode') setIconUrls((v) => ({ ...v, darkmode: row.value || '' }));
+      if (row.key === 'icon_url_lightmode') setIconUrls((v) => ({ ...v, lightmode: row.value || '' }));
+      if (row.key === 'header_icon_order' && row.value) {
+        const parsed = row.value.split(',').map((k) => k.trim()).filter((k) => DEFAULT_ICON_ORDER.includes(k));
+        const missing = DEFAULT_ICON_ORDER.filter((k) => !parsed.includes(k));
+        setIconOrder([...parsed, ...missing]);
+      }
+      if (row.key === 'site_name_ar' && row.value && lang === 'ar') setSiteName(row.value);
+      if (row.key === 'site_name_en' && row.value && lang === 'en') setSiteName(row.value);
+    });
+    setIconsReady(true);
+  }
+
   useEffect(() => {
-    (async () => {
-      const { data } = await supabase
-        .from('app_settings')
-        .select('key, value')
-        .in('key', [
-          'logo_url',
-          'site_name_ar',
-          'site_name_en',
-          'icon_show_colors',
-          'icon_show_language',
-          'icon_show_darkmode',
-          'icon_show_logout',
-          'icon_emoji_colors',
-          'icon_emoji_language',
-          'icon_emoji_logout',
-          'icon_emoji_darkmode',
-          'icon_emoji_lightmode',
-          'icon_url_colors',
-          'icon_url_language',
-          'icon_url_logout',
-          'icon_url_darkmode',
-          'icon_url_lightmode',
-          'header_icon_order',
-        ]);
-      (data as { key: string; value: string | null }[] | null)?.forEach((row) => {
-        if (row.key === 'logo_url' && row.value) setLogoUrl(row.value);
-        if (row.key === 'icon_show_colors') setIconVisibility((v) => ({ ...v, colors: row.value !== 'false' }));
-        if (row.key === 'icon_show_language') setIconVisibility((v) => ({ ...v, language: row.value !== 'false' }));
-        if (row.key === 'icon_show_darkmode') setIconVisibility((v) => ({ ...v, darkmode: row.value !== 'false' }));
-        if (row.key === 'icon_show_logout') setIconVisibility((v) => ({ ...v, logout: row.value !== 'false' }));
-        if (row.key === 'icon_emoji_colors' && row.value) setIconEmojis((v) => ({ ...v, colors: row.value as string }));
-        if (row.key === 'icon_emoji_language' && row.value) setIconEmojis((v) => ({ ...v, language: row.value as string }));
-        if (row.key === 'icon_emoji_logout' && row.value) setIconEmojis((v) => ({ ...v, logout: row.value as string }));
-        if (row.key === 'icon_emoji_darkmode' && row.value) setIconEmojis((v) => ({ ...v, darkmode: row.value as string }));
-        if (row.key === 'icon_emoji_lightmode' && row.value) setIconEmojis((v) => ({ ...v, lightmode: row.value as string }));
-        if (row.key === 'icon_url_colors') setIconUrls((v) => ({ ...v, colors: row.value || '' }));
-        if (row.key === 'icon_url_language') setIconUrls((v) => ({ ...v, language: row.value || '' }));
-        if (row.key === 'icon_url_logout') setIconUrls((v) => ({ ...v, logout: row.value || '' }));
-        if (row.key === 'icon_url_darkmode') setIconUrls((v) => ({ ...v, darkmode: row.value || '' }));
-        if (row.key === 'icon_url_lightmode') setIconUrls((v) => ({ ...v, lightmode: row.value || '' }));
-        if (row.key === 'header_icon_order' && row.value) {
-          const parsed = row.value.split(',').map((k) => k.trim()).filter((k) => DEFAULT_ICON_ORDER.includes(k));
-          const missing = DEFAULT_ICON_ORDER.filter((k) => !parsed.includes(k));
-          setIconOrder([...parsed, ...missing]);
-        }
-        if (row.key === 'site_name_ar' && row.value && lang === 'ar') setSiteName(row.value);
-        if (row.key === 'site_name_en' && row.value && lang === 'en') setSiteName(row.value);
-      });
-    })();
+    loadHeaderSettings();
     setMode(getStoredMode());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang]);
+
+  // إعادة تحميل الإعدادات فورًا لما يتم حفظها من صفحة الإعدادات، بدون
+  // الحاجة لتسجيل خروج ودخول عشان التغيير يظهر في الهيدر.
+  useEffect(() => {
+    function handleSettingsUpdated() {
+      loadHeaderSettings();
+    }
+    window.addEventListener(APP_SETTINGS_UPDATED_EVENT, handleSettingsUpdated);
+    return () => window.removeEventListener(APP_SETTINGS_UPDATED_EVENT, handleSettingsUpdated);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang]);
 
@@ -227,7 +243,7 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void } = {
       </div>
 
       <div className="flex items-center gap-1 shrink-0">
-        {iconOrder.map((key) => {
+        {iconsReady && iconOrder.map((key) => {
           if (key === 'logout') {
             return (
               iconVisibility.logout && (

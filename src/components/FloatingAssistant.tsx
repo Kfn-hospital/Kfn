@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
+import { APP_SETTINGS_UPDATED_EVENT } from '@/lib/settingsSync';
 
 interface AssistantMessage {
   id: string;
@@ -110,6 +111,7 @@ export default function FloatingAssistant() {
   const [visible, setVisible] = useState(true);
   const [iconEmoji, setIconEmoji] = useState('🤖');
   const [iconUrl, setIconUrl] = useState('');
+  const [settingsReady, setSettingsReady] = useState(false);
   const [assistantName, setAssistantName] = useState('');
   const [messages, setMessages] = useState<AssistantMessage[]>([]);
   const [text, setText] = useState('');
@@ -125,6 +127,20 @@ export default function FloatingAssistant() {
   const recordTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const recordSecondsRef = useRef(0);
 
+  async function loadAssistantSettings() {
+    const { data } = await supabase
+      .from('app_settings')
+      .select('key, value')
+      .in('key', ['icon_show_assistant', 'assistant_icon_emoji', 'assistant_icon_url', 'ai_assistant_name']);
+    (data as { key: string; value: string | null }[] | null)?.forEach((row) => {
+      if (row.key === 'icon_show_assistant') setVisible(row.value !== 'false');
+      if (row.key === 'assistant_icon_emoji' && row.value) setIconEmoji(row.value);
+      if (row.key === 'assistant_icon_url') setIconUrl(row.value || '');
+      if (row.key === 'ai_assistant_name' && row.value) setAssistantName(row.value);
+    });
+    setSettingsReady(true);
+  }
+
   useEffect(() => {
     (async () => {
       const {
@@ -132,18 +148,15 @@ export default function FloatingAssistant() {
       } = await supabase.auth.getUser();
       if (user) setUserId(user.id);
     })();
-    (async () => {
-      const { data } = await supabase
-        .from('app_settings')
-        .select('key, value')
-        .in('key', ['icon_show_assistant', 'assistant_icon_emoji', 'assistant_icon_url', 'ai_assistant_name']);
-      (data as { key: string; value: string | null }[] | null)?.forEach((row) => {
-        if (row.key === 'icon_show_assistant') setVisible(row.value !== 'false');
-        if (row.key === 'assistant_icon_emoji' && row.value) setIconEmoji(row.value);
-        if (row.key === 'assistant_icon_url' && row.value) setIconUrl(row.value);
-        if (row.key === 'ai_assistant_name' && row.value) setAssistantName(row.value);
-      });
-    })();
+    loadAssistantSettings();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // إعادة تحميل إعدادات أيقونة المساعد فورًا لما يتم حفظها من صفحة
+  // الإعدادات، بدون الحاجة لتسجيل خروج ودخول.
+  useEffect(() => {
+    window.addEventListener(APP_SETTINGS_UPDATED_EVENT, loadAssistantSettings);
+    return () => window.removeEventListener(APP_SETTINGS_UPDATED_EVENT, loadAssistantSettings);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -292,7 +305,7 @@ export default function FloatingAssistant() {
     mediaRecorderRef.current?.stop();
   }
 
-  if (!userId || !visible) return null;
+  if (!userId || !visible || !settingsReady) return null;
 
   return (
     <>

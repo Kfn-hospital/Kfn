@@ -9,6 +9,7 @@ import FormField from '@/components/ui/FormField';
 import Alert from '@/components/ui/Alert';
 import EmojiPicker from '@/components/ui/EmojiPicker';
 import Tabs from '@/components/ui/Tabs';
+import { notifyAppSettingsUpdated } from '@/lib/settingsSync';
 import type { RequestCategory, Room } from '@/types/database';
 import {
   DEFAULT_BOOKING_POLICY_MESSAGE_AR,
@@ -451,6 +452,7 @@ export default function SettingsPage() {
       setDarkmodeIconFile(null);
       setLightmodeIconFile(null);
       applyTheme(settings.theme_primary, settings.theme_text);
+      notifyAppSettingsUpdated();
       setAlert({ type: 'success', message: t('saveSuccess') });
     } catch (err) {
       setAlert({ type: 'error', message: err instanceof Error ? err.message : String(err) });
