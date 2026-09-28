@@ -7,6 +7,7 @@ import Card from '@/components/ui/Card';
 import Modal from '@/components/ui/Modal';
 import FormField from '@/components/ui/FormField';
 import Alert from '@/components/ui/Alert';
+import EmptyState from '@/components/ui/EmptyState';
 import type {
   Checklist,
   ChecklistItem,
@@ -138,7 +139,9 @@ export default function ChecklistsPage() {
           );
         })}
         {!checklists.length && (
-          <p className="text-[var(--c-text-muted)] col-span-full text-center py-10">{t('noData')}</p>
+          <div className="col-span-full">
+            <EmptyState icon="✅" message={t('noData')} />
+          </div>
         )}
       </div>
 

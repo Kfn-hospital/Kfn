@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import Card from '@/components/ui/Card';
 import Alert from '@/components/ui/Alert';
+import Breadcrumbs from '@/components/ui/Breadcrumbs';
 import type { CoordinationRequest, Profile } from '@/types/database';
 
 const CAN_MANAGE_ROLES = ['admin', 'coordinator', 'coordination_admin'];
@@ -308,9 +308,7 @@ export default function RequestDetailPage() {
   if (notFound || !request) {
     return (
       <main className="p-6 space-y-4">
-        <Link href="/requests" className="text-[var(--c-teal-600)] text-sm font-bold hover:underline">
-          ← {t('requestsTitle')}
-        </Link>
+        <Breadcrumbs items={[{ label: t('requestsTitle'), href: '/requests' }, { label: t('noData') }]} />
         <Alert type="error" message={t('noData')} />
       </main>
     );
@@ -318,9 +316,7 @@ export default function RequestDetailPage() {
 
   return (
     <main className="p-6 max-w-3xl space-y-4">
-      <Link href="/requests" className="text-[var(--c-teal-600)] text-sm font-bold hover:underline">
-        ← {t('requestsTitle')}
-      </Link>
+      <Breadcrumbs items={[{ label: t('requestsTitle'), href: '/requests' }, { label: request.title }]} />
 
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <h1 className="text-2xl font-extrabold text-[var(--c-teal-900)]">{request.title}</h1>

@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { applyMode, applyTheme, DEFAULT_THEME, getStoredMode, type ThemeMode } from '@/lib/theme/colorUtils';
 
-export default function Header() {
+export default function Header({ onMenuClick }: { onMenuClick?: () => void } = {}) {
   const pathname = usePathname();
   const router = useRouter();
   const { t, lang, setLang } = useLanguage();
@@ -182,6 +182,14 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-[var(--c-border)] bg-[var(--c-surface)] px-4 py-3">
       <div className="flex items-center gap-3 min-w-0">
+        <button
+          type="button"
+          onClick={onMenuClick}
+          aria-label={t('toggleMenu')}
+          className="md:hidden w-9 h-9 shrink-0 flex items-center justify-center rounded-lg hover:bg-[var(--c-surface-muted)] text-lg"
+        >
+          ☰
+        </button>
         {logoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={logoUrl} alt="logo" className="h-9 w-9 object-contain rounded-lg" />

@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import Card from '@/components/ui/Card';
 import FormField from '@/components/ui/FormField';
 import Alert from '@/components/ui/Alert';
+import Breadcrumbs from '@/components/ui/Breadcrumbs';
 import type { UserRole } from '@/types/database';
 
 export default function EditUserPage() {
@@ -74,11 +74,7 @@ export default function EditUserPage() {
 
   return (
     <div className="max-w-lg space-y-4">
-      <div className="flex items-center gap-2">
-        <Link href="/admin/users" className="text-[var(--c-teal-600)] text-sm font-bold hover:underline">
-          ← {t('usersTitle')}
-        </Link>
-      </div>
+      <Breadcrumbs items={[{ label: t('usersTitle'), href: '/admin/users' }, { label: t('editUserTitle') }]} />
       <h1 className="text-2xl font-extrabold text-[var(--c-teal-900)]">✏️ {t('editUserTitle')}</h1>
 
       {alert && <Alert type={alert.type} message={alert.message} />}

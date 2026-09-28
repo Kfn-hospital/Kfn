@@ -8,6 +8,7 @@ import Card from '@/components/ui/Card';
 import FormField from '@/components/ui/FormField';
 import Alert from '@/components/ui/Alert';
 import EmojiPicker from '@/components/ui/EmojiPicker';
+import Tabs from '@/components/ui/Tabs';
 import type { RequestCategory, Room } from '@/types/database';
 import {
   DEFAULT_BOOKING_POLICY_MESSAGE_AR,
@@ -112,6 +113,9 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [authorized, setAuthorized] = useState(false);
   const [myRole, setMyRole] = useState<string | null>(null);
+  const [activeSettingsTab, setActiveSettingsTab] = useState<
+    'general' | 'bookings' | 'requests' | 'assistant' | 'email' | 'icons'
+  >('general');
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testEmailRecipient, setTestEmailRecipient] = useState('');
@@ -599,6 +603,20 @@ export default function SettingsPage() {
 
       {myRole === 'admin' && (
         <>
+
+      <Tabs
+        active={activeSettingsTab}
+        onChange={(k) => setActiveSettingsTab(k as typeof activeSettingsTab)}
+        tabs={[
+          { key: 'general', label: t('settingsTabGeneral') },
+          { key: 'bookings', label: t('settingsTabBookings') },
+          { key: 'requests', label: t('settingsTabRequests') },
+          { key: 'assistant', label: t('settingsTabAssistant') },
+          { key: 'email', label: t('settingsTabEmail') },
+          { key: 'icons', label: t('settingsTabIcons') },
+        ]}
+      />
+      {activeSettingsTab === 'general' && (
       <Card>
         <h3 className="font-bold text-[var(--c-teal-900)] mb-3">🎨 {t('siteColors')}</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -641,7 +659,9 @@ export default function SettingsPage() {
           {t('resetDefaultColors')}
         </button>
       </Card>
+      )}
 
+      {activeSettingsTab === 'bookings' && (
       <Card>
         <h3 className="font-bold text-[var(--c-teal-900)] mb-3">🎨 {t('bookingColorsTitle')}</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -753,7 +773,9 @@ export default function SettingsPage() {
           {t('resetDefaultColors')}
         </button>
       </Card>
+      )}
 
+      {activeSettingsTab === 'general' && (
       <Card>
         <h3 className="font-bold text-[var(--c-teal-900)] mb-3">🏷️ {t('portalIdentityTitle')}</h3>
         <div className="space-y-4">
@@ -792,7 +814,9 @@ export default function SettingsPage() {
           </div>
         </div>
       </Card>
+      )}
 
+      {activeSettingsTab === 'assistant' && (
       <Card>
         <h3 className="font-bold text-[var(--c-teal-900)] mb-3">{t('aiAssistantName')}</h3>
         <FormField
@@ -812,7 +836,9 @@ export default function SettingsPage() {
           />
         </div>
       </Card>
+      )}
 
+      {activeSettingsTab === 'assistant' && (
       <Card>
         <h3 className="font-bold text-[var(--c-teal-900)] mb-3">{t('geminiApiKey')}</h3>
         <FormField
@@ -830,7 +856,9 @@ export default function SettingsPage() {
           {testing ? t('loading') : t('testConnection')}
         </button>
       </Card>
+      )}
 
+      {activeSettingsTab === 'assistant' && (
       <Card>
         <h3 className="font-bold text-[var(--c-teal-900)] mb-3">{t('voiceLink')}</h3>
         <FormField
@@ -841,7 +869,9 @@ export default function SettingsPage() {
           placeholder="https://..."
         />
       </Card>
+      )}
 
+      {activeSettingsTab === 'requests' && (
       <Card>
         <h3 className="font-bold text-[var(--c-teal-900)] mb-3">🏷️ {t('categoriesTitle')}</h3>
         <div className="space-y-2 mb-4">
@@ -975,7 +1005,9 @@ export default function SettingsPage() {
           </button>
         </div>
       </Card>
+      )}
 
+      {activeSettingsTab === 'email' && (
       <Card>
         <h3 className="font-bold text-[var(--c-teal-900)] mb-3">📧 {t('emailSettingsTitle')}</h3>
         <FormField
@@ -1029,7 +1061,9 @@ export default function SettingsPage() {
           </div>
         )}
       </Card>
+      )}
 
+      {activeSettingsTab === 'icons' && (
       <Card>
         <h3 className="font-bold text-[var(--c-teal-900)] mb-1">🎛️ {t('iconControlTitle')}</h3>
         <p className="text-xs text-[var(--c-text-muted)] mb-3">{t('iconControlHint')}</p>
@@ -1114,7 +1148,9 @@ export default function SettingsPage() {
           </div>
         </div>
       </Card>
+      )}
 
+      {activeSettingsTab === 'assistant' && (
       <Card>
         <h3 className="font-bold text-[var(--c-teal-900)] mb-3">🤖 {t('assistantIconTitle')}</h3>
         <label className="flex items-center gap-2 text-sm text-[var(--c-text)] mb-4">
@@ -1156,13 +1192,16 @@ export default function SettingsPage() {
           <p className="text-xs text-[var(--c-text-muted)] mt-1">{t('assistantIconUploadHint')}</p>
         </div>
       </Card>
+      )}
 
+      {activeSettingsTab === 'assistant' && (
       <Card>
         <h3 className="font-bold text-[var(--c-teal-900)] mb-3">{t('qrCodeTitle')}</h3>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={qrSrc} alt="QR code" className="rounded-lg border" />
         <p className="text-xs text-[var(--c-text-muted)] mt-2">{assistantUrl}</p>
       </Card>
+      )}
 
       <button
         onClick={handleSave}

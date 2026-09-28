@@ -10,6 +10,7 @@ import DataTable from '@/components/ui/DataTable';
 import Alert from '@/components/ui/Alert';
 import Modal from '@/components/ui/Modal';
 import FormField from '@/components/ui/FormField';
+import EmptyState from '@/components/ui/EmptyState';
 import { statusDotStyle, statusBadgeStyle } from '@/lib/theme/colorUtils';
 
 type BookingStatus = 'pending' | 'approved' | 'rejected' | 'cancelled';
@@ -271,23 +272,28 @@ export default function AdminControlPanelPage() {
         >
           {t('tabAuditLog')}
         </button>
-        <Link href="/requests" className="px-4 py-2 rounded-xl text-sm font-bold bg-[var(--c-surface)] text-[var(--c-text)]">
+      </div>
+
+      {/* روابط سريعة لصفحات تانية — متفصلة بصريًا عن التابات فوق عشان محدش يلخبط بينهم */}
+      <div className="flex items-center flex-wrap gap-x-4 gap-y-2 text-xs">
+        <span className="font-bold text-[var(--c-text-muted)]">{t('quickLinksLabel')}</span>
+        <Link href="/requests" className="font-bold text-[var(--c-teal-700)] hover:underline">
           {t('requestsTitle')} ↗
         </Link>
         {myRole === 'admin' && (
           <>
-        <Link href="/admin/rooms" className="px-4 py-2 rounded-xl text-sm font-bold bg-[var(--c-surface)] text-[var(--c-text)]">
-          {t('roomsManagement')} ↗
-        </Link>
-        <Link href="/admin/users" className="px-4 py-2 rounded-xl text-sm font-bold bg-[var(--c-surface)] text-[var(--c-text)]">
-          {t('usersTitle')} ↗
-        </Link>
-        <Link href="/reports" className="px-4 py-2 rounded-xl text-sm font-bold bg-[var(--c-surface)] text-[var(--c-text)]">
-          📊 {t('reportsTitle')} ↗
-        </Link>
+            <Link href="/admin/rooms" className="font-bold text-[var(--c-teal-700)] hover:underline">
+              {t('roomsManagement')} ↗
+            </Link>
+            <Link href="/admin/users" className="font-bold text-[var(--c-teal-700)] hover:underline">
+              {t('usersTitle')} ↗
+            </Link>
+            <Link href="/reports" className="font-bold text-[var(--c-teal-700)] hover:underline">
+              📊 {t('reportsTitle')} ↗
+            </Link>
           </>
         )}
-        <Link href="/admin/settings" className="px-4 py-2 rounded-xl text-sm font-bold bg-[var(--c-surface)] text-[var(--c-text)]">
+        <Link href="/admin/settings" className="font-bold text-[var(--c-teal-700)] hover:underline">
           🛠️ {t('settingsTitle')} ↗
         </Link>
       </div>
@@ -295,7 +301,7 @@ export default function AdminControlPanelPage() {
       {tab === 'pending' ? (
         pendingBookings.length === 0 ? (
           <Card>
-            <p className="text-[var(--c-text-muted)] text-center py-10">{t('noPendingBookings')}</p>
+            <EmptyState icon="🗓️" message={t('noPendingBookings')} />
           </Card>
         ) : (
           <div className="grid md:grid-cols-2 gap-4">

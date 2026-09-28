@@ -6,7 +6,18 @@ import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 
-export default function Sidebar() {
+interface NavLink {
+  href: string;
+  label: string;
+}
+
+export default function Sidebar({
+  open = false,
+  onClose,
+}: {
+  open?: boolean;
+  onClose?: () => void;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
@@ -48,25 +59,26 @@ export default function Sidebar() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang]);
 
-  const links = [
+  // ---- الروابط الأساسية: نفس الروابط اللي كانت موجودة، بدون أي حذف أو تغيير صلاحيات ----
+  const primaryLinks: NavLink[] = [
     { href: '/dashboard', label: t('navDashboard') },
     { href: '/requests', label: t('navRequests') },
     { href: '/checklists', label: t('navChecklists') },
     { href: '/files', label: t('navFiles') },
     { href: '/reports', label: t('navReports') },
+    { href: '/appearance', label: `🎨 ${t('appearanceTitle')}` },
+  ];
+
+  // ---- مجموعة الإدارة والإعدادات: نفس شرط الظهور القديم بالظبط، بس مجمّعة تحت عنوان واحد ----
+  const adminLinks: NavLink[] = [
+    ...(isAdmin || isRoomManager ? [{ href: '/admin', label: `📊 ${t('adminPanelTitle')}` }] : []),
     ...(isAdmin
       ? [
           { href: '/admin/rooms', label: t('navRoomsAdmin') },
           { href: '/admin/users', label: t('navUsers') },
         ]
       : []),
-    { href: '/appearance', label: `🎨 ${t('appearanceTitle')}` },
-    ...(isAdmin || isRoomManager
-      ? [
-          { href: '/admin/settings', label: `⚙️ ${t('settingsTitle')}` },
-          { href: '/admin', label: `📊 ${t('adminPanelTitle')}` },
-        ]
-      : []),
+    ...(isAdmin || isRoomManager ? [{ href: '/admin/settings', label: `⚙️ ${t('settingsTitle')}` }] : []),
   ];
 
   async function handleLogout() {
@@ -75,38 +87,69 @@ export default function Sidebar() {
     router.refresh();
   }
 
-  return (
-    <aside className="w-64 shrink-0 bg-[var(--c-teal-900)] text-white h-screen sticky top-0 overflow-y-auto p-4 flex flex-col">
-      <div className="mb-8 flex items-center justify-center gap-2">
-        {logoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={logoUrl} alt="logo" className="h-10 w-10 object-contain rounded-lg bg-[var(--c-surface)]/10 p-1" />
-        ) : null}
-        <h2 className="font-extrabold">{siteName || t('appName')}</h2>
-      </div>
-
-      <nav className="flex-1 space-y-1">
-        {links.map((link) => (
-          <Link
-            key={link.href}
-            href={link.href}
-            className={`block px-3 py-2.5 rounded-xl text-sm font-bold transition ${
-              pathname === link.href
-                ? 'bg-[var(--c-surface)] text-[var(--c-teal-900)]'
-                : 'text-[var(--c-teal-100)] hover:bg-[var(--c-sidebar-hover)]'
-            }`}
-          >
-            {link.label}
-          </Link>
-        ))}
-      </nav>
-
-      <button
-        onClick={handleLogout}
-        className="mt-2 shrink-0 text-sm font-bold text-[var(--c-teal-300)] hover:text-white text-start px-3 py-2 border-t border-[var(--c-teal-800)] pt-4"
+  function renderLink(link: NavLink) {
+    return (
+      <Link
+        key={link.href}
+        href={link.href}
+        onClick={onClose}
+        className={`block px-3 py-2.5 rounded-xl text-sm font-bold transition ${
+          pathname === link.href
+            ? 'bg-[var(--c-surface)] text-[var(--c-teal-900)]'
+            : 'text-[var(--c-teal-100)] hover:bg-[var(--c-sidebar-hover)]'
+        }`}
       >
-        🚪 {t('logout')}
-      </button>
-    </aside>
+        {link.label}
+      </Link>
+    );
+  }
+
+  return (
+    <>
+      {/* الخلفية الغامقة خلف القائمة على الموبايل بس */}
+      {open && <div className="fixed inset-0 bg-black/40 z-30 md:hidden" onClick={onClose} />}
+
+      <aside
+        className={`bg-[var(--c-teal-900)] text-white flex flex-col p-4 overflow-y-auto w-64 h-screen shrink-0 fixed md:relative inset-y-0 start-0 z-40 transition-transform duration-200 ease-in-out md:translate-x-0 ${
+          open ? 'translate-x-0' : 'translate-x-full'
+        }`}
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          className="md:hidden self-end text-white/70 hover:text-white text-xl leading-none mb-2"
+        >
+          ×
+        </button>
+
+        <div className="mb-6 flex items-center justify-center gap-2">
+          {logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={logoUrl} alt="logo" className="h-10 w-10 object-contain rounded-lg bg-[var(--c-surface)]/10 p-1" />
+          ) : null}
+          <h2 className="font-extrabold">{siteName || t('appName')}</h2>
+        </div>
+
+        <nav className="flex-1 space-y-1">
+          {primaryLinks.map(renderLink)}
+
+          {adminLinks.length > 0 && (
+            <>
+              <p className="px-3 pt-4 mt-2 mb-1 border-t border-white/10 text-[10px] font-extrabold uppercase tracking-wider text-white/40">
+                {t('navGroupAdmin')}
+              </p>
+              {adminLinks.map(renderLink)}
+            </>
+          )}
+        </nav>
+
+        <button
+          onClick={handleLogout}
+          className="mt-2 shrink-0 text-sm font-bold text-[var(--c-teal-300)] hover:text-white text-start px-3 py-2 border-t border-[var(--c-teal-800)] pt-4"
+        >
+          🚪 {t('logout')}
+        </button>
+      </aside>
+    </>
   );
 }
