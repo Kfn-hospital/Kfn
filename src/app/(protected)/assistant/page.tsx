@@ -10,16 +10,18 @@ export default function AssistantPage() {
   const supabase = createClient();
   const [iconEmoji, setIconEmoji] = useState('🤖');
   const [iconUrl, setIconUrl] = useState('');
+  const [assistantName, setAssistantName] = useState('');
 
   useEffect(() => {
     (async () => {
       const { data } = await supabase
         .from('app_settings')
         .select('key, value')
-        .in('key', ['assistant_icon_emoji', 'assistant_icon_url']);
+        .in('key', ['assistant_icon_emoji', 'assistant_icon_url', 'ai_assistant_name']);
       (data as { key: string; value: string | null }[] | null)?.forEach((row) => {
         if (row.key === 'assistant_icon_emoji' && row.value) setIconEmoji(row.value);
         if (row.key === 'assistant_icon_url' && row.value) setIconUrl(row.value);
+        if (row.key === 'ai_assistant_name' && row.value) setAssistantName(row.value);
       });
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -34,7 +36,7 @@ export default function AssistantPage() {
         ) : (
           <span>{iconEmoji}</span>
         )}
-        {t('aiAssistantTitle')}
+        {assistantName || t('aiAssistantTitle')}
       </h1>
       <Card>
         <p className="text-[var(--c-text)]">{t('assistantPageHint')}</p>

@@ -110,6 +110,7 @@ export default function FloatingAssistant() {
   const [visible, setVisible] = useState(true);
   const [iconEmoji, setIconEmoji] = useState('🤖');
   const [iconUrl, setIconUrl] = useState('');
+  const [assistantName, setAssistantName] = useState('');
   const [messages, setMessages] = useState<AssistantMessage[]>([]);
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
@@ -134,11 +135,12 @@ export default function FloatingAssistant() {
       const { data } = await supabase
         .from('app_settings')
         .select('key, value')
-        .in('key', ['icon_show_assistant', 'assistant_icon_emoji', 'assistant_icon_url']);
+        .in('key', ['icon_show_assistant', 'assistant_icon_emoji', 'assistant_icon_url', 'ai_assistant_name']);
       (data as { key: string; value: string | null }[] | null)?.forEach((row) => {
         if (row.key === 'icon_show_assistant') setVisible(row.value !== 'false');
         if (row.key === 'assistant_icon_emoji' && row.value) setIconEmoji(row.value);
         if (row.key === 'assistant_icon_url' && row.value) setIconUrl(row.value);
+        if (row.key === 'ai_assistant_name' && row.value) setAssistantName(row.value);
       });
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -301,7 +303,7 @@ export default function FloatingAssistant() {
               ) : (
                 iconEmoji
               )}
-              {t('aiAssistantTitle')}
+              {assistantName || t('aiAssistantTitle')}
             </span>
             <button
               type="button"
@@ -400,7 +402,7 @@ export default function FloatingAssistant() {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        title={t('aiAssistantTitle')}
+        title={assistantName || t('aiAssistantTitle')}
         className="fixed bottom-5 end-5 z-40 w-14 h-14 rounded-full bg-[var(--c-teal-700)] text-white shadow-2xl flex items-center justify-center text-2xl hover:scale-105 transition-transform overflow-hidden"
       >
         {open ? (

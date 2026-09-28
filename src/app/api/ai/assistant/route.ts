@@ -82,13 +82,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: 'بيانات ناقصة' }, { status: 400 });
   }
 
-  const [{ data: secretRows }, { data: rooms }, { data: categories }] = await Promise.all([
+  const [{ data: secretRows }, { data: rooms }, { data: categories }, { data: assistantSettings }] = await Promise.all([
     supabaseAdmin.from('app_secrets').select('key, value').eq('key', 'gemini_api_key'),
     supabaseAdmin.from('rooms').select('id, name, name_en').eq('status', 'active'),
     supabaseAdmin.from('request_categories').select('id, name'),
+    supabaseAdmin.from('app_settings').select('key, value').in('key', ['ai_assistant_name', 'ai_instructions']),
   ]);
 
   const geminiKey = secretRows?.[0]?.value as string | undefined;
+  const assistantName =
+    (assistantSettings ?? []).find((r) => r.key === 'ai_assistant_name')?.value || 'المساعد الذكي';
+  const customInstructions =
+    (assistantSettings ?? []).find((r) => r.key === 'ai_instructions')?.value || '';
   if (!geminiKey) {
     return NextResponse.json({
       ok: false,
@@ -100,7 +105,8 @@ export async function POST(request: Request) {
   const roomsList = (rooms ?? []).map((r) => `- ${r.name} (id: ${r.id})`).join('\n');
   const categoriesList = (categories ?? []).map((c) => `- ${c.name} (id: ${c.id})`).join('\n');
 
-  const prompt = `أنت مساعد ذكي في بوابة خورفكان الإدارية. تاريخ اليوم: ${today}
+  const prompt = `أنت مساعد ذكي اسمه "${assistantName}" في بوابة خورفكان الإدارية. تاريخ اليوم: ${today}
+${customInstructions ? `\nتعليمات إضافية من الإدارة يجب الالتزام بها:\n${customInstructions}\n` : ''}
 
 القاعات المتاحة لحجزها:
 ${roomsList}
