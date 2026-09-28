@@ -94,12 +94,12 @@ const DEFAULTS: Settings = {
   booking_cancelled_message: '',
 };
 
-const COLOR_ICON_OPTIONS = ['🎨', '🖌️', '🖍️', '🌈', '🎭', '✨'];
-const LANGUAGE_ICON_OPTIONS = ['🌐', '🌍', '🌎', '🗣️', '🔤', '📝'];
-const DARKMODE_ICON_OPTIONS = ['🌙', '🌚', '🌑', '🌘', '⭐', '🌃'];
-const LIGHTMODE_ICON_OPTIONS = ['☀️', '🌞', '💡', '🔆', '🌤️', '⚡'];
-const LOGOUT_ICON_OPTIONS = ['🚪', '🔓', '👋', '🚶', '⏏️', '➡️'];
-const ASSISTANT_ICON_OPTIONS = ['🤖', '🧠', '💬', '🗨️', '🎧', '⚡', '👨‍💼', '👩‍💼', '🔷', '💡'];
+const COLOR_ICON_OPTIONS = ['🎨', '🖌️', '🖍️', '🌈', '🎭', '✨', '🖼️', '🪄', '🌸', '💠'];
+const LANGUAGE_ICON_OPTIONS = ['🌐', '🌍', '🌎', '🗣️', '🔤', '📝', '🈯', '🔡', '📖', '💬'];
+const DARKMODE_ICON_OPTIONS = ['🌙', '🌚', '🌑', '🌘', '⭐', '🌃', '🌌', '🦉', '🌒', '🔮'];
+const LIGHTMODE_ICON_OPTIONS = ['☀️', '🌞', '💡', '🔆', '🌤️', '⚡', '🌅', '🔅', '🌻', '⛅'];
+const LOGOUT_ICON_OPTIONS = ['🚪', '🔓', '👋', '🚶', '⏏️', '➡️', '🔚', '🏃', '📤', '🛎️'];
+const ASSISTANT_ICON_OPTIONS = ['🤖', '🧠', '💬', '🗨️', '🎧', '⚡', '👨‍💼', '👩‍💼', '🔷', '💡', '🦾', '🛠️', '📞', '🧞', '✨', '🔮'];
 
 export default function SettingsPage() {
   const { t } = useLanguage();
