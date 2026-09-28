@@ -42,6 +42,10 @@ interface Settings {
   brevo_smtp_login: string;
   brevo_smtp_key: string;
   email_from_address: string;
+  booking_notify_email: string;
+  booking_approved_message: string;
+  booking_rejected_message: string;
+  booking_cancelled_message: string;
 }
 
 const DEFAULTS: Settings = {
@@ -69,6 +73,10 @@ const DEFAULTS: Settings = {
   brevo_smtp_login: '',
   brevo_smtp_key: '',
   email_from_address: '',
+  booking_notify_email: '',
+  booking_approved_message: '',
+  booking_rejected_message: '',
+  booking_cancelled_message: '',
 };
 
 export default function SettingsPage() {
@@ -81,6 +89,7 @@ export default function SettingsPage() {
   const [assistantIconFile, setAssistantIconFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(true);
   const [authorized, setAuthorized] = useState(false);
+  const [myRole, setMyRole] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testEmailRecipient, setTestEmailRecipient] = useState('');
@@ -103,10 +112,11 @@ export default function SettingsPage() {
         return;
       }
       const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-      if (profile?.role !== 'admin') {
+      if (profile?.role !== 'admin' && profile?.role !== 'room_manager') {
         router.push('/dashboard');
         return;
       }
+      setMyRole(profile?.role ?? null);
       setAuthorized(true);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -257,6 +267,24 @@ export default function SettingsPage() {
     }
   };
 
+  const handleSaveBookingNotifications = async () => {
+    setSaving(true);
+    setAlert(null);
+    try {
+      await Promise.all([
+        upsertSetting('booking_notify_email', settings.booking_notify_email),
+        upsertSetting('booking_approved_message', settings.booking_approved_message),
+        upsertSetting('booking_rejected_message', settings.booking_rejected_message),
+        upsertSetting('booking_cancelled_message', settings.booking_cancelled_message),
+      ]);
+      setAlert({ type: 'success', message: t('saveSuccess') });
+    } catch (err) {
+      setAlert({ type: 'error', message: err instanceof Error ? err.message : String(err) });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleResetColors = () => {
     setSettings((s) => ({
       ...s,
@@ -344,6 +372,64 @@ export default function SettingsPage() {
 
       {alert && <Alert type={alert.type} message={alert.message} />}
 
+      <Card>
+        <h3 className="font-bold text-[var(--c-teal-900)] mb-3">🔔 {t('bookingNotificationsTitle')}</h3>
+        <FormField
+          label={t('bookingNotifyEmailLabel')}
+          type="text"
+          value={settings.booking_notify_email}
+          onChange={(v: string) => setSettings((s) => ({ ...s, booking_notify_email: v }))}
+          placeholder="you@example.com"
+        />
+        <p className="text-xs text-[var(--c-text-muted)] mt-1">{t('bookingNotifyEmailHint')}</p>
+
+        <div className="mt-3">
+          <label className="block text-sm font-bold text-[var(--c-text)] mb-1">{t('bookingApprovedMessageLabel')}</label>
+          <textarea
+            value={settings.booking_approved_message}
+            onChange={(e) => setSettings((s) => ({ ...s, booking_approved_message: e.target.value }))}
+            rows={3}
+            className="w-full border rounded-xl p-3 text-sm"
+            placeholder={t('bookingMessagePlaceholder')}
+          />
+        </div>
+
+        <div className="mt-3">
+          <label className="block text-sm font-bold text-[var(--c-text)] mb-1">{t('bookingRejectedMessageLabel')}</label>
+          <textarea
+            value={settings.booking_rejected_message}
+            onChange={(e) => setSettings((s) => ({ ...s, booking_rejected_message: e.target.value }))}
+            rows={3}
+            className="w-full border rounded-xl p-3 text-sm"
+            placeholder={t('bookingMessagePlaceholder')}
+          />
+        </div>
+
+        <div className="mt-3">
+          <label className="block text-sm font-bold text-[var(--c-text)] mb-1">{t('bookingCancelledMessageLabel')}</label>
+          <textarea
+            value={settings.booking_cancelled_message}
+            onChange={(e) => setSettings((s) => ({ ...s, booking_cancelled_message: e.target.value }))}
+            rows={3}
+            className="w-full border rounded-xl p-3 text-sm"
+            placeholder={t('bookingMessagePlaceholder')}
+          />
+        </div>
+
+        <p className="text-xs text-[var(--c-text-muted)] mt-2">{t('bookingMessageVarsHint')}</p>
+
+        <button
+          onClick={handleSaveBookingNotifications}
+          disabled={saving}
+          className="mt-3 bg-[var(--c-teal-700)] text-white font-bold rounded-xl px-4 py-2 text-sm disabled:opacity-50"
+          type="button"
+        >
+          {saving ? t('loading') : t('saveSettings')}
+        </button>
+      </Card>
+
+      {myRole === 'admin' && (
+        <>
       <Card>
         <h3 className="font-bold text-[var(--c-teal-900)] mb-3">🎨 {t('siteColors')}</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -799,6 +885,8 @@ export default function SettingsPage() {
       >
         {saving ? t('loading') : t('saveSettings')}
       </button>
+        </>
+      )}
     </div>
   );
 }

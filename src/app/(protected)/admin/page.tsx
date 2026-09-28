@@ -2,11 +2,14 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import Card from '@/components/ui/Card';
 import DataTable from '@/components/ui/DataTable';
 import Alert from '@/components/ui/Alert';
+import Modal from '@/components/ui/Modal';
+import FormField from '@/components/ui/FormField';
 import { statusDotStyle, statusBadgeStyle } from '@/lib/theme/colorUtils';
 
 type BookingStatus = 'pending' | 'approved' | 'rejected' | 'cancelled';
@@ -43,6 +46,7 @@ function toDateKey(d: Date) {
 export default function AdminControlPanelPage() {
   const { t, lang } = useLanguage();
   const supabase = createClient();
+  const router = useRouter();
 
   const [tab, setTab] = useState<Tab>('pending');
   const [bookings, setBookings] = useState<BookingRow[]>([]);
@@ -57,6 +61,8 @@ export default function AdminControlPanelPage() {
     return new Date(d.getFullYear(), d.getMonth(), 1);
   });
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const [rejectModal, setRejectModal] = useState<BookingRow | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
 
   const loadBookings = useCallback(async () => {
     const { data, error } = await supabase
@@ -83,13 +89,23 @@ export default function AdminControlPanelPage() {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) {
+      router.push('/login');
+      return;
+    }
 
     const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-    setMyRole(profile?.role ?? null);
-
     const { data: rm } = await supabase.from('room_managers').select('room_id').eq('user_id', user.id);
-    setMyRoomIds(((rm as { room_id: string }[] | null) ?? []).map((r) => r.room_id));
+    const roomIds = ((rm as { room_id: string }[] | null) ?? []).map((r) => r.room_id);
+
+    if (profile?.role !== 'admin' && profile?.role !== 'room_manager' && roomIds.length === 0) {
+      router.push('/dashboard');
+      return;
+    }
+
+    setMyRole(profile?.role ?? null);
+    setMyRoomIds(roomIds);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supabase]);
 
   useEffect(() => {
@@ -104,7 +120,7 @@ export default function AdminControlPanelPage() {
 
   const visibleBookings = useMemo(() => bookings.filter((b) => canSeeRoom(b.room_id)), [bookings, canSeeRoom]);
 
-  const handleDecision = async (booking: BookingRow, decision: 'approved' | 'rejected') => {
+  const performDecision = async (booking: BookingRow, decision: 'approved' | 'rejected', reason?: string) => {
     setActingId(booking.id);
     setAlert(null);
 
@@ -114,7 +130,7 @@ export default function AdminControlPanelPage() {
 
     const { error: updateError } = await supabase
       .from('bookings')
-      .update({ status: decision })
+      .update({ status: decision, decision_reason: reason || null })
       .eq('id', booking.id);
 
     if (updateError) {
@@ -129,6 +145,12 @@ export default function AdminControlPanelPage() {
       performed_by: user?.id ?? null,
     });
 
+    fetch('/api/bookings/notify-decision', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bookingId: booking.id, decision, reason }),
+    }).catch(() => {});
+
     setAlert({
       type: 'success',
       message: decision === 'approved' ? t('approveSuccess') : t('rejectSuccess'),
@@ -136,6 +158,22 @@ export default function AdminControlPanelPage() {
 
     await Promise.all([loadBookings(), loadAuditLog()]);
     setActingId(null);
+  };
+
+  const handleDecision = (booking: BookingRow, decision: 'approved' | 'rejected') => {
+    if (decision === 'rejected') {
+      setRejectReason('');
+      setRejectModal(booking);
+      return;
+    }
+    performDecision(booking, 'approved');
+  };
+
+  const confirmRejectModal = () => {
+    if (!rejectModal) return;
+    performDecision(rejectModal, 'rejected', rejectReason.trim());
+    setRejectModal(null);
+    setRejectReason('');
   };
 
   const pendingBookings = visibleBookings.filter((b) => b.status === 'pending');
@@ -230,17 +268,21 @@ export default function AdminControlPanelPage() {
         <Link href="/requests" className="px-4 py-2 rounded-xl text-sm font-bold bg-[var(--c-surface)] text-[var(--c-text)]">
           {t('requestsTitle')} ↗
         </Link>
+        {myRole === 'admin' && (
+          <>
         <Link href="/admin/rooms" className="px-4 py-2 rounded-xl text-sm font-bold bg-[var(--c-surface)] text-[var(--c-text)]">
           {t('roomsManagement')} ↗
         </Link>
         <Link href="/admin/users" className="px-4 py-2 rounded-xl text-sm font-bold bg-[var(--c-surface)] text-[var(--c-text)]">
           {t('usersTitle')} ↗
         </Link>
-        <Link href="/admin/settings" className="px-4 py-2 rounded-xl text-sm font-bold bg-[var(--c-surface)] text-[var(--c-text)]">
-          🛠️ {t('settingsTitle')} ↗
-        </Link>
         <Link href="/reports" className="px-4 py-2 rounded-xl text-sm font-bold bg-[var(--c-surface)] text-[var(--c-text)]">
           📊 {t('reportsTitle')} ↗
+        </Link>
+          </>
+        )}
+        <Link href="/admin/settings" className="px-4 py-2 rounded-xl text-sm font-bold bg-[var(--c-surface)] text-[var(--c-text)]">
+          🛠️ {t('settingsTitle')} ↗
         </Link>
       </div>
 
@@ -396,6 +438,24 @@ export default function AdminControlPanelPage() {
           />
         </Card>
       )}
+
+      <Modal open={!!rejectModal} onClose={() => setRejectModal(null)} title={t('bookingReasonModalTitleReject')}>
+        <div className="space-y-3">
+          <FormField
+            label=""
+            type="textarea"
+            value={rejectReason}
+            onChange={setRejectReason}
+            placeholder={t('bookingReasonPlaceholder')}
+          />
+          <button
+            onClick={confirmRejectModal}
+            className="w-full bg-[var(--c-teal-700)] text-white rounded-xl py-3 font-bold"
+          >
+            {t('bookingReasonConfirm')}
+          </button>
+        </div>
+      </Modal>
     </main>
   );
 }

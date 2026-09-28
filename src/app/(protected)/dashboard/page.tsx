@@ -59,6 +59,10 @@ export default function DashboardPage() {
 
   const [form, setForm] = useState({ ...EMPTY_FORM });
 
+  // ---- سبب الرفض/الإلغاء ----
+  const [reasonModal, setReasonModal] = useState<{ booking: Booking; status: 'rejected' | 'cancelled' } | null>(null);
+  const [reasonText, setReasonText] = useState('');
+
   // ---- Calendar state ----
   const [calendarBookings, setCalendarBookings] = useState<Booking[]>([]);
   const [calendarMonth, setCalendarMonth] = useState(() => {
@@ -169,9 +173,15 @@ export default function DashboardPage() {
       notes: form.notes || null,
     };
 
-    const { error } = editingId
-      ? await supabase.from('bookings').update(payload).eq('id', editingId)
-      : await supabase.from('bookings').insert({ ...payload, booked_by: userId, status: 'pending' });
+    const isNewBooking = !editingId;
+
+    const { data: savedBooking, error } = editingId
+      ? await supabase.from('bookings').update(payload).eq('id', editingId).select().single()
+      : await supabase
+          .from('bookings')
+          .insert({ ...payload, booked_by: userId, status: 'pending' })
+          .select()
+          .single();
 
     setLoading(false);
     if (error) {
@@ -183,12 +193,45 @@ export default function DashboardPage() {
     setForm({ ...EMPTY_FORM });
     loadData();
     loadCalendarBookings();
+
+    if (isNewBooking && savedBooking?.id) {
+      fetch('/api/bookings/notify-created', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bookingId: savedBooking.id }),
+      }).catch(() => {});
+    }
   }
 
-  async function updateStatus(id: string, status: 'approved' | 'rejected' | 'cancelled') {
-    await supabase.from('bookings').update({ status }).eq('id', id);
+  async function applyStatusChange(id: string, status: 'approved' | 'rejected' | 'cancelled', reason?: string) {
+    await supabase
+      .from('bookings')
+      .update({ status, decision_reason: reason || null })
+      .eq('id', id);
     loadData();
     loadCalendarBookings();
+    fetch('/api/bookings/notify-decision', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bookingId: id, decision: status, reason }),
+    }).catch(() => {});
+  }
+
+  function requestStatusChange(b: Booking, status: 'approved' | 'rejected' | 'cancelled') {
+    const isOwnCancel = status === 'cancelled' && b.booked_by === userId;
+    if (!isOwnCancel && (status === 'rejected' || status === 'cancelled')) {
+      setReasonText('');
+      setReasonModal({ booking: b, status });
+      return;
+    }
+    applyStatusChange(b.id, status);
+  }
+
+  function confirmReasonModal() {
+    if (!reasonModal) return;
+    applyStatusChange(reasonModal.booking.id, reasonModal.status, reasonText.trim());
+    setReasonModal(null);
+    setReasonText('');
   }
 
   const statusLabel: Record<string, string> = {
@@ -238,6 +281,14 @@ export default function DashboardPage() {
       render: (b: Booking) => (lang === 'en' && b.rooms?.name_en ? b.rooms.name_en : b.rooms?.name) || '-',
     },
     { header: t('bookingDate'), render: (b: Booking) => dateOnly(b.booking_date) },
+    ...(ownList
+      ? []
+      : [
+          {
+            header: t('bookedBy'),
+            render: (b: Booking) => b.profiles?.name || b.profiles?.email || '-',
+          },
+        ]),
     {
       header: t('status'),
       render: (b: Booking) => (
@@ -257,13 +308,13 @@ export default function DashboardPage() {
             {!ownList && canManage && b.status === 'pending' && (
               <>
                 <button
-                  onClick={() => updateStatus(b.id, 'approved')}
+                  onClick={() => requestStatusChange(b, 'approved')}
                   className="text-green-600 text-xs font-bold hover:underline"
                 >
                   {t('approve')}
                 </button>
                 <button
-                  onClick={() => updateStatus(b.id, 'rejected')}
+                  onClick={() => requestStatusChange(b, 'rejected')}
                   className="text-red-600 text-xs font-bold hover:underline"
                 >
                   {t('reject')}
@@ -279,7 +330,7 @@ export default function DashboardPage() {
                   {t('edit')}
                 </button>
                 <button
-                  onClick={() => updateStatus(b.id, 'cancelled')}
+                  onClick={() => requestStatusChange(b, 'cancelled')}
                   className="text-[var(--c-text-muted)] text-xs font-bold hover:underline"
                 >
                   {t('cancel')}
@@ -507,6 +558,28 @@ export default function DashboardPage() {
             {loading ? t('saving') : t('save')}
           </button>
         </form>
+      </Modal>
+
+      <Modal
+        open={!!reasonModal}
+        onClose={() => setReasonModal(null)}
+        title={reasonModal?.status === 'rejected' ? t('bookingReasonModalTitleReject') : t('bookingReasonModalTitleCancel')}
+      >
+        <div className="space-y-3">
+          <FormField
+            label=""
+            type="textarea"
+            value={reasonText}
+            onChange={setReasonText}
+            placeholder={t('bookingReasonPlaceholder')}
+          />
+          <button
+            onClick={confirmReasonModal}
+            className="w-full bg-[var(--c-teal-700)] text-white rounded-xl py-3 font-bold"
+          >
+            {t('bookingReasonConfirm')}
+          </button>
+        </div>
       </Modal>
     </main>
   );

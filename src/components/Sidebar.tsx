@@ -12,6 +12,7 @@ export default function Sidebar() {
   const supabase = createClient();
   const { t, lang } = useLanguage();
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isRoomManager, setIsRoomManager] = useState(false);
   const [logoUrl, setLogoUrl] = useState('');
   const [siteName, setSiteName] = useState('');
 
@@ -27,6 +28,9 @@ export default function Sidebar() {
         .eq('id', user.id)
         .single();
       if (profile?.role === 'admin') setIsAdmin(true);
+      if (profile?.role === 'room_manager') setIsRoomManager(true);
+      const { data: rm } = await supabase.from('room_managers').select('room_id').eq('user_id', user.id).limit(1);
+      if ((rm ?? []).length > 0) setIsRoomManager(true);
     }
     async function loadBranding() {
       const { data } = await supabase
@@ -57,7 +61,7 @@ export default function Sidebar() {
         ]
       : []),
     { href: '/appearance', label: `🎨 ${t('appearanceTitle')}` },
-    ...(isAdmin
+    ...(isAdmin || isRoomManager
       ? [
           { href: '/admin/settings', label: `⚙️ ${t('settingsTitle')}` },
           { href: '/admin', label: `📊 ${t('adminPanelTitle')}` },

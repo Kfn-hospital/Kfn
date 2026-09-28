@@ -36,6 +36,7 @@ export interface Booking {
   end_time: string;
   status: BookingStatus;
   notes: string | null;
+  decision_reason?: string | null;
   created_at: string;
   rooms?: Room;
   profiles?: Profile;
