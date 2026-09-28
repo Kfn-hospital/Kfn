@@ -25,7 +25,7 @@ interface BookingRow {
   status: BookingStatus;
   notes: string | null;
   rooms: { name: string; name_en: string | null } | null;
-  profiles: { name: string } | null;
+  profiles: { name: string; email: string } | null;
 }
 
 interface AuditRow {
@@ -34,6 +34,12 @@ interface AuditRow {
   details: string | null;
   created_at: string;
   profiles: { name: string } | null;
+}
+
+function bookerLabel(p?: { name?: string | null; email?: string | null } | null) {
+  if (!p) return '—';
+  if (p.name && p.email) return `${p.name} — ${p.email}`;
+  return p.name || p.email || '—';
 }
 
 function toDateKey(d: Date) {
@@ -68,7 +74,7 @@ export default function AdminControlPanelPage() {
     const { data, error } = await supabase
       .from('bookings')
       .select(
-        'id, room_id, title, booking_date, start_time, end_time, status, notes, rooms(name, name_en), profiles(name)'
+        'id, room_id, title, booking_date, start_time, end_time, status, notes, rooms(name, name_en), profiles(name, email)'
       )
       .order('booking_date', { ascending: false });
 
@@ -299,7 +305,7 @@ export default function AdminControlPanelPage() {
                   {statusLabel(b.status)}
                 </span>
                 <h3 className="font-extrabold text-[var(--c-teal-900)] mb-1">{roomName(b)}</h3>
-                <p className="text-sm text-[var(--c-text-muted)] mb-1">👤 {b.profiles?.name ?? '—'}</p>
+                <p className="text-sm text-[var(--c-text-muted)] mb-1">👤 {bookerLabel(b.profiles)}</p>
                 <p className="text-sm text-[var(--c-text-muted)] mb-1">
                   📅 {b.booking_date} · {b.start_time} - {b.end_time}
                 </p>
@@ -388,7 +394,7 @@ export default function AdminControlPanelPage() {
                       <div>
                         <p className="font-bold text-sm text-[var(--c-text)]">{roomName(b)}</p>
                         <p className="text-xs text-[var(--c-text-muted)]">
-                          {b.start_time}-{b.end_time} · {b.profiles?.name ?? '—'}
+                          {b.start_time}-{b.end_time} · {bookerLabel(b.profiles)}
                         </p>
                       </div>
                       <span className="text-xs font-bold px-2 py-1 rounded-lg" style={statusBadgeStyle(b.status)}>
@@ -408,7 +414,7 @@ export default function AdminControlPanelPage() {
             rows={visibleBookings}
             columns={[
               { header: t('bookingRoom'), render: roomName },
-              { header: t('bookedBy'), render: (b) => b.profiles?.name ?? '—' },
+              { header: t('bookedBy'), render: (b) => bookerLabel(b.profiles) },
               { header: t('bookingDate'), render: (b) => `${b.booking_date} · ${b.start_time}-${b.end_time}` },
               {
                 header: t('status'),

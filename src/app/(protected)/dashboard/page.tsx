@@ -22,6 +22,12 @@ function dateOnly(value: string) {
   return value.slice(0, 10);
 }
 
+function bookerLabel(p?: { name?: string | null; email?: string | null } | null) {
+  if (!p) return '-';
+  if (p.name && p.email) return `${p.name} — ${p.email}`;
+  return p.name || p.email || '-';
+}
+
 function formatTime12(time: string, amLabel: string, pmLabel: string) {
   if (!time) return '';
   const [hStr, mStr] = time.split(':');
@@ -286,7 +292,7 @@ export default function DashboardPage() {
       : [
           {
             header: t('bookedBy'),
-            render: (b: Booking) => b.profiles?.name || b.profiles?.email || '-',
+            render: (b: Booking) => bookerLabel(b.profiles),
           },
         ]),
     {
@@ -425,7 +431,7 @@ export default function DashboardPage() {
                         {dayBookings.slice(0, 3).map((b) => (
                           <span
                             key={b.id}
-                            title={`${b.title} — ${b.profiles?.name || b.profiles?.email || ''} — ${timeLabel(b.start_time)}-${timeLabel(b.end_time)}`}
+                            title={`${b.title} — ${bookerLabel(b.profiles)} — ${timeLabel(b.start_time)}-${timeLabel(b.end_time)}`}
                             style={statusDotStyle(b.status)}
                             className="block w-full truncate text-[10px] leading-4 font-bold text-white rounded px-1"
                           >
@@ -464,7 +470,7 @@ export default function DashboardPage() {
                         <div>
                           <p className="font-bold text-sm text-[var(--c-text)]">{b.title}</p>
                           <p className="text-xs text-[var(--c-text-muted)]">
-                            {(lang === 'en' && b.rooms?.name_en ? b.rooms.name_en : b.rooms?.name) || '-'} · {timeLabel(b.start_time)}-{timeLabel(b.end_time)} · {b.profiles?.name || b.profiles?.email || '—'}
+                            {(lang === 'en' && b.rooms?.name_en ? b.rooms.name_en : b.rooms?.name) || '-'} · {timeLabel(b.start_time)}-{timeLabel(b.end_time)} · {bookerLabel(b.profiles)}
                           </p>
                         </div>
                         <span className="text-xs font-bold px-2 py-1 rounded-full" style={statusBadgeStyle(b.status)}>
