@@ -34,6 +34,14 @@ export default function RootLayout({
   return (
     <html lang="ar" dir="rtl">
       <body className="bg-[var(--c-bg)] min-h-screen">
+        {/* بيطبّق آخر ألوان محفوظة محليًا فورًا قبل أي حاجة تانية تترسم، عشان
+            يمنع وميض اللون الافتراضي (زي الأخضر) قبل ظهور اللون اللي
+            المستخدم اختاره (زي الأزرق) لحد ما يوصل رد قاعدة البيانات */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var r=JSON.parse(localStorage.getItem('kfn-theme-cache-v1'));if(!r)return;var s=document.documentElement.style;for(var k in r){s.setProperty(k,r[k]);}}catch(e){}})();`,
+          }}
+        />
         <LanguageProvider>
           <ThemeProvider>
             <ConfirmProvider>{children}</ConfirmProvider>

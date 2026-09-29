@@ -11,6 +11,7 @@ import {
   applySidebarHover,
   DEFAULT_BOOKING_COLORS,
   DEFAULT_SIDEBAR_HOVER,
+  cacheCurrentThemeColors,
   type BookingColors,
 } from './colorUtils';
 
@@ -75,8 +76,11 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
       applySidebarHover(sidebarHover);
     }
 
-    loadColors();
-    loadBookingAndSidebarColors();
+    // بعد ما الألوان الحقيقية توصل وتتطبّق، نخزّنها محليًا عشان سكريبت
+    // الـ layout يطبّقها فورًا في أول تحميل جاي من غير ما يستنى الشبكة
+    Promise.all([loadColors(), loadBookingAndSidebarColors()]).then(() => {
+      cacheCurrentThemeColors();
+    });
   }, [supabase]);
 
   return <>{children}</>;

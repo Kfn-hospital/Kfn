@@ -106,6 +106,46 @@ export function applySidebarHover(hex: string) {
   document.documentElement.style.setProperty('--c-sidebar-hover', hex);
 }
 
+// ============================================================
+// تخزين الألوان المطبّقة في localStorage عشان نطبّقها فورًا في تحميل
+// الصفحة الجاية (سكريبت في layout.tsx) قبل ما نستنى رد قاعدة البيانات —
+// ده اللي بيمنع وميض اللون الافتراضي قبل اللون المختار (مثلاً خلفية
+// الروابط الجانبية بتظهر باللون الافتراضي لحظة قبل ما تتحول للون المختار)
+// ============================================================
+export const THEME_CACHE_KEY = 'kfn-theme-cache-v1';
+
+const CACHED_CSS_PROPS = [
+  '--c-teal-50',
+  '--c-teal-100',
+  '--c-teal-300',
+  '--c-teal-400',
+  '--c-teal-500',
+  '--c-teal-600',
+  '--c-teal-700',
+  '--c-teal-800',
+  '--c-teal-900',
+  '--c-status-pending',
+  '--c-status-approved',
+  '--c-status-rejected',
+  '--c-status-cancelled',
+  '--c-sidebar-hover',
+];
+
+export function cacheCurrentThemeColors() {
+  if (typeof document === 'undefined') return;
+  const root = document.documentElement;
+  const snapshot: Record<string, string> = {};
+  CACHED_CSS_PROPS.forEach((prop) => {
+    const value = root.style.getPropertyValue(prop).trim();
+    if (value) snapshot[prop] = value;
+  });
+  try {
+    localStorage.setItem(THEME_CACHE_KEY, JSON.stringify(snapshot));
+  } catch {
+    // localStorage غير متاح
+  }
+}
+
 function bookingColorFallback(status: string): string {
   switch (status) {
     case 'pending':
