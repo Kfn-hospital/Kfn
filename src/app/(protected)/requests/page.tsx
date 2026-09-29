@@ -412,7 +412,7 @@ export default function RequestsPage() {
         />
       </Card>
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={t('newRequest')}>
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={t('newRequest')} size="lg">
         <form onSubmit={handleAdd} className="space-y-3">
           <FormField
             label={t('requestTitle')}
