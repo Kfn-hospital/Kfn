@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
+import { useConfirm } from '@/lib/confirm/ConfirmContext';
 import Card from '@/components/ui/Card';
 import Alert from '@/components/ui/Alert';
 import Breadcrumbs from '@/components/ui/Breadcrumbs';
@@ -164,6 +165,7 @@ export default function RequestDetailPage() {
   const params = useParams();
   const requestId = params?.id as string;
   const { t, lang } = useLanguage();
+  const confirm = useConfirm();
 
   const [request, setRequest] = useState<CoordinationRequest | null>(null);
   const [creator, setCreator] = useState<Profile | null>(null);
@@ -264,7 +266,7 @@ export default function RequestDetailPage() {
 
   async function deleteRequest() {
     if (myRole !== 'admin' || !request) return;
-    if (!window.confirm(t('confirmDeleteRequest'))) return;
+    if (!(await confirm({ message: t('confirmDeleteRequest'), danger: true, confirmLabel: t('delete') }))) return;
     setDeleting(true);
     await supabase.from('request_assignees').delete().eq('request_id', request.id);
     const { error: delError } = await supabase.from('requests').delete().eq('id', request.id);

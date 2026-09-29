@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import './globals.css';
 import { LanguageProvider } from '@/lib/i18n/LanguageContext';
 import ThemeProvider from '@/lib/theme/ThemeProvider';
+import { ConfirmProvider } from '@/lib/confirm/ConfirmContext';
 
 export async function generateMetadata(): Promise<Metadata> {
   let title = 'بوابة خورفكان الإدارية';
@@ -34,7 +35,9 @@ export default function RootLayout({
     <html lang="ar" dir="rtl">
       <body className="bg-[var(--c-bg)] min-h-screen">
         <LanguageProvider>
-          <ThemeProvider>{children}</ThemeProvider>
+          <ThemeProvider>
+            <ConfirmProvider>{children}</ConfirmProvider>
+          </ThemeProvider>
         </LanguageProvider>
       </body>
     </html>

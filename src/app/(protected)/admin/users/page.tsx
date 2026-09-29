@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
+import { useConfirm } from '@/lib/confirm/ConfirmContext';
 import Card from '@/components/ui/Card';
 import DataTable from '@/components/ui/DataTable';
 import type { Profile, UserRole } from '@/types/database';
@@ -18,6 +19,7 @@ export default function UsersPage() {
   const supabase = createClient();
   const router = useRouter();
   const { t } = useLanguage();
+  const confirm = useConfirm();
   const [users, setUsers] = useState<Profile[]>([]);
   const [uploaderIds, setUploaderIds] = useState<Set<string>>(new Set());
   const [tab, setTab] = useState<Tab>('regular');
@@ -91,7 +93,7 @@ export default function UsersPage() {
   }
 
   async function deleteUser(id: string) {
-    if (!window.confirm(t('confirmDeleteUser'))) return;
+    if (!(await confirm({ message: t('confirmDeleteUser'), danger: true, confirmLabel: t('delete') }))) return;
     setDeletingId(id);
     try {
       const res = await fetch('/api/admin/delete-user', {

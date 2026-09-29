@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
+import { useConfirm } from '@/lib/confirm/ConfirmContext';
 import Card from '@/components/ui/Card';
 import FormField from '@/components/ui/FormField';
 import Alert from '@/components/ui/Alert';
@@ -118,6 +119,7 @@ const ASSISTANT_ICON_OPTIONS = ['🤖', '🧠', '💬', '🗨️', '🎧', '⚡'
 
 export default function SettingsPage() {
   const { t } = useLanguage();
+  const confirm = useConfirm();
   const router = useRouter();
   const supabase = createClient();
 
@@ -320,7 +322,7 @@ export default function SettingsPage() {
   }
 
   async function deleteCategory(id: string) {
-    if (!window.confirm(t('categoryDeleteConfirm'))) return;
+    if (!(await confirm({ message: t('categoryDeleteConfirm'), danger: true, confirmLabel: t('delete') }))) return;
     setCategoryError('');
     const deletedName = categories.find((c) => c.id === id)?.name || id;
     const { error } = await supabase.from('request_categories').delete().eq('id', id);
