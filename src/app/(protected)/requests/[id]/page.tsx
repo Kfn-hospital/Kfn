@@ -315,7 +315,7 @@ export default function RequestDetailPage() {
   }
 
   return (
-    <main className="p-6 max-w-3xl space-y-4">
+    <main className="p-6 space-y-4">
       <Breadcrumbs items={[{ label: t('requestsTitle'), href: '/requests' }, { label: request.title }]} />
 
       <div className="flex items-start justify-between gap-4 flex-wrap">

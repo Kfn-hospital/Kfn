@@ -9,6 +9,7 @@ import FormField from '@/components/ui/FormField';
 import Alert from '@/components/ui/Alert';
 import DataTable from '@/components/ui/DataTable';
 import type { SharedFile } from '@/types/database';
+import { safeStorageKey } from '@/lib/storage/safeStorageKey';
 
 export default function FilesPage() {
   const supabase = createClient();
@@ -74,7 +75,7 @@ export default function FilesPage() {
     setUploading(true);
     setError('');
 
-    const path = `${Date.now()}_${pendingFile.name}`;
+    const path = safeStorageKey(pendingFile.name);
     const { error: uploadError } = await supabase.storage.from('shared-files').upload(path, pendingFile);
 
     if (uploadError) {

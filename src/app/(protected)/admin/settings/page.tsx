@@ -10,6 +10,7 @@ import Alert from '@/components/ui/Alert';
 import EmojiPicker from '@/components/ui/EmojiPicker';
 import Tabs from '@/components/ui/Tabs';
 import { notifyAppSettingsUpdated } from '@/lib/settingsSync';
+import { safeStorageKey } from '@/lib/storage/safeStorageKey';
 import type { RequestCategory, Room } from '@/types/database';
 import {
   DEFAULT_BOOKING_POLICY_MESSAGE_AR,
@@ -363,7 +364,7 @@ export default function SettingsPage() {
       let lightmodeIconUrl = settings.icon_url_lightmode;
 
       if (logoFile) {
-        const path = `logo-${Date.now()}-${logoFile.name}`;
+        const path = `logo-${safeStorageKey(logoFile.name)}`;
         const { error: uploadError } = await supabase.storage
           .from('branding')
           .upload(path, logoFile, { upsert: true });
@@ -373,7 +374,7 @@ export default function SettingsPage() {
       }
 
       if (assistantIconFile) {
-        const path = `assistant-icon-${Date.now()}-${assistantIconFile.name}`;
+        const path = `assistant-icon-${safeStorageKey(assistantIconFile.name)}`;
         const { error: uploadError } = await supabase.storage
           .from('branding')
           .upload(path, assistantIconFile, { upsert: true });
@@ -391,7 +392,7 @@ export default function SettingsPage() {
       ];
       for (const [file, prefix, applyUrl] of headerIconUploads) {
         if (!file) continue;
-        const path = `${prefix}-${Date.now()}-${file.name}`;
+        const path = `${prefix}-${safeStorageKey(file.name)}`;
         const { error: uploadError } = await supabase.storage.from('branding').upload(path, file, { upsert: true });
         if (uploadError) throw uploadError;
         const { data: pub } = supabase.storage.from('branding').getPublicUrl(path);
@@ -558,7 +559,7 @@ export default function SettingsPage() {
   if (loading) return <p className="text-[var(--c-text-muted)]">{t('loading')}</p>;
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <main className="p-6 space-y-6">
       <div>
         <h1 className="text-2xl font-extrabold text-[var(--c-teal-900)]">⚙️ {t('settingsTitle')}</h1>
         <p className="text-[var(--c-text-muted)]">{t('settingsSubtitle')}</p>
@@ -1431,6 +1432,6 @@ export default function SettingsPage() {
       </button>
         </>
       )}
-    </div>
+    </main>
   );
 }

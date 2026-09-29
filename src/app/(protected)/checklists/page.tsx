@@ -16,6 +16,7 @@ import type {
   ChecklistAttachment,
   Profile,
 } from '@/types/database';
+import { safeStorageKey } from '@/lib/storage/safeStorageKey';
 
 type ChecklistWithProgress = Checklist & {
   itemsCount: number;
@@ -316,7 +317,7 @@ function ChecklistDetailModal({
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    const path = `${checklistId}/${Date.now()}_${file.name}`;
+    const path = safeStorageKey(file.name, checklistId);
     const { error } = await supabase.storage.from('checklist-attachments').upload(path, file);
     if (!error) {
       await supabase.from('checklist_attachments').insert({

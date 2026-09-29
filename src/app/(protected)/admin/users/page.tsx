@@ -23,6 +23,7 @@ export default function UsersPage() {
   const [tab, setTab] = useState<Tab>('regular');
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [authorized, setAuthorized] = useState(false);
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     (async () => {
@@ -44,7 +45,9 @@ export default function UsersPage() {
   }, []);
 
   async function loadUsers() {
-    const { data } = await supabase.from('profiles').select('*').order('name');
+    // الأحدث (اللي انضم مؤخرًا) يظهر فوق، لأن عدد الموظفين بقى كبير
+    // وأسهل حاجة للأدمن إنه يلاقي الحساب اللي لسه مضاف.
+    const { data } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
     setUsers((data as Profile[]) || []);
 
     const { data: uploaders } = await supabase.from('file_uploaders').select('user_id');
@@ -117,8 +120,19 @@ export default function UsersPage() {
     employee: t('roleEmployee'),
   };
 
-  const regularUsers = useMemo(() => users.filter((u) => u.role === 'employee'), [users]);
-  const adminUsers = useMemo(() => users.filter((u) => ADMIN_ROLES.includes(u.role as UserRole)), [users]);
+  const searchedUsers = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return users;
+    return users.filter((u) =>
+      [u.name, u.email, u.department, u.phone].some((field) => (field || '').toLowerCase().includes(q))
+    );
+  }, [users, search]);
+
+  const regularUsers = useMemo(() => searchedUsers.filter((u) => u.role === 'employee'), [searchedUsers]);
+  const adminUsers = useMemo(
+    () => searchedUsers.filter((u) => ADMIN_ROLES.includes(u.role as UserRole)),
+    [searchedUsers]
+  );
   const pendingCount = useMemo(() => users.filter((u) => u.status === 'pending').length, [users]);
 
   const renderStatus = (u: Profile) => {
@@ -221,6 +235,16 @@ export default function UsersPage() {
         >
           ➕ {t('addUser')}
         </Link>
+      </div>
+
+      <div className="mb-4">
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder={t('usersSearchPlaceholder')}
+          className="w-full sm:max-w-sm border rounded-xl px-3 py-2.5"
+        />
       </div>
 
       <div className="flex flex-wrap gap-2 mb-4">
