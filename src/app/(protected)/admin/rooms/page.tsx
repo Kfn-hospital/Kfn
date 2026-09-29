@@ -207,7 +207,7 @@ export default function AdminRoomsPage() {
   if (!authorized) return null;
 
   return (
-    <main className="p-6 max-w-5xl">
+    <main className="p-6">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-extrabold text-[var(--c-teal-900)]">{t('roomsManagement')}</h1>
         <button
