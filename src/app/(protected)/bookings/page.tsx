@@ -8,6 +8,7 @@ import Card from '@/components/ui/Card';
 import Alert from '@/components/ui/Alert';
 import FormField from '@/components/ui/FormField';
 import DataTable from '@/components/ui/DataTable';
+import Modal from '@/components/ui/Modal';
 import type { Booking } from '@/types/database';
 import { statusBadgeStyle, statusDotStyle } from '@/lib/theme/colorUtils';
 
@@ -47,6 +48,12 @@ export default function AllBookingsPage() {
   const [deciders, setDeciders] = useState<Record<string, string>>({});
   const [alert, setAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
+  // ---- بيانات المستخدم الحالي + سبب الرفض/الإلغاء ----
+  const [userId, setUserId] = useState('');
+  const [myName, setMyName] = useState('');
+  const [reasonModal, setReasonModal] = useState<{ booking: Booking; status: 'rejected' | 'cancelled' } | null>(null);
+  const [reasonText, setReasonText] = useState('');
+
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [roomFilter, setRoomFilter] = useState('');
@@ -84,8 +91,14 @@ export default function AllBookingsPage() {
       } = await supabase.auth.getUser();
       let r: string | null = null;
       if (user) {
-        const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+        setUserId(user.id);
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role, name, email')
+          .eq('id', user.id)
+          .single();
         r = profile?.role ?? null;
+        setMyName(profile?.name || profile?.email || '');
       }
       setRole(r);
       if (r === 'admin' || r === 'room_manager') await loadBookings();
@@ -182,6 +195,55 @@ export default function AllBookingsPage() {
     const gone = new Set(deleted.map((d) => d.id));
     setBookings((prev) => prev.filter((b) => !gone.has(b.id)));
     setAlert({ type: 'success', message: t('bookingDeleted') });
+  }
+
+  async function applyStatusChange(b: Booking, status: 'approved' | 'rejected' | 'cancelled', reason?: string) {
+    setAlert(null);
+    const decides = status === 'approved' || status === 'rejected';
+    const { data, error } = await supabase
+      .from('bookings')
+      .update({
+        status,
+        decision_reason: reason || null,
+        ...(decides ? { decided_by: userId } : {}),
+      })
+      .eq('id', b.id)
+      .select('id');
+    if (error || !data || !data.length) {
+      setAlert({ type: 'error', message: t('bookingActionFailed') });
+      return;
+    }
+    setBookings((prev) =>
+      prev.map((x) =>
+        x.id === b.id
+          ? { ...x, status, decision_reason: reason || null, decided_by: decides ? userId : x.decided_by }
+          : x
+      )
+    );
+    if (decides && userId) setDeciders((prev) => ({ ...prev, [userId]: myName || '-' }));
+    setAlert({ type: 'success', message: t('bookingActionDone') });
+    fetch('/api/bookings/notify-decision', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bookingId: b.id, decision: status, reason }),
+    }).catch(() => {});
+  }
+
+  function requestStatusChange(b: Booking, status: 'approved' | 'rejected' | 'cancelled') {
+    const isOwnCancel = status === 'cancelled' && b.booked_by === userId;
+    if (!isOwnCancel && (status === 'rejected' || status === 'cancelled')) {
+      setReasonText('');
+      setReasonModal({ booking: b, status });
+      return;
+    }
+    applyStatusChange(b, status);
+  }
+
+  function confirmReasonModal() {
+    if (!reasonModal) return;
+    applyStatusChange(reasonModal.booking, reasonModal.status, reasonText.trim());
+    setReasonModal(null);
+    setReasonText('');
   }
 
   if (!ready) return <p className="text-[var(--c-text-muted)] p-6">{t('loading')}</p>;
@@ -342,20 +404,76 @@ export default function AllBookingsPage() {
             },
             {
               header: t('actions'),
-              render: (b: Booking) =>
-                b.status === 'cancelled' ? (
-                  <button
-                    type="button"
-                    onClick={() => deleteBookings([b.id], t('confirmDeleteCancelledBooking'))}
-                    className="text-red-600 text-xs font-bold hover:underline"
-                  >
-                    🗑️ {t('delete')}
-                  </button>
-                ) : null,
+              render: (b: Booking) => {
+                if (b.status === 'rejected') return null;
+                return (
+                  <div className="flex gap-3 flex-wrap">
+                    {b.status === 'pending' && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => requestStatusChange(b, 'approved')}
+                          className="text-green-600 text-xs font-bold hover:underline"
+                        >
+                          {t('approve')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => requestStatusChange(b, 'rejected')}
+                          className="text-red-600 text-xs font-bold hover:underline"
+                        >
+                          {t('reject')}
+                        </button>
+                      </>
+                    )}
+                    {(b.status === 'pending' || b.status === 'approved') && (
+                      <button
+                        type="button"
+                        onClick={() => requestStatusChange(b, 'cancelled')}
+                        className="text-[var(--c-text-muted)] text-xs font-bold hover:underline"
+                      >
+                        {t('cancel')}
+                      </button>
+                    )}
+                    {b.status === 'cancelled' && (
+                      <button
+                        type="button"
+                        onClick={() => deleteBookings([b.id], t('confirmDeleteCancelledBooking'))}
+                        className="text-red-600 text-xs font-bold hover:underline"
+                      >
+                        🗑️ {t('delete')}
+                      </button>
+                    )}
+                  </div>
+                );
+              },
             },
           ]}
         />
       </Card>
+
+      <Modal
+        open={!!reasonModal}
+        onClose={() => setReasonModal(null)}
+        title={reasonModal?.status === 'rejected' ? t('bookingReasonModalTitleReject') : t('bookingReasonModalTitleCancel')}
+      >
+        <div className="space-y-3">
+          <FormField
+            label=""
+            type="textarea"
+            value={reasonText}
+            onChange={setReasonText}
+            placeholder={t('bookingReasonPlaceholder')}
+          />
+          <button
+            type="button"
+            onClick={confirmReasonModal}
+            className="w-full bg-[var(--c-teal-700)] text-white rounded-xl py-3 font-bold"
+          >
+            {t('bookingReasonConfirm')}
+          </button>
+        </div>
+      </Modal>
     </main>
   );
 }
