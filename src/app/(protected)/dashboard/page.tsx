@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import Card from '@/components/ui/Card';
@@ -557,8 +558,15 @@ export default function DashboardPage() {
       {/* ---- كل الحجوزات — لإدارة الأدمن/مسؤول القاعة بس ---- */}
       {canManage && (
         <Card className="mt-6">
-          <h3 className="font-extrabold text-[var(--c-teal-900)] mb-3">📋 {t('allBookingsTitle')}</h3>
-          <DataTable emptyMessage={t('noData')} rows={bookings} columns={bookingColumns(false)} />
+          <Link
+            href="/bookings"
+            className="flex items-center justify-between font-extrabold text-[var(--c-teal-900)]"
+          >
+            <span>📋 {t('allBookingsTitle')}</span>
+            <span className="text-sm text-[var(--c-teal-700)]">
+              {t('openAllBookingsPage')} {lang === 'ar' ? '‹' : '›'}
+            </span>
+          </Link>
         </Card>
       )}
 

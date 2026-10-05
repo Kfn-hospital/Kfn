@@ -73,6 +73,7 @@ export default function Sidebar({
   // ---- مجموعة الإدارة والإعدادات: نفس شرط الظهور القديم بالظبط، بس مجمّعة تحت عنوان واحد ----
   const adminLinks: NavLink[] = [
     ...(isAdmin || isRoomManager ? [{ href: '/admin', label: `📊 ${t('adminPanelTitle')}` }] : []),
+    ...(isAdmin || isRoomManager ? [{ href: '/bookings', label: `📋 ${t('navAllBookings')}` }] : []),
     ...(isAdmin
       ? [
           { href: '/admin/rooms', label: t('navRoomsAdmin') },
