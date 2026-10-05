@@ -82,6 +82,9 @@ export default function DashboardPage() {
   const [reasonModal, setReasonModal] = useState<{ booking: Booking; status: 'rejected' | 'cancelled' } | null>(null);
   const [reasonText, setReasonText] = useState('');
 
+  // ---- أسماء اللي اعتمد/رفض الحجوزات (id → اسم) ----
+  const [deciders, setDeciders] = useState<Record<string, string>>({});
+
   // ---- Calendar state ----
   const [calendarBookings, setCalendarBookings] = useState<Booking[]>([]);
   const [calendarMonth, setCalendarMonth] = useState(() => {
@@ -122,6 +125,7 @@ export default function DashboardPage() {
       .order('booking_date', { ascending: false })
       .limit(50);
     setBookings((bookingsData as Booking[]) || []);
+    loadDeciders((bookingsData as Booking[]) || []);
 
     if (uid) {
       const { data: mineData } = await supabase
@@ -131,7 +135,19 @@ export default function DashboardPage() {
         .order('booking_date', { ascending: false })
         .limit(50);
       setMyBookings((mineData as Booking[]) || []);
+      loadDeciders((mineData as Booking[]) || []);
     }
+  }
+
+  async function loadDeciders(list: Booking[]) {
+    const ids = Array.from(new Set(list.map((b) => b.decided_by).filter((id): id is string => !!id)));
+    if (!ids.length) return;
+    const { data } = await supabase.from('profiles').select('id, name, email').in('id', ids);
+    const map: Record<string, string> = {};
+    (data as { id: string; name: string | null; email: string | null }[] | null)?.forEach((p) => {
+      map[p.id] = p.name || p.email || '-';
+    });
+    setDeciders((prev) => ({ ...prev, ...map }));
   }
 
   async function loadCalendarBookings() {
@@ -228,7 +244,12 @@ export default function DashboardPage() {
   async function applyStatusChange(id: string, status: 'approved' | 'rejected' | 'cancelled', reason?: string) {
     await supabase
       .from('bookings')
-      .update({ status, decision_reason: reason || null })
+      .update({
+        status,
+        decision_reason: reason || null,
+        // نسجّل مين اعتمد أو رفض (الإلغاء ما يغيّرش اسم المراجع)
+        ...(status === 'approved' || status === 'rejected' ? { decided_by: userId } : {}),
+      })
       .eq('id', id);
     loadData();
     loadCalendarBookings();
@@ -363,6 +384,13 @@ export default function DashboardPage() {
         );
       },
     },
+    {
+      header: t('decidedByLabel'),
+      render: (b: Booking) =>
+        (b.status === 'approved' || b.status === 'rejected') && b.decided_by
+          ? deciders[b.decided_by] || '-'
+          : '-',
+    },
   ];
 
   return (
@@ -397,6 +425,24 @@ export default function DashboardPage() {
           {!rooms.length && (
             <p className="text-[var(--c-text-muted)] text-center py-6">{t('noData')}</p>
           )}
+
+          {/* ---- معنى ألوان الحجوزات في الأجندة ---- */}
+          <Card>
+            <h3 className="font-extrabold text-[var(--c-teal-900)] mb-3">🎨 {t('legendTitle')}</h3>
+            <ul className="space-y-2">
+              {[
+                ['approved', t('legendApproved')],
+                ['pending', t('legendPending')],
+                ['rejected', t('legendRejected')],
+                ['cancelled', t('legendCancelled')],
+              ].map(([status, label]) => (
+                <li key={status} className="flex items-center gap-2 text-sm">
+                  <span className="inline-block w-4 h-4 rounded" style={statusDotStyle(status)} />
+                  <span className="font-bold text-[var(--c-text)]">{label}</span>
+                </li>
+              ))}
+            </ul>
+          </Card>
         </div>
 
         {/* ---- الأجندة + حجوزاتي (يمين) ---- */}

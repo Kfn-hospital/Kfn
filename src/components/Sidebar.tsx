@@ -61,8 +61,8 @@ export default function Sidebar({
 
   // ---- الروابط الأساسية: نفس الروابط اللي كانت موجودة، بدون أي حذف أو تغيير صلاحيات ----
   const primaryLinks: NavLink[] = [
-    { href: '/dashboard', label: t('navDashboard') },
     { href: '/requests', label: t('navRequests') },
+    { href: '/dashboard', label: t('navDashboard') },
     { href: '/checklists', label: t('navChecklists') },
     { href: '/files', label: t('navFiles') },
     { href: '/reports', label: t('navReports') },
