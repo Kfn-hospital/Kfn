@@ -217,6 +217,7 @@ export default function Header({ onMenuClick }: { onMenuClick?: () => void } = {
   else if (pathname.startsWith('/files')) pageTitle = t('navFiles');
   else if (pathname.startsWith('/reports')) pageTitle = t('navReports');
   else if (pathname.startsWith('/appearance')) pageTitle = t('appearanceTitle');
+  else if (pathname.startsWith('/password')) pageTitle = t('navChangePassword');
   else if (pathname.startsWith('/assistant')) pageTitle = t('aiAssistantTitle');
   else if (pathname.startsWith('/dashboard')) pageTitle = t('navDashboard');
 

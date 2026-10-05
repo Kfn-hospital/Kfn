@@ -14,41 +14,53 @@ export async function POST(request: Request) {
   const ipLimit = checkRateLimit(`resolve-phone:ip:${ip}`, 30, 15 * 60 * 1000);
   if (!ipLimit.allowed) {
     return NextResponse.json(
-      { ok: false, error: 'محاولات كتير في وقت قصير، جرّب تاني بعد شوية' },
+      { ok: false, code: 'rate_limited', error: 'محاولات كتير في وقت قصير، جرّب تاني بعد شوية' },
       { status: 429 }
     );
   }
 
-  const { phone } = await request.json();
+  const body = await request.json().catch(() => ({}));
+  const phone = typeof body.phone === 'string' ? body.phone.trim() : '';
+  const emailInput = typeof body.email === 'string' ? body.email.trim() : '';
 
-  if (!phone) {
-    return NextResponse.json({ ok: false, error: 'رقم الهاتف مطلوب' }, { status: 400 });
-  }
-
-  const phoneLimit = checkRateLimit(`resolve-phone:number:${phone}`, 10, 15 * 60 * 1000);
-  if (!phoneLimit.allowed) {
+  if (!phone && !emailInput) {
     return NextResponse.json(
-      { ok: false, error: 'محاولات كتير بنفس الرقم، جرّب تاني بعد شوية' },
+      { ok: false, code: 'missing', error: 'رقم الهاتف أو البريد الإلكتروني مطلوب' },
+      { status: 400 }
+    );
+  }
+
+  const identity = phone || emailInput.toLowerCase();
+  const identityLimit = checkRateLimit(`resolve-phone:number:${identity}`, 10, 15 * 60 * 1000);
+  if (!identityLimit.allowed) {
+    return NextResponse.json(
+      { ok: false, code: 'rate_limited', error: 'محاولات كتير بنفس الحساب، جرّب تاني بعد شوية' },
       { status: 429 }
     );
   }
 
-  const { data: profile } = await supabaseAdmin
-    .from('profiles')
-    .select('email, status')
-    .eq('phone', phone)
-    .maybeSingle();
+  const base = supabaseAdmin.from('profiles').select('email, status');
+  const lookup = phone
+    ? base.eq('phone', phone)
+    : base.ilike('email', emailInput.replace(/[\\%_]/g, '\\$&'));
+  const { data: profile } = await lookup.limit(1).maybeSingle();
 
   if (!profile) {
-    return NextResponse.json({ ok: false, error: 'رقم الهاتف غير مسجل' });
+    return NextResponse.json({
+      ok: false,
+      code: phone ? 'phone_not_found' : 'email_not_found',
+      error: phone ? 'رقم الهاتف غير مسجل' : 'البريد الإلكتروني غير مسجل',
+    });
   }
 
   if (profile.status === 'pending') {
-    return NextResponse.json({ ok: false, error: 'حسابك لسه قيد الموافقة من الإدارة' });
+    return NextResponse.json({ ok: false, code: 'pending', error: 'حسابك لسه قيد الموافقة من الإدارة' });
   }
 
-  if (profile.status !== 'active') {
-    return NextResponse.json({ ok: false, error: 'الحساب غير مفعّل، تواصل مع الإدارة' });
+  // مسار الإيميل: ما نمنعش إلا لو الحالة مكتوبة وغير active (حسابات قديمة ممكن تكون من غير status)
+  const isInactive = phone ? profile.status !== 'active' : !!profile.status && profile.status !== 'active';
+  if (isInactive) {
+    return NextResponse.json({ ok: false, code: 'inactive', error: 'الحساب غير مفعّل، تواصل مع الإدارة' });
   }
 
   return NextResponse.json({ ok: true, email: profile.email });

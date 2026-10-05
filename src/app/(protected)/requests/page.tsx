@@ -58,7 +58,10 @@ function AssignedToCombobox({
         className="w-full border rounded-xl px-3 py-2.5"
       />
       {open && (
-        <div className="absolute z-20 w-full border rounded-xl mt-1 bg-[var(--c-surface)] shadow-lg max-h-48 overflow-auto">
+        <div
+          onMouseDown={(e) => e.preventDefault()}
+          className="w-full border rounded-xl mt-1 bg-[var(--c-surface)] shadow-lg max-h-[50vh] overflow-auto"
+        >
           <button
             type="button"
             onMouseDown={() => {
@@ -412,7 +415,7 @@ export default function RequestsPage() {
         />
       </Card>
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={t('newRequest')} size="lg">
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={t('newRequest')} size="xl">
         <form onSubmit={handleAdd} className="space-y-3">
           <FormField
             label={t('requestTitle')}

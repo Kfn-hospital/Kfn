@@ -40,23 +40,43 @@ function LoginForm() {
     setLoading(true);
 
     const trimmed = identifier.trim();
+    const isEmail = trimmed.includes('@');
     let loginEmail = trimmed;
 
-    if (!trimmed.includes('@')) {
-      try {
-        const res = await fetch('/api/auth/resolve-phone', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phone: trimmed }),
-        });
-        const json = await res.json();
-        if (!json.ok) {
-          setError(json.error || t('loginError'));
-          setLoading(false);
-          return;
-        }
-        loginEmail = json.email;
-      } catch {
+    function accountErrorMessage(code?: string, fallback?: string) {
+      switch (code) {
+        case 'email_not_found':
+          return t('loginEmailNotFound');
+        case 'phone_not_found':
+          return t('loginPhoneNotFound');
+        case 'pending':
+          return t('loginAccountPending');
+        case 'inactive':
+          return t('loginAccountInactive');
+        case 'rate_limited':
+          return t('loginRateLimited');
+        default:
+          return fallback || t('loginError');
+      }
+    }
+
+    // نتحقق الأول إن الحساب (الإيميل أو رقم الهاتف) موجود ومفعّل، عشان نفرّق
+    // بين مشكلة الحساب ومشكلة كلمة المرور.
+    try {
+      const res = await fetch('/api/auth/resolve-phone', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(isEmail ? { email: trimmed } : { phone: trimmed }),
+      });
+      const json = await res.json();
+      if (!json.ok) {
+        setError(accountErrorMessage(json.code, json.error));
+        setLoading(false);
+        return;
+      }
+      loginEmail = json.email;
+    } catch {
+      if (!isEmail) {
         setError(t('loginError'));
         setLoading(false);
         return;
@@ -67,7 +87,7 @@ function LoginForm() {
 
     setLoading(false);
     if (error) {
-      setError(t('loginError'));
+      setError(/invalid login credentials/i.test(error.message) ? t('loginPasswordWrong') : t('loginError'));
       return;
     }
     const next = searchParams.get('next');

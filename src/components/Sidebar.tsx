@@ -67,6 +67,7 @@ export default function Sidebar({
     { href: '/files', label: t('navFiles') },
     { href: '/reports', label: t('navReports') },
     { href: '/appearance', label: `🎨 ${t('appearanceTitle')}` },
+    { href: '/password', label: `🔑 ${t('navChangePassword')}` },
   ];
 
   // ---- مجموعة الإدارة والإعدادات: نفس شرط الظهور القديم بالظبط، بس مجمّعة تحت عنوان واحد ----
