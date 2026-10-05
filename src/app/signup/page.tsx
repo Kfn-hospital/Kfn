@@ -12,7 +12,7 @@ export default function SignupPage() {
   const { t } = useLanguage();
   const router = useRouter();
 
-  const [form, setForm] = useState({ name: '', email: '', phone: '', department: '', password: '' });
+  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '', department: '', password: '' });
   const [saving, setSaving] = useState(false);
   const [alert, setAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
@@ -25,7 +25,13 @@ export default function SignupPage() {
       const res = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          name: `${form.firstName.trim()} ${form.lastName.trim()}`.trim(),
+          email: form.email,
+          phone: form.phone,
+          department: form.department,
+          password: form.password,
+        }),
       });
       const json = await res.json();
 
@@ -53,10 +59,17 @@ export default function SignupPage() {
         <Card>
           <form onSubmit={submit} className="space-y-3">
             <FormField
-              label={t('name')}
+              label={t('signupFirstName')}
               type="text"
-              value={form.name}
-              onChange={(v: string) => setForm((f) => ({ ...f, name: v }))}
+              value={form.firstName}
+              onChange={(v: string) => setForm((f) => ({ ...f, firstName: v }))}
+              required
+            />
+            <FormField
+              label={t('signupLastName')}
+              type="text"
+              value={form.lastName}
+              onChange={(v: string) => setForm((f) => ({ ...f, lastName: v }))}
               required
             />
             <FormField
