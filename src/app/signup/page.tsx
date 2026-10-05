@@ -61,6 +61,8 @@ export default function SignupPage() {
             <FormField
               label={t('signupFirstName')}
               type="text"
+              name="given-name"
+              autoComplete="given-name"
               value={form.firstName}
               onChange={(v: string) => setForm((f) => ({ ...f, firstName: v }))}
               required
@@ -68,13 +70,17 @@ export default function SignupPage() {
             <FormField
               label={t('signupLastName')}
               type="text"
+              name="family-name"
+              autoComplete="family-name"
               value={form.lastName}
               onChange={(v: string) => setForm((f) => ({ ...f, lastName: v }))}
               required
             />
             <FormField
               label={t('userEmail')}
-              type="text"
+              type="email"
+              name="email"
+              autoComplete="email"
               value={form.email}
               onChange={(v: string) => setForm((f) => ({ ...f, email: v }))}
               required
@@ -82,6 +88,8 @@ export default function SignupPage() {
             <FormField
               label={t('signupPhone')}
               type="text"
+              name="phone"
+              autoComplete="tel"
               value={form.phone}
               onChange={(v: string) => setForm((f) => ({ ...f, phone: v }))}
               required
@@ -89,6 +97,8 @@ export default function SignupPage() {
             <FormField
               label={t('userDepartment')}
               type="text"
+              name="department"
+              autoComplete="off"
               value={form.department}
               onChange={(v: string) => setForm((f) => ({ ...f, department: v }))}
               required
@@ -96,6 +106,8 @@ export default function SignupPage() {
             <FormField
               label={t('userPassword')}
               type="password"
+              name="new-password"
+              autoComplete="new-password"
               value={form.password}
               onChange={(v: string) => setForm((f) => ({ ...f, password: v }))}
               required

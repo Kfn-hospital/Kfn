@@ -5,6 +5,8 @@ interface FormFieldProps {
   onChange: (value: string) => void;
   required?: boolean;
   placeholder?: string;
+  name?: string;
+  autoComplete?: string;
 }
 
 export default function FormField({
@@ -14,6 +16,8 @@ export default function FormField({
   onChange,
   required = false,
   placeholder,
+  name,
+  autoComplete,
 }: FormFieldProps) {
   return (
     <div>
@@ -28,11 +32,15 @@ export default function FormField({
           required={required}
           placeholder={placeholder}
           rows={3}
+          name={name}
+          autoComplete={autoComplete}
           className="w-full border rounded-xl px-3 py-2.5"
         />
       ) : (
         <input
           type={type}
+          name={name}
+          autoComplete={autoComplete}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           required={required}
