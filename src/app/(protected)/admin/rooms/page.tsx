@@ -98,37 +98,68 @@ function ResponsibleEditor({
   onSave,
 }: {
   room: Room;
-  onSave: (roomId: string, ar: string, en: string) => void;
+  onSave: (roomId: string, ar: string, en: string) => Promise<boolean>;
 }) {
   const { t } = useLanguage();
   const [ar, setAr] = useState(room.responsible || '');
   const [en, setEn] = useState(room.responsible_en || '');
+  const [saving, setSaving] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
   const dirty = ar !== (room.responsible || '') || en !== (room.responsible_en || '');
 
+  // لو القيمة المحفوظة اتغيرت من السيرفر نحدّث الحقول (من غير ما نعيد بناء المكوّن ونفقد الـ focus)
+  useEffect(() => {
+    setAr(room.responsible || '');
+    setEn(room.responsible_en || '');
+  }, [room.responsible, room.responsible_en]);
+
+  async function save() {
+    if (saving || !dirty) return;
+    setSaving(true);
+    const done = await onSave(room.id, ar, en);
+    setSaving(false);
+    if (done) {
+      setJustSaved(true);
+      setTimeout(() => setJustSaved(false), 2500);
+    }
+  }
+
+  function onEnter(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      save();
+    }
+  }
+
   return (
-    <div className="min-w-[200px] space-y-1">
+    <div className="min-w-[220px] space-y-1">
       <input
         value={ar}
         onChange={(e) => setAr(e.target.value)}
+        onKeyDown={onEnter}
         placeholder="القسم / المسؤول (عربي)"
         className="w-full border rounded-lg px-2 py-1 text-xs"
       />
       <input
         value={en}
         onChange={(e) => setEn(e.target.value)}
+        onKeyDown={onEnter}
         placeholder="Department / person (English)"
         dir="ltr"
         className="w-full border rounded-lg px-2 py-1 text-xs"
       />
-      {dirty && (
-        <button
-          type="button"
-          onClick={() => onSave(room.id, ar, en)}
-          className="text-xs font-bold text-[var(--c-teal-700)] hover:underline"
-        >
-          💾 {t('save')}
-        </button>
-      )}
+      <button
+        type="button"
+        onClick={save}
+        disabled={!dirty || saving}
+        className={`text-xs font-bold rounded-lg px-3 py-1 transition ${
+          dirty
+            ? 'bg-[var(--c-teal-700)] text-white hover:opacity-90'
+            : 'bg-slate-100 text-slate-400 cursor-default'
+        } disabled:opacity-70`}
+      >
+        {saving ? t('saving') : justSaved && !dirty ? '✓ ' + t('saveSuccess') : '💾 ' + t('save')}
+      </button>
     </div>
   );
 }
@@ -145,6 +176,8 @@ export default function AdminRoomsPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [pageError, setPageError] = useState('');
+  const [pageSuccess, setPageSuccess] = useState('');
+  const [columnMissing, setColumnMissing] = useState(false);
   const [authorized, setAuthorized] = useState(false);
 
   useEffect(() => {
@@ -172,11 +205,15 @@ export default function AdminRoomsPage() {
     location: '',
     location_en: '',
     capacity: '',
+    responsible: '',
+    responsible_en: '',
   });
 
   async function loadRooms() {
     const { data } = await supabase.from('rooms').select('*').order('name');
     setRooms((data as Room[]) || []);
+    // لو عمود المسؤول مش موجود في قاعدة البيانات (ملف 0015 ما اتشغلش) نعرض تنبيه واضح
+    setColumnMissing(!!data && data.length > 0 && !('responsible' in (data[0] as object)));
 
     const { data: users } = await supabase.from('profiles').select('*').eq('status', 'active').order('name');
     setAllUsers((users as Profile[]) || []);
@@ -205,8 +242,9 @@ export default function AdminRoomsPage() {
     loadRooms();
   }
 
-  async function saveResponsible(roomId: string, ar: string, en: string) {
+  async function saveResponsible(roomId: string, ar: string, en: string): Promise<boolean> {
     setPageError('');
+    setPageSuccess('');
     const { data, error: saveError } = await supabase
       .from('rooms')
       .update({ responsible: ar.trim() || null, responsible_en: en.trim() || null })
@@ -214,9 +252,11 @@ export default function AdminRoomsPage() {
       .select('id');
     if (saveError || !data || !data.length) {
       setPageError(saveError?.message || 'لم يتم الحفظ، تحقق من الصلاحيات');
-      return;
+      return false;
     }
-    loadRooms();
+    setPageSuccess(t('responsibleSaved'));
+    await loadRooms();
+    return true;
   }
 
   async function handleAddRoom(e: React.FormEvent) {
@@ -232,6 +272,8 @@ export default function AdminRoomsPage() {
       location_en: form.location_en.trim() || null,
       capacity: form.capacity ? parseInt(form.capacity) : 0,
       status: 'active',
+      ...(form.responsible.trim() ? { responsible: form.responsible.trim() } : {}),
+      ...(form.responsible_en.trim() ? { responsible_en: form.responsible_en.trim() } : {}),
     });
 
     setLoading(false);
@@ -239,7 +281,7 @@ export default function AdminRoomsPage() {
       setError(error.message);
       return;
     }
-    setForm({ name: '', name_en: '', location: '', location_en: '', capacity: '' });
+    setForm({ name: '', name_en: '', location: '', location_en: '', capacity: '', responsible: '', responsible_en: '' });
     setModalOpen(false);
     loadRooms();
   }
@@ -273,9 +315,19 @@ export default function AdminRoomsPage() {
         </button>
       </div>
 
+      {columnMissing && (
+        <div className="mb-3">
+          <Alert type="error" message={t('responsibleColumnMissing')} />
+        </div>
+      )}
       {pageError && (
         <div className="mb-3">
           <Alert type="error" message={pageError} />
+        </div>
+      )}
+      {pageSuccess && (
+        <div className="mb-3">
+          <Alert type="success" message={pageSuccess} />
         </div>
       )}
 
@@ -297,7 +349,7 @@ export default function AdminRoomsPage() {
               header: t('roomResponsible'),
               render: (r) => (
                 <ResponsibleEditor
-                  key={`${r.id}-${r.responsible || ''}-${r.responsible_en || ''}`}
+                  key={r.id}
                   room={r}
                   onSave={saveResponsible}
                 />
@@ -358,6 +410,16 @@ export default function AdminRoomsPage() {
             type="number"
             value={form.capacity}
             onChange={(v) => setForm({ ...form, capacity: v })}
+          />
+          <FormField
+            label={`${t('roomResponsible')} (عربي)`}
+            value={form.responsible}
+            onChange={(v) => setForm({ ...form, responsible: v })}
+          />
+          <FormField
+            label={`${t('roomResponsible')} (English)`}
+            value={form.responsible_en}
+            onChange={(v) => setForm({ ...form, responsible_en: v })}
           />
           <Alert type="error" message={error} />
           <button
