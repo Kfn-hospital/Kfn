@@ -54,6 +54,9 @@ export default function AllBookingsPage() {
   const [myName, setMyName] = useState('');
   const [reasonModal, setReasonModal] = useState<{ booking: Booking; status: 'approved' | 'rejected' | 'cancelled' | 'needs_edit' } | null>(null);
   const [reasonText, setReasonText] = useState('');
+  // كارت يظهر عند الوقوف على عنوان الحجز + نافذة تفاصيل عند الضغط على الصف
+  const [hoverCard, setHoverCard] = useState<{ b: Booking; x: number; y: number } | null>(null);
+  const [details, setDetails] = useState<Booking | null>(null);
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -256,6 +259,101 @@ export default function AllBookingsPage() {
   if (!ready) return <p className="text-[var(--c-text-muted)] p-6">{t('loading')}</p>;
   if (!canManage) return <p className="text-[var(--c-text-muted)] p-6">{t('bookingsAccessDenied')}</p>;
 
+  function renderActions(b: Booking) {
+                if (b.status === 'rejected') return null;
+                const canEdit = b.status === 'pending' || b.status === 'approved' || b.status === 'needs_edit';
+                return (
+                  <div className="flex gap-3 items-center">
+                    {b.status === 'pending' && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => requestStatusChange(b, 'approved')}
+                          className="text-green-600 text-xs font-bold hover:underline"
+                        >
+                          {t('approve')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => requestStatusChange(b, 'rejected')}
+                          className="text-red-600 text-xs font-bold hover:underline"
+                        >
+                          {t('reject')}
+                        </button>
+                      </>
+                    )}
+                    {(b.status === 'pending' || b.status === 'approved') && (
+                      <button
+                        type="button"
+                        onClick={() => requestStatusChange(b, 'needs_edit')}
+                        className="text-orange-600 text-xs font-bold hover:underline"
+                      >
+                        {t('returnForEdit')}
+                      </button>
+                    )}
+                    {canEdit && (
+                      <Link
+                        href={`/dashboard?edit=${b.id}`}
+                        className="text-[var(--c-teal-600)] text-xs font-bold hover:underline"
+                      >
+                        {t('edit')}
+                      </Link>
+                    )}
+                    {canEdit && (
+                      <button
+                        type="button"
+                        onClick={() => requestStatusChange(b, 'cancelled')}
+                        className="text-[var(--c-text-muted)] text-xs font-bold hover:underline"
+                      >
+                        {t('cancel')}
+                      </button>
+                    )}
+                    {b.status === 'cancelled' && (
+                      <button
+                        type="button"
+                        onClick={() => deleteBookings([b.id], t('confirmDeleteCancelledBooking'))}
+                        className="text-red-600 text-xs font-bold hover:underline"
+                      >
+                        🗑️ {t('delete')}
+                      </button>
+                    )}
+                  </div>
+                );
+  }
+
+  function renderInfo(b: Booking) {
+    const rows: [string, React.ReactNode][] = [
+      [t('bookingTitle'), <span key="t" className="font-bold break-words">{b.title}</span>],
+      [t('bookingRoom'), (lang === 'en' && b.rooms?.name_en ? b.rooms.name_en : b.rooms?.name) || '-'],
+      [t('bookingDate'), dateOnly(b.booking_date)],
+      [t('bookingTimeLabel'), `${timeLabel(b.start_time)} - ${timeLabel(b.end_time)}`],
+      [t('bookedBy'), bookerLabel(b.profiles)],
+      [
+        t('status'),
+        <span key="s" className="px-2 py-1 rounded-full text-xs font-bold" style={statusBadgeStyle(b.status)}>
+          {statusLabel[b.status] || b.status}
+        </span>,
+      ],
+    ];
+    if ((b.status === 'approved' || b.status === 'rejected') && b.decided_by) {
+      rows.push([t('decidedByLabel'), deciders[b.decided_by] || '-']);
+    }
+    if (b.notes) rows.push([t('bookingNotes'), <span key="n" className="break-words whitespace-pre-wrap">{b.notes}</span>]);
+    if (b.decision_reason) {
+      rows.push([t('bookingDecisionNote'), <span key="d" className="break-words whitespace-pre-wrap">{b.decision_reason}</span>]);
+    }
+    return (
+      <dl className="space-y-2 text-sm">
+        {rows.map(([label, value], idx) => (
+          <div key={idx} className="flex gap-3">
+            <dt className="w-28 shrink-0 text-[var(--c-text-muted)] font-bold">{label}</dt>
+            <dd className="flex-1 min-w-0">{value}</dd>
+          </div>
+        ))}
+      </dl>
+    );
+  }
+
   const cancelledShown = filtered.filter((b) => b.status === 'cancelled');
 
   return (
@@ -383,8 +481,24 @@ export default function AllBookingsPage() {
           rows={filtered}
           pageSize={20}
           nowrap
+          onRowClick={(b: Booking) => {
+            setHoverCard(null);
+            setDetails(b);
+          }}
           columns={[
-            { header: t('bookingTitle'), render: (b: Booking) => <span className="font-bold">{b.title}</span> },
+            {
+              header: t('bookingTitle'),
+              render: (b: Booking) => (
+                <span
+                  className="block max-w-[200px] truncate font-bold cursor-pointer"
+                  onMouseEnter={(e) => setHoverCard({ b, x: e.clientX, y: e.clientY })}
+                  onMouseMove={(e) => setHoverCard({ b, x: e.clientX, y: e.clientY })}
+                  onMouseLeave={() => setHoverCard(null)}
+                >
+                  {b.title}
+                </span>
+              ),
+            },
             {
               header: t('bookingRoom'),
               render: (b: Booking) => (lang === 'en' && b.rooms?.name_en ? b.rooms.name_en : b.rooms?.name) || '-',
@@ -412,71 +526,36 @@ export default function AllBookingsPage() {
             },
             {
               header: t('actions'),
-              render: (b: Booking) => {
-                if (b.status === 'rejected') return null;
-                const canEdit = b.status === 'pending' || b.status === 'approved' || b.status === 'needs_edit';
-                return (
-                  <div className="flex gap-3 items-center">
-                    {b.status === 'pending' && (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => requestStatusChange(b, 'approved')}
-                          className="text-green-600 text-xs font-bold hover:underline"
-                        >
-                          {t('approve')}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => requestStatusChange(b, 'rejected')}
-                          className="text-red-600 text-xs font-bold hover:underline"
-                        >
-                          {t('reject')}
-                        </button>
-                      </>
-                    )}
-                    {(b.status === 'pending' || b.status === 'approved') && (
-                      <button
-                        type="button"
-                        onClick={() => requestStatusChange(b, 'needs_edit')}
-                        className="text-orange-600 text-xs font-bold hover:underline"
-                      >
-                        {t('returnForEdit')}
-                      </button>
-                    )}
-                    {canEdit && (
-                      <Link
-                        href={`/dashboard?edit=${b.id}`}
-                        className="text-[var(--c-teal-600)] text-xs font-bold hover:underline"
-                      >
-                        {t('edit')}
-                      </Link>
-                    )}
-                    {canEdit && (
-                      <button
-                        type="button"
-                        onClick={() => requestStatusChange(b, 'cancelled')}
-                        className="text-[var(--c-text-muted)] text-xs font-bold hover:underline"
-                      >
-                        {t('cancel')}
-                      </button>
-                    )}
-                    {b.status === 'cancelled' && (
-                      <button
-                        type="button"
-                        onClick={() => deleteBookings([b.id], t('confirmDeleteCancelledBooking'))}
-                        className="text-red-600 text-xs font-bold hover:underline"
-                      >
-                        🗑️ {t('delete')}
-                      </button>
-                    )}
-                  </div>
-                );
-              },
+              render: (b: Booking) => (
+                <div onClick={(e) => e.stopPropagation()}>{renderActions(b)}</div>
+              ),
             },
           ]}
         />
       </Card>
+
+      <Modal open={!!details} onClose={() => setDetails(null)} title={t('bookingDetailsTitle')}>
+        {details && (
+          <div className="space-y-4">
+            {renderInfo(details)}
+            <div className="pt-3 border-t" onClick={() => setDetails(null)}>
+              {renderActions(details)}
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {hoverCard && !details && (
+        <div
+          className="fixed z-50 pointer-events-none bg-[var(--c-surface)] border border-[var(--c-border,#e2e8f0)] shadow-xl rounded-xl p-4 w-80"
+          style={{
+            left: Math.max(8, Math.min(hoverCard.x + 14, (typeof window !== 'undefined' ? window.innerWidth : 1200) - 336)),
+            top: Math.max(8, Math.min(hoverCard.y + 14, (typeof window !== 'undefined' ? window.innerHeight : 800) - 280)),
+          }}
+        >
+          {renderInfo(hoverCard.b)}
+        </div>
+      )}
 
       <Modal
         open={!!reasonModal}
