@@ -2,7 +2,7 @@
 
 export type UserRole = 'admin' | 'room_manager' | 'coordinator' | 'coordination_admin' | 'employee';
 export type UserStatus = 'active' | 'suspended' | 'pending';
-export type BookingStatus = 'pending' | 'approved' | 'rejected' | 'cancelled';
+export type BookingStatus = 'pending' | 'approved' | 'rejected' | 'cancelled' | 'needs_edit';
 export type RequestStatus = 'pending' | 'in_progress' | 'completed' | 'rejected';
 
 export interface Profile {
@@ -26,6 +26,8 @@ export interface Room {
   status: string;
   booking_policy_message: string | null;
   booking_policy_message_en: string | null;
+  responsible?: string | null;
+  responsible_en?: string | null;
 }
 
 export interface Booking {

@@ -82,6 +82,8 @@ export default function DashboardPage() {
   // ---- سبب الرفض/الإلغاء ----
   const [reasonModal, setReasonModal] = useState<{ booking: Booking; status: 'rejected' | 'cancelled' } | null>(null);
   const [reasonText, setReasonText] = useState('');
+  // حالة الحجز اللي بيتعدّل وصاحبه (عشان نعيد إرساله لو كان مُعاد للتعديل)
+  const [editingMeta, setEditingMeta] = useState<{ status: string; bookedBy: string } | null>(null);
 
   // ---- أسماء اللي اعتمد/رفض الحجوزات (id → اسم) ----
   const [deciders, setDeciders] = useState<Record<string, string>>({});
@@ -164,6 +166,18 @@ export default function DashboardPage() {
     loadData();
   }, []);
 
+  // فتح نافذة التعديل مباشرة لو جاي من صفحة كل الحجوزات (?edit=ID)
+  useEffect(() => {
+    const editId = new URLSearchParams(window.location.search).get('edit');
+    if (!editId) return;
+    (async () => {
+      const { data } = await supabase.from('bookings').select('*').eq('id', editId).single();
+      if (data) openEditBooking(data as Booking);
+      window.history.replaceState(null, '', window.location.pathname);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     loadCalendarBookings();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -179,6 +193,7 @@ export default function DashboardPage() {
 
   function openEditBooking(b: Booking) {
     setEditingId(b.id);
+    setEditingMeta({ status: b.status, bookedBy: b.booked_by });
     setForm({
       room_id: b.room_id,
       title: b.title,
@@ -195,6 +210,7 @@ export default function DashboardPage() {
   function closeModal() {
     setModalOpen(false);
     setEditingId(null);
+    setEditingMeta(null);
     setAgreedPolicy(false);
   }
 
@@ -213,9 +229,16 @@ export default function DashboardPage() {
     };
 
     const isNewBooking = !editingId;
+    // صاحب الحجز عدّل حجز مُعاد للتعديل → يرجع "قيد الانتظار" لمراجعة المسؤول
+    const resubmit = !!editingId && editingMeta?.status === 'needs_edit' && editingMeta.bookedBy === userId;
 
     const { data: savedBooking, error } = editingId
-      ? await supabase.from('bookings').update(payload).eq('id', editingId).select().single()
+      ? await supabase
+          .from('bookings')
+          .update(resubmit ? { ...payload, status: 'pending', decision_reason: null } : payload)
+          .eq('id', editingId)
+          .select()
+          .single()
       : await supabase
           .from('bookings')
           .insert({ ...payload, booked_by: userId, status: 'pending' })
@@ -229,11 +252,12 @@ export default function DashboardPage() {
     }
     setModalOpen(false);
     setEditingId(null);
+    setEditingMeta(null);
     setForm({ ...EMPTY_FORM });
     loadData();
     loadCalendarBookings();
 
-    if (isNewBooking && savedBooking?.id) {
+    if ((isNewBooking || resubmit) && savedBooking?.id) {
       fetch('/api/bookings/notify-created', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -280,6 +304,7 @@ export default function DashboardPage() {
 
   const statusLabel: Record<string, string> = {
     pending: t('bookingPending'),
+    needs_edit: t('bookingNeedsEdit'),
     approved: t('bookingApproved'),
     rejected: t('bookingRejected'),
     cancelled: t('bookingCancelled'),
@@ -367,12 +392,16 @@ export default function DashboardPage() {
             )}
             {isOwnerOrManager && (
               <>
-                <button
-                  onClick={() => openEditBooking(b)}
-                  className="text-[var(--c-teal-600)] text-xs font-bold hover:underline"
-                >
-                  {t('edit')}
-                </button>
+                {canManage || b.status === 'needs_edit' ? (
+                  <button
+                    onClick={() => openEditBooking(b)}
+                    className="text-[var(--c-teal-600)] text-xs font-bold hover:underline"
+                  >
+                    {t('edit')}
+                  </button>
+                ) : (
+                  <span className="text-[10px] text-[var(--c-text-muted)]">🔒 {t('editLockedHint')}</span>
+                )}
                 <button
                   onClick={() => requestStatusChange(b, 'cancelled')}
                   className="text-[var(--c-text-muted)] text-xs font-bold hover:underline"
@@ -421,6 +450,12 @@ export default function DashboardPage() {
                 {lang === 'en' && room.location_en ? room.location_en : room.location} —{' '}
                 {room.capacity}
               </p>
+              {(lang === 'en' && room.responsible_en ? room.responsible_en : room.responsible) && (
+                <p className="text-xs font-bold text-[var(--c-teal-700)] mt-1">
+                  👤 {t('roomResponsible')}:{' '}
+                  {lang === 'en' && room.responsible_en ? room.responsible_en : room.responsible}
+                </p>
+              )}
             </Card>
           ))}
           {!rooms.length && (
@@ -434,6 +469,7 @@ export default function DashboardPage() {
               {[
                 ['approved', t('legendApproved')],
                 ['pending', t('legendPending')],
+                ['needs_edit', t('legendNeedsEdit')],
                 ['rejected', t('legendRejected')],
                 ['cancelled', t('legendCancelled')],
               ].map(([status, label]) => (

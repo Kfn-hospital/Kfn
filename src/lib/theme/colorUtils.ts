@@ -156,6 +156,8 @@ function bookingColorFallback(status: string): string {
       return DEFAULT_BOOKING_COLORS.rejected;
     case 'cancelled':
       return DEFAULT_BOOKING_COLORS.cancelled;
+    case 'needs_edit':
+      return '#f97316';
     default:
       return DEFAULT_BOOKING_COLORS.pending;
   }

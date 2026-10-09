@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { useConfirm } from '@/lib/confirm/ConfirmContext';
@@ -12,7 +13,7 @@ import Modal from '@/components/ui/Modal';
 import type { Booking } from '@/types/database';
 import { statusBadgeStyle, statusDotStyle } from '@/lib/theme/colorUtils';
 
-const STATUS_KEYS = ['pending', 'approved', 'rejected', 'cancelled'] as const;
+const STATUS_KEYS = ['pending', 'needs_edit', 'approved', 'rejected', 'cancelled'] as const;
 const NO_DECIDER = '__none__';
 
 function dateOnly(value: string) {
@@ -51,7 +52,7 @@ export default function AllBookingsPage() {
   // ---- بيانات المستخدم الحالي + سبب الرفض/الإلغاء ----
   const [userId, setUserId] = useState('');
   const [myName, setMyName] = useState('');
-  const [reasonModal, setReasonModal] = useState<{ booking: Booking; status: 'rejected' | 'cancelled' } | null>(null);
+  const [reasonModal, setReasonModal] = useState<{ booking: Booking; status: 'rejected' | 'cancelled' | 'needs_edit' } | null>(null);
   const [reasonText, setReasonText] = useState('');
 
   const [search, setSearch] = useState('');
@@ -143,7 +144,7 @@ export default function AllBookingsPage() {
   }, [bookings, search, roomFilter, deciderFilter, dateFrom, dateTo]);
 
   const statusCounts = useMemo(() => {
-    const counts: Record<string, number> = { pending: 0, approved: 0, rejected: 0, cancelled: 0 };
+    const counts: Record<string, number> = { pending: 0, needs_edit: 0, approved: 0, rejected: 0, cancelled: 0 };
     preStatusFiltered.forEach((b) => {
       counts[b.status] = (counts[b.status] || 0) + 1;
     });
@@ -172,6 +173,7 @@ export default function AllBookingsPage() {
 
   const statusLabel: Record<string, string> = {
     pending: t('bookingPending'),
+    needs_edit: t('bookingNeedsEdit'),
     approved: t('legendApproved'),
     rejected: t('bookingRejected'),
     cancelled: t('bookingCancelled'),
@@ -197,7 +199,11 @@ export default function AllBookingsPage() {
     setAlert({ type: 'success', message: t('bookingDeleted') });
   }
 
-  async function applyStatusChange(b: Booking, status: 'approved' | 'rejected' | 'cancelled', reason?: string) {
+  async function applyStatusChange(
+    b: Booking,
+    status: 'approved' | 'rejected' | 'cancelled' | 'needs_edit',
+    reason?: string
+  ) {
     setAlert(null);
     const decides = status === 'approved' || status === 'rejected';
     const { data, error } = await supabase
@@ -229,9 +235,9 @@ export default function AllBookingsPage() {
     }).catch(() => {});
   }
 
-  function requestStatusChange(b: Booking, status: 'approved' | 'rejected' | 'cancelled') {
+  function requestStatusChange(b: Booking, status: 'approved' | 'rejected' | 'cancelled' | 'needs_edit') {
     const isOwnCancel = status === 'cancelled' && b.booked_by === userId;
-    if (!isOwnCancel && (status === 'rejected' || status === 'cancelled')) {
+    if (!isOwnCancel && (status === 'rejected' || status === 'cancelled' || status === 'needs_edit')) {
       setReasonText('');
       setReasonModal({ booking: b, status });
       return;
@@ -241,6 +247,7 @@ export default function AllBookingsPage() {
 
   function confirmReasonModal() {
     if (!reasonModal) return;
+    if (reasonModal.status === 'needs_edit' && !reasonText.trim()) return;
     applyStatusChange(reasonModal.booking, reasonModal.status, reasonText.trim());
     setReasonModal(null);
     setReasonText('');
@@ -375,6 +382,7 @@ export default function AllBookingsPage() {
           emptyMessage={hasActiveFilters ? t('noFilteredBookings') : t('noData')}
           rows={filtered}
           pageSize={20}
+          nowrap
           columns={[
             { header: t('bookingTitle'), render: (b: Booking) => <span className="font-bold">{b.title}</span> },
             {
@@ -406,8 +414,9 @@ export default function AllBookingsPage() {
               header: t('actions'),
               render: (b: Booking) => {
                 if (b.status === 'rejected') return null;
+                const canEdit = b.status === 'pending' || b.status === 'approved' || b.status === 'needs_edit';
                 return (
-                  <div className="flex gap-3 flex-wrap">
+                  <div className="flex gap-3 items-center">
                     {b.status === 'pending' && (
                       <>
                         <button
@@ -427,6 +436,23 @@ export default function AllBookingsPage() {
                       </>
                     )}
                     {(b.status === 'pending' || b.status === 'approved') && (
+                      <button
+                        type="button"
+                        onClick={() => requestStatusChange(b, 'needs_edit')}
+                        className="text-orange-600 text-xs font-bold hover:underline"
+                      >
+                        {t('returnForEdit')}
+                      </button>
+                    )}
+                    {canEdit && (
+                      <Link
+                        href={`/dashboard?edit=${b.id}`}
+                        className="text-[var(--c-teal-600)] text-xs font-bold hover:underline"
+                      >
+                        {t('edit')}
+                      </Link>
+                    )}
+                    {canEdit && (
                       <button
                         type="button"
                         onClick={() => requestStatusChange(b, 'cancelled')}
@@ -455,7 +481,13 @@ export default function AllBookingsPage() {
       <Modal
         open={!!reasonModal}
         onClose={() => setReasonModal(null)}
-        title={reasonModal?.status === 'rejected' ? t('bookingReasonModalTitleReject') : t('bookingReasonModalTitleCancel')}
+        title={
+          reasonModal?.status === 'rejected'
+            ? t('bookingReasonModalTitleReject')
+            : reasonModal?.status === 'needs_edit'
+              ? t('bookingReasonModalTitleNeedsEdit')
+              : t('bookingReasonModalTitleCancel')
+        }
       >
         <div className="space-y-3">
           <FormField
@@ -463,7 +495,9 @@ export default function AllBookingsPage() {
             type="textarea"
             value={reasonText}
             onChange={setReasonText}
-            placeholder={t('bookingReasonPlaceholder')}
+            placeholder={
+              reasonModal?.status === 'needs_edit' ? t('bookingNeedsEditPlaceholder') : t('bookingReasonPlaceholder')
+            }
           />
           <button
             type="button"

@@ -16,12 +16,14 @@ export default function DataTable<T extends { id: string }>({
   emptyMessage,
   pageSize = DEFAULT_PAGE_SIZE,
   onRowClick,
+  nowrap = false,
 }: {
   columns: Column<T>[];
   rows: T[];
   emptyMessage: string;
   pageSize?: number;
   onRowClick?: (row: T) => void;
+  nowrap?: boolean;
 }) {
   const { t } = useLanguage();
   const [page, setPage] = useState(1);
@@ -42,7 +44,7 @@ export default function DataTable<T extends { id: string }>({
   return (
     <div>
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className={`w-full text-sm ${nowrap ? 'whitespace-nowrap' : ''}`}>
           <thead>
             <tr className="text-[var(--c-text-muted)] border-b">
               {columns.map((col, i) => (

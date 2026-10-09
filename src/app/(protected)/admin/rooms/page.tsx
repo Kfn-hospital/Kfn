@@ -93,6 +93,46 @@ function RoomManagersEditor({
   );
 }
 
+function ResponsibleEditor({
+  room,
+  onSave,
+}: {
+  room: Room;
+  onSave: (roomId: string, ar: string, en: string) => void;
+}) {
+  const { t } = useLanguage();
+  const [ar, setAr] = useState(room.responsible || '');
+  const [en, setEn] = useState(room.responsible_en || '');
+  const dirty = ar !== (room.responsible || '') || en !== (room.responsible_en || '');
+
+  return (
+    <div className="min-w-[200px] space-y-1">
+      <input
+        value={ar}
+        onChange={(e) => setAr(e.target.value)}
+        placeholder="القسم / المسؤول (عربي)"
+        className="w-full border rounded-lg px-2 py-1 text-xs"
+      />
+      <input
+        value={en}
+        onChange={(e) => setEn(e.target.value)}
+        placeholder="Department / person (English)"
+        dir="ltr"
+        className="w-full border rounded-lg px-2 py-1 text-xs"
+      />
+      {dirty && (
+        <button
+          type="button"
+          onClick={() => onSave(room.id, ar, en)}
+          className="text-xs font-bold text-[var(--c-teal-700)] hover:underline"
+        >
+          💾 {t('save')}
+        </button>
+      )}
+    </div>
+  );
+}
+
 export default function AdminRoomsPage() {
   const supabase = createClient();
   const router = useRouter();
@@ -164,6 +204,14 @@ export default function AdminRoomsPage() {
     loadRooms();
   }
 
+  async function saveResponsible(roomId: string, ar: string, en: string) {
+    await supabase
+      .from('rooms')
+      .update({ responsible: ar.trim() || null, responsible_en: en.trim() || null })
+      .eq('id', roomId);
+    loadRooms();
+  }
+
   async function handleAddRoom(e: React.FormEvent) {
     e.preventDefault();
     if (!form.name.trim()) return;
@@ -232,6 +280,16 @@ export default function AdminRoomsPage() {
               render: (r) => (lang === 'en' && r.location_en ? r.location_en : r.location) || '-',
             },
             { header: t('roomCapacity'), render: (r) => r.capacity },
+            {
+              header: t('roomResponsible'),
+              render: (r) => (
+                <ResponsibleEditor
+                  key={`${r.id}-${r.responsible || ''}-${r.responsible_en || ''}`}
+                  room={r}
+                  onSave={saveResponsible}
+                />
+              ),
+            },
             {
               header: t('roomManagers'),
               render: (r) => (

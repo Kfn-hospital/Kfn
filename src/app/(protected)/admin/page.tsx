@@ -13,7 +13,7 @@ import FormField from '@/components/ui/FormField';
 import EmptyState from '@/components/ui/EmptyState';
 import { statusDotStyle, statusBadgeStyle } from '@/lib/theme/colorUtils';
 
-type BookingStatus = 'pending' | 'approved' | 'rejected' | 'cancelled';
+type BookingStatus = 'pending' | 'approved' | 'rejected' | 'cancelled' | 'needs_edit';
 type Tab = 'pending' | 'calendar' | 'log' | 'audit';
 
 interface BookingRow {
@@ -192,6 +192,8 @@ export default function AdminControlPanelPage() {
       ? t('bookingApproved')
       : status === 'rejected'
       ? t('bookingRejected')
+      : status === 'needs_edit'
+      ? t('bookingNeedsEdit')
       : t('bookingCancelled');
 
   const roomName = (b: BookingRow) => (lang === 'ar' ? b.rooms?.name : b.rooms?.name_en || b.rooms?.name);

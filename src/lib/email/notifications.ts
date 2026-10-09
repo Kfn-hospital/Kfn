@@ -122,6 +122,8 @@ const DEFAULT_BOOKING_APPROVED_MESSAGE =
   'مرحبًا {name}، تم الموافقة على حجزك لقاعة {room} بتاريخ {date}.';
 const DEFAULT_BOOKING_REJECTED_MESSAGE =
   'مرحبًا {name}، نأسف لإبلاغك بأنه تم رفض حجزك لقاعة {room} بتاريخ {date}. السبب: {reason}';
+const DEFAULT_BOOKING_NEEDS_EDIT_MESSAGE =
+  'مرحبًا {name}، مطلوب تعديل على حجزك لقاعة {room} بتاريخ {date}. المطلوب: {reason}. من فضلك ادخل على البوابة وعدّل الحجز ثم أعد إرساله.';
 const DEFAULT_BOOKING_CANCELLED_MESSAGE =
   'مرحبًا {name}، تم إلغاء حجزك لقاعة {room} بتاريخ {date}. السبب: {reason}';
 
@@ -164,7 +166,7 @@ export async function notifyBookingCreated(bookingId: string): Promise<{ ok: boo
 
 export async function notifyBookingDecision(
   bookingId: string,
-  decision: 'approved' | 'rejected' | 'cancelled',
+  decision: 'approved' | 'rejected' | 'cancelled' | 'needs_edit',
   reason?: string
 ): Promise<{ ok: boolean; error?: string }> {
   try {
@@ -185,13 +187,17 @@ export async function notifyBookingDecision(
         ? 'booking_approved_message'
         : decision === 'rejected'
           ? 'booking_rejected_message'
-          : 'booking_cancelled_message';
+          : decision === 'needs_edit'
+            ? 'booking_needs_edit_message'
+            : 'booking_cancelled_message';
     const defaultMessage =
       decision === 'approved'
         ? DEFAULT_BOOKING_APPROVED_MESSAGE
         : decision === 'rejected'
           ? DEFAULT_BOOKING_REJECTED_MESSAGE
-          : DEFAULT_BOOKING_CANCELLED_MESSAGE;
+          : decision === 'needs_edit'
+            ? DEFAULT_BOOKING_NEEDS_EDIT_MESSAGE
+            : DEFAULT_BOOKING_CANCELLED_MESSAGE;
 
     const template = (await getSetting(settingKey)) || defaultMessage;
     const messageText = fillTemplate(template, {
@@ -205,11 +211,13 @@ export async function notifyBookingDecision(
       approved: `تمت الموافقة على حجزك: ${roomName}`,
       rejected: `تم رفض حجزك: ${roomName}`,
       cancelled: `تم إلغاء حجزك: ${roomName}`,
+      needs_edit: `مطلوب تعديل على حجزك: ${roomName}`,
     };
     const titleByDecision: Record<typeof decision, string> = {
       approved: 'تمت الموافقة على حجزك ✅',
       rejected: 'تم رفض حجزك',
       cancelled: 'تم إلغاء حجزك',
+      needs_edit: 'مطلوب تعديل على حجزك ✏️',
     };
 
     const body = `<p>${messageText}</p>`;
