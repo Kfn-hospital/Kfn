@@ -8,7 +8,7 @@ import { useConfirm } from '@/lib/confirm/ConfirmContext';
 import Card from '@/components/ui/Card';
 import Alert from '@/components/ui/Alert';
 import Breadcrumbs from '@/components/ui/Breadcrumbs';
-import type { CoordinationRequest, Profile } from '@/types/database';
+import type { CoordinationRequest, Profile, RequestCategory } from '@/types/database';
 
 const CAN_MANAGE_ROLES = ['admin', 'coordinator', 'coordination_admin'];
 const ASSIGNABLE_ROLES = ['admin', 'coordinator', 'coordination_admin'];
@@ -175,6 +175,8 @@ export default function RequestDetailPage() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [categories, setCategories] = useState<RequestCategory[]>([]);
+  const [savingCategory, setSavingCategory] = useState(false);
   const [error, setError] = useState('');
 
   async function loadData() {
@@ -190,6 +192,9 @@ export default function RequestDetailPage() {
       return;
     }
     setRequest(req as CoordinationRequest);
+
+    const { data: cats } = await supabase.from('request_categories').select('*').order('name');
+    setCategories((cats as RequestCategory[]) || []);
 
     if (req.created_by) {
       const { data: creatorRow } = await supabase.from('profiles').select('*').eq('id', req.created_by).maybeSingle();
@@ -248,6 +253,37 @@ export default function RequestDetailPage() {
   async function updateAssigneeNote(reqId: string, targetUserId: string, note: string) {
     setAssignees((prev) => prev.map((a) => (a.user_id === targetUserId ? { ...a, note } : a)));
     await supabase.from('request_assignees').update({ note: note || null }).eq('request_id', reqId).eq('user_id', targetUserId);
+  }
+
+  async function updateCategory(categoryId: string) {
+    if (!canManageRequests || !request) return;
+    if ((request.category_id || '') === categoryId) return;
+    setError('');
+    setSavingCategory(true);
+    const { data, error: catError } = await supabase
+      .from('requests')
+      .update({ category_id: categoryId || null })
+      .eq('id', request.id)
+      .select('id');
+    setSavingCategory(false);
+    if (catError || !data || !data.length) {
+      setError(catError?.message || 'تعذر تغيير التصنيف، تأكد من صلاحياتك');
+      return;
+    }
+    const newCat = categories.find((c) => c.id === categoryId);
+    setRequest({
+      ...request,
+      category_id: categoryId || null,
+      request_categories: newCat,
+    });
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    await supabase.from('audit_log').insert({
+      action: 'request_category_changed',
+      details: `تغيير تصنيف الطلب "${request.title}" من ${request.request_categories?.name || '-'} إلى ${newCat?.name || '-'}`,
+      performed_by: user?.id ?? null,
+    });
   }
 
   async function updateStatus(status: string) {
@@ -348,7 +384,27 @@ export default function RequestDetailPage() {
           </div>
           <div>
             <span className="block text-[var(--c-text-muted)] font-bold mb-1">{t('requestCategory')}</span>
-            <span className="font-bold">{request.request_categories?.name || '-'}</span>
+            {canManageRequests ? (
+              <select
+                value={request.category_id || ''}
+                disabled={savingCategory}
+                onChange={(e) => updateCategory(e.target.value)}
+                className="w-full max-w-xs border rounded-lg px-3 py-1.5 text-sm font-bold bg-[var(--c-surface)] disabled:opacity-60"
+              >
+                <option value="">-</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {lang === 'en' && c.name_en ? c.name_en : c.name}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <span className="font-bold">
+                {(lang === 'en' && request.request_categories?.name_en
+                  ? request.request_categories.name_en
+                  : request.request_categories?.name) || '-'}
+              </span>
+            )}
           </div>
           <div>
             <span className="block text-[var(--c-text-muted)] font-bold mb-1">{t('status')}</span>
