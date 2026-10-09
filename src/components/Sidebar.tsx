@@ -39,7 +39,6 @@ export default function Sidebar({
         .eq('id', user.id)
         .single();
       if (profile?.role === 'admin') setIsAdmin(true);
-      if (profile?.role === 'room_manager') setIsRoomManager(true);
       const { data: rm } = await supabase.from('room_managers').select('room_id').eq('user_id', user.id).limit(1);
       if ((rm ?? []).length > 0) setIsRoomManager(true);
     }

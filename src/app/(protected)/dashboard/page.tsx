@@ -71,6 +71,7 @@ export default function DashboardPage() {
   const [myBookings, setMyBookings] = useState<Booking[]>([]);
   const [userId, setUserId] = useState<string>('');
   const [userRole, setUserRole] = useState<string>('');
+  const [myRoomIds, setMyRoomIds] = useState<string[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -120,6 +121,8 @@ export default function DashboardPage() {
         .eq('id', user.id)
         .single();
       if (profile) setUserRole(profile.role);
+      const { data: rm } = await supabase.from('room_managers').select('room_id').eq('user_id', user.id);
+      setMyRoomIds(((rm as { room_id: string }[] | null) ?? []).map((x) => x.room_id));
     }
 
     const { data: bookingsData } = await supabase
@@ -310,7 +313,9 @@ export default function DashboardPage() {
     cancelled: t('bookingCancelled'),
   };
 
-  const canManage = userRole === 'admin' || userRole === 'room_manager';
+  // الصلاحية على مستوى القاعة: الأدمن أو المسؤول المُسند للقاعة نفسها
+  const canManage = userRole === 'admin' || myRoomIds.length > 0;
+  const canManageBooking = (b: { room_id: string }) => userRole === 'admin' || myRoomIds.includes(b.room_id);
 
   // ---- Calendar derived data ----
   const bookingsByDate = useMemo(() => {
@@ -371,10 +376,10 @@ export default function DashboardPage() {
       render: (b: Booking) => {
         const isFinal = b.status === 'rejected' || b.status === 'cancelled';
         if (isFinal) return null;
-        const isOwnerOrManager = ownList || canManage || b.booked_by === userId;
+        const isOwnerOrManager = ownList || canManageBooking(b) || b.booked_by === userId;
         return (
           <div className="flex gap-2 flex-wrap">
-            {!ownList && canManage && b.status === 'pending' && (
+            {!ownList && canManageBooking(b) && b.status === 'pending' && (
               <>
                 <button
                   onClick={() => requestStatusChange(b, 'approved')}
@@ -392,7 +397,7 @@ export default function DashboardPage() {
             )}
             {isOwnerOrManager && (
               <>
-                {canManage || b.status === 'needs_edit' ? (
+                {canManageBooking(b) || b.status === 'needs_edit' ? (
                   <button
                     onClick={() => openEditBooking(b)}
                     className="text-[var(--c-teal-600)] text-xs font-bold hover:underline"

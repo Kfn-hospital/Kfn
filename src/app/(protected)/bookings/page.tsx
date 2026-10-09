@@ -65,15 +65,19 @@ export default function AllBookingsPage() {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
 
-  const canManage = role === 'admin' || role === 'room_manager';
+  // الأدمن يشوف كل الحجوزات، ومسؤول الحجوزات يشوف حجوزات القاعات المُسندة له بس
+  const [myRoomIds, setMyRoomIds] = useState<string[]>([]);
+  const canManage = role === 'admin' || myRoomIds.length > 0;
   const timeLabel = (time: string) => formatTime12(time, t('am'), t('pm'));
 
-  async function loadBookings() {
-    const { data } = await supabase
+  async function loadBookings(roomIds: string[] | null) {
+    let query = supabase
       .from('bookings')
       .select('*, rooms(*), profiles(*)')
       .order('booking_date', { ascending: false })
       .limit(2000);
+    if (roomIds) query = query.in('room_id', roomIds);
+    const { data } = await query;
     const list = (data as Booking[]) || [];
     setBookings(list);
 
@@ -105,7 +109,14 @@ export default function AllBookingsPage() {
         setMyName(profile?.name || profile?.email || '');
       }
       setRole(r);
-      if (r === 'admin' || r === 'room_manager') await loadBookings();
+      if (r === 'admin') {
+        await loadBookings(null);
+      } else if (user) {
+        const { data: rm } = await supabase.from('room_managers').select('room_id').eq('user_id', user.id);
+        const ids = ((rm as { room_id: string }[] | null) ?? []).map((x) => x.room_id);
+        setMyRoomIds(ids);
+        if (ids.length) await loadBookings(ids);
+      }
       setReady(true);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -190,7 +201,6 @@ export default function AllBookingsPage() {
       .from('bookings')
       .delete()
       .in('id', ids)
-      .eq('status', 'cancelled')
       .select('id');
     const deleted = (data as { id: string }[] | null) ?? [];
     if (error || !deleted.length) {
@@ -260,7 +270,6 @@ export default function AllBookingsPage() {
   if (!canManage) return <p className="text-[var(--c-text-muted)] p-6">{t('bookingsAccessDenied')}</p>;
 
   function renderActions(b: Booking) {
-                if (b.status === 'rejected') return null;
                 const canEdit = b.status === 'pending' || b.status === 'approved' || b.status === 'needs_edit';
                 return (
                   <div className="flex gap-3 items-center">
@@ -308,10 +317,15 @@ export default function AllBookingsPage() {
                         {t('cancel')}
                       </button>
                     )}
-                    {b.status === 'cancelled' && (
+                    {(
                       <button
                         type="button"
-                        onClick={() => deleteBookings([b.id], t('confirmDeleteCancelledBooking'))}
+                        onClick={() =>
+                          deleteBookings(
+                            [b.id],
+                            b.status === 'cancelled' ? t('confirmDeleteCancelledBooking') : t('confirmDeleteBooking')
+                          )
+                        }
                         className="text-red-600 text-xs font-bold hover:underline"
                       >
                         🗑️ {t('delete')}

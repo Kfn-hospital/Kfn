@@ -106,7 +106,7 @@ export default function AdminControlPanelPage() {
     const { data: rm } = await supabase.from('room_managers').select('room_id').eq('user_id', user.id);
     const roomIds = ((rm as { room_id: string }[] | null) ?? []).map((r) => r.room_id);
 
-    if (profile?.role !== 'admin' && profile?.role !== 'room_manager' && roomIds.length === 0) {
+    if (profile?.role !== 'admin' && roomIds.length === 0) {
       router.push('/dashboard');
       return;
     }
@@ -122,7 +122,7 @@ export default function AdminControlPanelPage() {
   }, [loadBookings, loadAuditLog, loadMyAccess]);
 
   const canSeeRoom = useCallback(
-    (roomId: string) => myRole === 'admin' || myRole === 'room_manager' || myRoomIds.includes(roomId),
+    (roomId: string) => myRole === 'admin' || myRoomIds.includes(roomId),
     [myRole, myRoomIds]
   );
 
