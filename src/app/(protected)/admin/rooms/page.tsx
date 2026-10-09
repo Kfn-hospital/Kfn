@@ -144,6 +144,7 @@ export default function AdminRoomsPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [pageError, setPageError] = useState('');
   const [authorized, setAuthorized] = useState(false);
 
   useEffect(() => {
@@ -205,10 +206,16 @@ export default function AdminRoomsPage() {
   }
 
   async function saveResponsible(roomId: string, ar: string, en: string) {
-    await supabase
+    setPageError('');
+    const { data, error: saveError } = await supabase
       .from('rooms')
       .update({ responsible: ar.trim() || null, responsible_en: en.trim() || null })
-      .eq('id', roomId);
+      .eq('id', roomId)
+      .select('id');
+    if (saveError || !data || !data.length) {
+      setPageError(saveError?.message || 'لم يتم الحفظ، تحقق من الصلاحيات');
+      return;
+    }
     loadRooms();
   }
 
@@ -265,6 +272,12 @@ export default function AdminRoomsPage() {
           {t('addRoom')}
         </button>
       </div>
+
+      {pageError && (
+        <div className="mb-3">
+          <Alert type="error" message={pageError} />
+        </div>
+      )}
 
       <Card>
         <DataTable
