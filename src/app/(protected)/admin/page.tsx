@@ -69,6 +69,7 @@ export default function AdminControlPanelPage() {
   });
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [rejectModal, setRejectModal] = useState<BookingRow | null>(null);
+  const [approveModal, setApproveModal] = useState<BookingRow | null>(null);
   const [rejectReason, setRejectReason] = useState('');
 
   const loadBookings = useCallback(async () => {
@@ -173,7 +174,15 @@ export default function AdminControlPanelPage() {
       setRejectModal(booking);
       return;
     }
-    performDecision(booking, 'approved');
+    setRejectReason('');
+    setApproveModal(booking);
+  };
+
+  const confirmApproveModal = () => {
+    if (!approveModal) return;
+    performDecision(approveModal, 'approved', rejectReason.trim());
+    setApproveModal(null);
+    setRejectReason('');
   };
 
   const confirmRejectModal = () => {
@@ -464,6 +473,24 @@ export default function AdminControlPanelPage() {
           />
           <button
             onClick={confirmRejectModal}
+            className="w-full bg-[var(--c-teal-700)] text-white rounded-xl py-3 font-bold"
+          >
+            {t('bookingReasonConfirm')}
+          </button>
+        </div>
+      </Modal>
+
+      <Modal open={!!approveModal} onClose={() => setApproveModal(null)} title={t('bookingReasonModalTitleApprove')}>
+        <div className="space-y-3">
+          <FormField
+            label=""
+            type="textarea"
+            value={rejectReason}
+            onChange={setRejectReason}
+            placeholder={t('bookingApprovePlaceholder')}
+          />
+          <button
+            onClick={confirmApproveModal}
             className="w-full bg-[var(--c-teal-700)] text-white rounded-xl py-3 font-bold"
           >
             {t('bookingReasonConfirm')}

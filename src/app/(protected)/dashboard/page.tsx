@@ -80,7 +80,7 @@ export default function DashboardPage() {
   const [agreedPolicy, setAgreedPolicy] = useState(false);
 
   // ---- سبب الرفض/الإلغاء ----
-  const [reasonModal, setReasonModal] = useState<{ booking: Booking; status: 'rejected' | 'cancelled' } | null>(null);
+  const [reasonModal, setReasonModal] = useState<{ booking: Booking; status: 'approved' | 'rejected' | 'cancelled' } | null>(null);
   const [reasonText, setReasonText] = useState('');
   // حالة الحجز اللي بيتعدّل وصاحبه (عشان نعيد إرساله لو كان مُعاد للتعديل)
   const [editingMeta, setEditingMeta] = useState<{ status: string; bookedBy: string } | null>(null);
@@ -287,7 +287,7 @@ export default function DashboardPage() {
 
   function requestStatusChange(b: Booking, status: 'approved' | 'rejected' | 'cancelled') {
     const isOwnCancel = status === 'cancelled' && b.booked_by === userId;
-    if (!isOwnCancel && (status === 'rejected' || status === 'cancelled')) {
+    if (!isOwnCancel && (status === 'approved' || status === 'rejected' || status === 'cancelled')) {
       setReasonText('');
       setReasonModal({ booking: b, status });
       return;
@@ -690,7 +690,13 @@ export default function DashboardPage() {
       <Modal
         open={!!reasonModal}
         onClose={() => setReasonModal(null)}
-        title={reasonModal?.status === 'rejected' ? t('bookingReasonModalTitleReject') : t('bookingReasonModalTitleCancel')}
+        title={
+          reasonModal?.status === 'approved'
+            ? t('bookingReasonModalTitleApprove')
+            : reasonModal?.status === 'rejected'
+              ? t('bookingReasonModalTitleReject')
+              : t('bookingReasonModalTitleCancel')
+        }
       >
         <div className="space-y-3">
           <FormField
@@ -698,7 +704,9 @@ export default function DashboardPage() {
             type="textarea"
             value={reasonText}
             onChange={setReasonText}
-            placeholder={t('bookingReasonPlaceholder')}
+            placeholder={
+              reasonModal?.status === 'approved' ? t('bookingApprovePlaceholder') : t('bookingReasonPlaceholder')
+            }
           />
           <button
             onClick={confirmReasonModal}

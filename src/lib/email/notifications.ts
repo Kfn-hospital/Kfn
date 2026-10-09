@@ -88,10 +88,26 @@ export async function notifyRequestCompleted(requestId: string): Promise<{ ok: b
       .single();
     if (!creator?.email) return { ok: false, error: 'لا يوجد بريد إلكتروني لصاحب الطلب' };
 
+    // ملاحظات موظفي التنسيق والمتابعة المسندين للطلب
+    const { data: noteRows } = await supabaseAdmin
+      .from('request_assignees')
+      .select('note, profiles(name)')
+      .eq('request_id', requestId);
+    const notes = ((noteRows || []) as unknown as { note: string | null; profiles?: { name?: string } | null }[])
+      .filter((r) => r.note && r.note.trim())
+      .map((r) => ({ name: r.profiles?.name || '', note: (r.note || '').trim() }));
+    const notesHtml = notes.length
+      ? notesBlock(
+          'ملاحظات مكتب التنسيق والمتابعة:',
+          notes.map((n) => (notes.length > 1 && n.name ? `${n.name}: ${n.note}` : n.note)).join('\n')
+        )
+      : '';
+
     const body = `
       <p>مرحبًا ${creator.name || ''}،</p>
       <p>نود إعلامك بأنه تم الانتهاء من تنفيذ طلبك التالي:</p>
       <p><strong>${reqRow.title}</strong></p>
+      ${notesHtml}
       <p>شكرًا لتواصلك مع مكتب التنسيق والمتابعة.</p>
     `;
 
@@ -107,6 +123,21 @@ export async function notifyRequestCompleted(requestId: string): Promise<{ ok: b
     await logEmailResult('notifyRequestCompleted', result);
     return result;
   }
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\n/g, '<br />');
+}
+
+function notesBlock(label: string, text: string) {
+  return `<div style="margin-top:16px;padding:12px 14px;background:#f0fdfa;border-right:4px solid #0f766e;border-radius:8px;">
+    <p style="margin:0 0 4px;font-weight:bold;color:#0f766e;">${label}</p>
+    <p style="margin:0;">${escapeHtml(text)}</p>
+  </div>`;
 }
 
 function fillTemplate(template: string, vars: Record<string, string>) {
@@ -220,7 +251,10 @@ export async function notifyBookingDecision(
       needs_edit: 'مطلوب تعديل على حجزك ✏️',
     };
 
-    const body = `<p>${messageText}</p>`;
+    const cleanReason = (reason || '').trim();
+    // لو رسالة الأدمن المخصصة ما فيهاش {reason} نضيف الملاحظة في مربع مستقل
+    const notesHtml = cleanReason && !template.includes('{reason}') ? notesBlock('ملاحظات المسؤول:', cleanReason) : '';
+    const body = `<p>${messageText}</p>${notesHtml}`;
 
     const result = await sendEmail(
       booker.email,

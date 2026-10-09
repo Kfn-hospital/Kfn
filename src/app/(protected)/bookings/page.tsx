@@ -52,7 +52,7 @@ export default function AllBookingsPage() {
   // ---- بيانات المستخدم الحالي + سبب الرفض/الإلغاء ----
   const [userId, setUserId] = useState('');
   const [myName, setMyName] = useState('');
-  const [reasonModal, setReasonModal] = useState<{ booking: Booking; status: 'rejected' | 'cancelled' | 'needs_edit' } | null>(null);
+  const [reasonModal, setReasonModal] = useState<{ booking: Booking; status: 'approved' | 'rejected' | 'cancelled' | 'needs_edit' } | null>(null);
   const [reasonText, setReasonText] = useState('');
 
   const [search, setSearch] = useState('');
@@ -237,7 +237,7 @@ export default function AllBookingsPage() {
 
   function requestStatusChange(b: Booking, status: 'approved' | 'rejected' | 'cancelled' | 'needs_edit') {
     const isOwnCancel = status === 'cancelled' && b.booked_by === userId;
-    if (!isOwnCancel && (status === 'rejected' || status === 'cancelled' || status === 'needs_edit')) {
+    if (!isOwnCancel && (status === 'approved' || status === 'rejected' || status === 'cancelled' || status === 'needs_edit')) {
       setReasonText('');
       setReasonModal({ booking: b, status });
       return;
@@ -482,7 +482,9 @@ export default function AllBookingsPage() {
         open={!!reasonModal}
         onClose={() => setReasonModal(null)}
         title={
-          reasonModal?.status === 'rejected'
+          reasonModal?.status === 'approved'
+            ? t('bookingReasonModalTitleApprove')
+            : reasonModal?.status === 'rejected'
             ? t('bookingReasonModalTitleReject')
             : reasonModal?.status === 'needs_edit'
               ? t('bookingReasonModalTitleNeedsEdit')
@@ -496,7 +498,11 @@ export default function AllBookingsPage() {
             value={reasonText}
             onChange={setReasonText}
             placeholder={
-              reasonModal?.status === 'needs_edit' ? t('bookingNeedsEditPlaceholder') : t('bookingReasonPlaceholder')
+              reasonModal?.status === 'needs_edit'
+                ? t('bookingNeedsEditPlaceholder')
+                : reasonModal?.status === 'approved'
+                  ? t('bookingApprovePlaceholder')
+                  : t('bookingReasonPlaceholder')
             }
           />
           <button
