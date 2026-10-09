@@ -47,6 +47,8 @@ export default function AllBookingsPage() {
   const [ready, setReady] = useState(false);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [deciders, setDeciders] = useState<Record<string, string>>({});
+  // مسؤولو كل قاعة (حسب صلاحيات القاعات) — لفلتر "تمت المراجعة بواسطة"
+  const [managersByRoom, setManagersByRoom] = useState<Record<string, { id: string; name: string }[]>>({});
   const [alert, setAlert] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   // ---- بيانات المستخدم الحالي + سبب الرفض/الإلغاء ----
@@ -80,6 +82,20 @@ export default function AllBookingsPage() {
     const { data } = await query;
     const list = (data as Booking[]) || [];
     setBookings(list);
+
+    const roomIdList = Array.from(new Set(list.map((b) => b.room_id)));
+    if (roomIdList.length) {
+      const { data: rm } = await supabase
+        .from('room_managers')
+        .select('room_id, user_id, profiles(name, email)')
+        .in('room_id', roomIdList);
+      const mm: Record<string, { id: string; name: string }[]> = {};
+      (rm as unknown as { room_id: string; user_id: string; profiles: { name?: string | null; email?: string | null } | null }[] | null)?.forEach((row) => {
+        if (!mm[row.room_id]) mm[row.room_id] = [];
+        mm[row.room_id].push({ id: row.user_id, name: row.profiles?.name || row.profiles?.email || '-' });
+      });
+      setManagersByRoom(mm);
+    }
 
     const ids = Array.from(new Set(list.map((b) => b.decided_by).filter((id): id is string => !!id)));
     if (ids.length) {
@@ -132,10 +148,22 @@ export default function AllBookingsPage() {
     return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
   }, [bookings, lang]);
 
-  const deciderOptions = useMemo(
-    () => Object.entries(deciders).map(([id, name]) => ({ id, name })),
-    [deciders]
-  );
+  // الخيارات = مسؤولو القاعات فقط (وليس كل الموظفين). لو اخترت قاعة يظهر مسؤولوها فقط
+  const deciderOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    const roomIds = roomFilter ? [roomFilter] : roomOptions.map((r) => r.id);
+    roomIds.forEach((rid) => (managersByRoom[rid] || []).forEach((m) => map.set(m.id, m.name)));
+    return Array.from(map.entries())
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [managersByRoom, roomFilter, roomOptions]);
+
+  // لو الفلتر المختار مش من مسؤولي القاعة المختارة نصفّره
+  useEffect(() => {
+    if (deciderFilter && deciderFilter !== NO_DECIDER && !deciderOptions.some((d) => d.id === deciderFilter)) {
+      setDeciderFilter('');
+    }
+  }, [deciderOptions, deciderFilter]);
 
   const preStatusFiltered = useMemo(() => {
     const q = search.trim().toLowerCase();
